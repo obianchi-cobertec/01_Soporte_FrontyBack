@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "description": "Reglas reales de asignación de Cobertec — tabla maestra de responsables",
+
+  "master_rules": [
+    { "priority": 1, "block": "movilsat", "module": "*", "need": "error", "assignee": "b.garcia" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "configuracion", "assignee": "b.garcia" },
+    { "priority": 3, "block": "movilsat", "module": "*", "need": "permisos", "assignee": "b.garcia" },
+    { "priority": 4, "block": "movilsat", "module": "*", "need": "sacarcampo", "assignee": "b.garcia" },
+    { "priority": 5, "block": "movilsat", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
+
+    { "priority": 10, "block": "gmao", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
+    { "priority": 11, "block": "gmao", "module": "listadootmov", "need": "*", "assignee": "b.garcia" },
+    { "priority": 12, "block": "gmao", "module": "movilsatparte", "need": "*", "assignee": "b.garcia" },
+    { "priority": 13, "block": "gmao", "module": "reglamentos", "need": "*", "assignee": "desarrollo4" },
+
+    { "priority": 20, "block": "portalot", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
+    { "priority": 21, "block": "portalot", "module": "*", "need": "*", "assignee": "b.garcia" },
+
+    { "priority": 30, "block": "crm", "module": "*", "need": "formacion", "assignee": "j.ares" },
+
+    { "priority": 40, "block": "obras", "module": "*", "need": "formacion", "assignee": "alvaro" },
+
+    { "priority": 50, "block": "pi", "module": "*", "need": "*", "assignee": "a.arnaiz" },
+    { "priority": 51, "block": "appfichar", "module": "*", "need": "*", "assignee": "a.arnaiz" },
+    { "priority": 52, "block": "tarifas", "module": "*", "need": "*", "assignee": "a.arnaiz" },
+
+    { "priority": 60, "block": "servidor", "module": "sesiones", "need": "*", "assignee": "a.martinez" },
+    { "priority": 61, "block": "servidor", "module": "*", "need": "*", "assignee": "Soporte" },
+
+    { "priority": 70, "block": "general", "module": "accesos", "need": "*", "assignee": "Soporte" },
+    { "priority": 71, "block": "general", "module": "conexion", "need": "*", "assignee": "Soporte" },
+    { "priority": 72, "block": "general", "module": "instalarprog", "need": "*", "assignee": "Soporte" },
+    { "priority": 73, "block": "general", "module": "sesionesgeneral", "need": "sesion", "assignee": "a.martinez" },
+    { "priority": 74, "block": "general", "module": "sesionesgeneral", "need": "*", "assignee": "a.martinez" },
+    { "priority": 75, "block": "general", "module": "exportacion", "need": "*", "assignee": "desarrollo4" },
+    { "priority": 76, "block": "general", "module": "modulosnew", "need": "*", "assignee": "j.ares" },
+
+    { "priority": 100, "block": "*", "module": "*", "need": "campo", "assignee": "desarrollo4" },
+    { "priority": 101, "block": "*", "module": "*", "need": "sacarcampo", "assignee": "desarrollo4" },
+    { "priority": 102, "block": "*", "module": "*", "need": "error", "assignee": "SAT_Exp" },
+    { "priority": 103, "block": "*", "module": "*", "need": "formacion", "assignee": "Financiero" },
+    { "priority": 104, "block": "*", "module": "*", "need": "infor", "assignee": "Soporte" },
+    { "priority": 105, "block": "*", "module": "*", "need": "modificar-informe", "assignee": "Soporte" },
+    { "priority": 106, "block": "*", "module": "*", "need": "proceso", "assignee": "SAT_Exp" }
+  ],
+
+  "match_logic": "La regla más específica gana. Prioridad menor = más específica. Un campo con '*' coincide con cualquier valor. Para que una regla aplique, todos sus campos no-wildcard deben coincidir.",
+
+  "assignee_names": {
+    "desarrollo4": "Hildegart Nieto",
+    "SAT_Exp": "Alberto San Miguel",
+    "Soporte": "Sergio García",
+    "Financiero": "Financiero",
+    "b.garcia": "b.garcia",
+    "j.quintanilla": "j.quintanilla",
+    "j.ares": "j.ares",
+    "a.arnaiz": "a.arnaiz",
+    "a.martinez": "a.martinez",
+    "alvaro": "alvaro"
+  },
+
+  "default_assignee": "Soporte",
+
+  "review_status_overrides": {
+    "ambiguous": "Soporte",
+    "out_of_map": "Soporte",
+    "human_required": "Soporte"
+  }
+}

@@ -1,0 +1,210 @@
+[
+  {
+    "id": "error-facturacion",
+    "description": "No me deja generar factura, da error al guardar. Cuando intento cerrar el pedido y darle a facturar, el sistema muestra un error y no guarda nada.",
+    "company_name": "Empresa Test S.L.",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "ventas_facturacion",
+      "need": "error",
+      "assignee": "SAT_Exp"
+    }
+  },
+  {
+    "id": "formacion-abono",
+    "description": "No sé dónde está la opción para hacer un abono de factura. ¿Me podéis explicar cómo se hace? Soy nueva en el programa.",
+    "company_name": "Servicios Atlántico",
+    "expected": {
+      "nature": "formacion_duda_uso",
+      "domain": "ventas_facturacion",
+      "need": "formacion"
+    }
+  },
+  {
+    "id": "acceso-login",
+    "description": "No puedo entrar al sistema, me dice contraseña incorrecta. He probado varias veces y nada. Ayer funcionaba bien.",
+    "company_name": "Talleres López",
+    "expected": {
+      "nature": "usuario_acceso",
+      "domain": "funcionamiento_general",
+      "block": "general",
+      "assignee": "Soporte"
+    }
+  },
+  {
+    "id": "mejora-campo-nuevo",
+    "description": "Necesitamos un campo nuevo en la ficha de producto para poner el código de barras EAN13. Ahora mismo no hay sitio donde ponerlo.",
+    "company_name": "Comercial Norte S.A.",
+    "expected": {
+      "nature": "peticion_cambio_mejora",
+      "need": "campo",
+      "assignee": "desarrollo4"
+    }
+  },
+  {
+    "id": "instalacion-equipo",
+    "description": "Hay que instalar Expertis en un equipo nuevo del almacén. Es un Windows 11.",
+    "company_name": "Logística Vigo S.L.",
+    "expected": {
+      "nature": "instalacion_entorno",
+      "domain": "servidor_sistemas",
+      "need": "instalar",
+      "assignee": "Soporte"
+    }
+  },
+  {
+    "id": "movilsat-error",
+    "description": "Movilsat no sincroniza los partes de trabajo. Le doy a sincronizar y se queda cargando pero no envía nada. Llevamos dos días así.",
+    "company_name": "Mantenimientos del Sur",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "movilsat",
+      "block": "movilsat",
+      "need": "error",
+      "assignee": "b.garcia"
+    }
+  },
+  {
+    "id": "gmao-formacion",
+    "description": "Necesitamos formación sobre el módulo GMAO. Queremos aprender a crear órdenes de trabajo preventivas.",
+    "company_name": "Industrial Galicia",
+    "expected": {
+      "nature": "formacion_duda_uso",
+      "domain": "gmao",
+      "block": "gmao",
+      "need": "formacion",
+      "assignee": "j.quintanilla"
+    }
+  },
+  {
+    "id": "importar-csv",
+    "description": "Necesito importar un fichero CSV con los artículos nuevos pero me da error de formato. El archivo tiene 3000 líneas.",
+    "company_name": "Mayoristas del Sur",
+    "expected": {
+      "nature": "importacion_exportacion",
+      "need": "importdatos"
+    }
+  },
+  {
+    "id": "vpn-configurar",
+    "description": "Necesitamos configurar la VPN en el portátil nuevo del director comercial para que pueda acceder desde fuera.",
+    "company_name": "Distribuciones Rías Baixas",
+    "expected": {
+      "nature": "instalacion_entorno",
+      "domain": "servidor_sistemas",
+      "need": "vpn2"
+    }
+  },
+  {
+    "id": "sesion-colgada",
+    "description": "Se me ha quedado colgada la sesión de Expertis y no me deja entrar. Dice que ya hay una sesión abierta con mi usuario.",
+    "company_name": "Asesoría Pontevedra",
+    "expected": {
+      "nature": "rendimiento_bloqueo",
+      "need": "sesion"
+    }
+  },
+  {
+    "id": "portal-ot-error",
+    "description": "El portal de OT no carga. Los técnicos de campo no pueden ver las órdenes de trabajo asignadas desde esta mañana.",
+    "company_name": "Servicios Técnicos Norte",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "portal_ot",
+      "block": "portalot",
+      "assignee": "b.garcia"
+    }
+  },
+  {
+    "id": "informe-modificar",
+    "description": "Necesitamos modificar el informe de ventas mensual para que incluya el desglose por comercial. Ahora solo sale el total.",
+    "company_name": "Comercial Galicia S.L.",
+    "expected": {
+      "nature": "peticion_cambio_mejora",
+      "need": "infor",
+      "assignee": "Soporte"
+    }
+  },
+  {
+    "id": "permisos-usuario",
+    "description": "Hay que cambiar los permisos de María García. Necesita acceso al módulo de compras pero que no pueda ver el financiero.",
+    "company_name": "Grupo Industrial Vigo",
+    "expected": {
+      "nature": "configuracion",
+      "need": "permisos",
+      "assignee": "Soporte"
+    }
+  },
+  {
+    "id": "app-fichajes",
+    "description": "La app de fichajes no registra la salida. Los empleados fichan la entrada pero cuando fichan la salida no queda registrado.",
+    "company_name": "Transportes Galicia",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "app_fichajes",
+      "block": "appfichar",
+      "assignee": "a.arnaiz"
+    }
+  },
+  {
+    "id": "urgente-bloqueo-total",
+    "description": "URGENTE: No podemos facturar nada. Todo el departamento de facturación está parado. Desde esta mañana al intentar crear cualquier factura da error de base de datos. Somos 8 personas sin poder trabajar.",
+    "company_name": "Distribuciones Rías Baixas",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "ventas_facturacion",
+      "need": "error",
+      "suggested_priority_min": "high"
+    }
+  },
+  {
+    "id": "ambiguo-lento",
+    "description": "El programa va lento.",
+    "company_name": "Empresa Genérica",
+    "expected": {
+      "nature": "rendimiento_bloqueo",
+      "confidence_max": "medium",
+      "review_status_min": "review_recommended"
+    }
+  },
+  {
+    "id": "ambiguo-no-funciona",
+    "description": "No funciona.",
+    "company_name": "Empresa Genérica",
+    "expected": {
+      "confidence_max": "low",
+      "review_status_min": "review_recommended"
+    }
+  },
+  {
+    "id": "fuera-de-mapa",
+    "description": "Quiero saber si tienen servicio de hosting y cuánto costaría alojar nuestra web con ustedes.",
+    "company_name": "Startup Digital S.L.",
+    "expected": {
+      "review_status_min": "out_of_map"
+    }
+  },
+  {
+    "id": "crm-formacion",
+    "description": "Nos gustaría recibir formación del CRM. No sabemos bien cómo registrar las oportunidades comerciales ni hacer seguimiento.",
+    "company_name": "Comercial Noroeste",
+    "expected": {
+      "nature": "formacion_duda_uso",
+      "domain": "crm",
+      "block": "crm",
+      "need": "formacion",
+      "assignee": "j.ares"
+    }
+  },
+  {
+    "id": "tarifas-error",
+    "description": "Las tarifas no se actualizan correctamente. Hemos cambiado los precios en el catálogo pero en los pedidos sigue apareciendo el precio antiguo.",
+    "company_name": "Distribuciones Costa",
+    "expected": {
+      "nature": "incidencia_error",
+      "domain": "tarifas_catalogos",
+      "block": "tarifas",
+      "assignee": "a.arnaiz"
+    }
+  }
+]

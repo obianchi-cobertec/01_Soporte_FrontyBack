@@ -1,0 +1,1762 @@
+{
+  "nature": {
+    "description": "Naturaleza principal de la incidencia. Elegir siempre una categoría principal. Si hay duda entre dos, usar reglas de frontera y marcar menor confianza.",
+    "values": [
+      {
+        "id": "incidencia_error",
+        "label": "Incidencia o error",
+        "description": "Fallo funcional o técnico. Algo que antes funcionaba o debería funcionar no funciona correctamente.",
+        "keywords_positive": [
+          "error",
+          "falla",
+          "no funciona",
+          "no deja",
+          "se cuelga",
+          "se queda colgado",
+          "mensaje de error",
+          "da fallo",
+          "no calcula bien",
+          "no genera",
+          "no guarda",
+          "sale mal",
+          "incorrecto",
+          "descuadra",
+          "no carga",
+          "se bloquea"
+        ],
+        "keywords_negative": [
+          "cómo se hace",
+          "necesito que me expliquéis",
+          "queremos un campo nuevo",
+          "crear usuario",
+          "cambiar permisos",
+          "configurar",
+          "dar de alta",
+          "dar de baja"
+        ],
+        "decision_rules": [
+          "Usar cuando el usuario describe un comportamiento incorrecto, un fallo o un resultado erróneo.",
+          "Priorizar sobre consulta si hay evidencia de mal funcionamiento real.",
+          "No usar si el usuario solo pregunta cómo se hace algo y no describe fallo."
+        ],
+        "confusion_with": [
+          "consulta_funcional",
+          "formacion_duda_uso",
+          "rendimiento_bloqueo"
+        ],
+        "examples_positive": [
+          "da error al guardar",
+          "no genera la factura",
+          "aparece un mensaje de error",
+          "no cuadran los números",
+          "el informe sale mal"
+        ],
+        "examples_negative": [
+          "cómo se hace un abono",
+          "qué significa este campo",
+          "queremos un informe nuevo"
+        ],
+        "examples": [
+          "da error al guardar",
+          "no genera la factura",
+          "aparece un mensaje de error",
+          "no cuadran los números",
+          "el informe sale mal"
+        ]
+      },
+      {
+        "id": "consulta_funcional",
+        "label": "Consulta funcional",
+        "description": "Duda sobre el significado, comportamiento o interpretación de una funcionalidad existente.",
+        "keywords_positive": [
+          "qué significa",
+          "por qué sale",
+          "es normal",
+          "cuándo aplica",
+          "cómo interpreta",
+          "qué hace",
+          "qué valor es este",
+          "por qué aparece",
+          "cómo funciona esto",
+          "a qué corresponde",
+          "qué implica"
+        ],
+        "keywords_negative": [
+          "cómo se hace",
+          "explicadme",
+          "enséñame",
+          "crear",
+          "modificar",
+          "nuevo",
+          "no funciona",
+          "no deja entrar"
+        ],
+        "decision_rules": [
+          "Usar cuando el usuario quiere entender algo existente, no aprender un proceso completo.",
+          "No usar si la necesidad real es formación paso a paso.",
+          "No usar si el usuario solicita un cambio o una nueva funcionalidad."
+        ],
+        "confusion_with": [
+          "formacion_duda_uso",
+          "incidencia_error",
+          "peticion_cambio_mejora"
+        ],
+        "examples_positive": [
+          "qué significa este campo",
+          "por qué me sale este importe",
+          "es normal que aparezca este aviso",
+          "cuándo se aplica este descuento"
+        ],
+        "examples_negative": [
+          "cómo exporto un listado",
+          "necesitamos un campo nuevo",
+          "da error al contabilizar"
+        ],
+        "examples": [
+          "qué significa este campo",
+          "por qué me sale este importe",
+          "es normal que aparezca este aviso",
+          "cuándo se aplica este descuento"
+        ]
+      },
+      {
+        "id": "formacion_duda_uso",
+        "label": "Formación o duda de uso",
+        "description": "El usuario necesita que le expliquen, enseñen o acompañen para realizar un proceso.",
+        "keywords_positive": [
+          "cómo se hace",
+          "cómo hago",
+          "dónde está",
+          "explicadme",
+          "enséñame",
+          "no sé cómo",
+          "me podéis ayudar a",
+          "necesito formación",
+          "repasar",
+          "acompañamiento",
+          "cómo crear",
+          "cómo exportar",
+          "cómo cerrar"
+        ],
+        "keywords_negative": [
+          "da error",
+          "no funciona",
+          "nuevo campo",
+          "nuevo informe",
+          "configurar permisos"
+        ],
+        "decision_rules": [
+          "Usar cuando el cliente necesita guía operativa sobre un proceso.",
+          "Priorizar sobre consulta funcional si la pregunta es procedural.",
+          "No usar si el problema es que algo falla realmente."
+        ],
+        "confusion_with": [
+          "consulta_funcional",
+          "incidencia_error",
+          "configuracion"
+        ],
+        "examples_positive": [
+          "cómo se hace un abono",
+          "no sé dónde está la opción",
+          "necesito que me expliquéis cómo exportar",
+          "cómo creo un usuario"
+        ],
+        "examples_negative": [
+          "qué significa este campo",
+          "no deja guardar el pedido",
+          "hay que cambiar permisos"
+        ],
+        "examples": [
+          "cómo se hace un abono",
+          "no sé dónde está la opción",
+          "necesito que me expliquéis cómo exportar",
+          "cómo creo un usuario"
+        ]
+      },
+      {
+        "id": "configuracion",
+        "label": "Configuración",
+        "description": "Alta, baja o modificación de parámetros, usuarios, permisos, opciones o ajustes existentes.",
+        "keywords_positive": [
+          "configurar",
+          "cambiar permisos",
+          "crear usuario",
+          "dar de alta",
+          "dar de baja",
+          "parametrizar",
+          "ajustar",
+          "activar",
+          "desactivar",
+          "modificar configuración",
+          "impresora",
+          "serie",
+          "contador",
+          "empresa",
+          "rol",
+          "licencia"
+        ],
+        "keywords_negative": [
+          "queremos algo nuevo",
+          "nuevo informe",
+          "nuevo campo",
+          "da error",
+          "cómo se hace"
+        ],
+        "decision_rules": [
+          "Usar cuando el sistema ya soporta la capacidad y solo requiere ajuste.",
+          "No usar si se pide una funcionalidad nueva.",
+          "No usar si el caso real es un fallo de acceso simple."
+        ],
+        "confusion_with": [
+          "peticion_cambio_mejora",
+          "usuario_acceso",
+          "formacion_duda_uso"
+        ],
+        "examples_positive": [
+          "necesito crear un usuario",
+          "hay que cambiar permisos",
+          "configurar impresora",
+          "dar de baja un usuario"
+        ],
+        "examples_negative": [
+          "queremos un campo nuevo",
+          "no puedo entrar",
+          "cómo se crea una factura"
+        ],
+        "examples": [
+          "necesito crear un usuario",
+          "hay que cambiar permisos",
+          "configurar impresora",
+          "dar de baja un usuario"
+        ]
+      },
+      {
+        "id": "peticion_cambio_mejora",
+        "label": "Petición de cambio o mejora",
+        "description": "Solicitud de nueva funcionalidad, nuevo campo, nuevo informe o cambio de comportamiento actual.",
+        "keywords_positive": [
+          "queremos",
+          "necesitamos que exista",
+          "nuevo campo",
+          "nuevo informe",
+          "mejora",
+          "sería útil",
+          "añadir",
+          "ampliar",
+          "automatizar",
+          "modificar proceso",
+          "crear proceso",
+          "nuevo listado",
+          "sacar campo",
+          "mostrar campo",
+          "adaptar"
+        ],
+        "keywords_negative": [
+          "configurar",
+          "dar de alta",
+          "cómo se hace",
+          "no funciona",
+          "no puedo entrar"
+        ],
+        "decision_rules": [
+          "Usar cuando la necesidad es que el sistema haga algo nuevo o distinto de lo actual.",
+          "Priorizar sobre configuración si la capacidad no existe hoy.",
+          "No usar si la necesidad ya se resuelve con una opción existente."
+        ],
+        "confusion_with": [
+          "configuracion",
+          "consulta_funcional",
+          "incidencia_error"
+        ],
+        "examples_positive": [
+          "necesitamos un campo nuevo",
+          "queremos un informe nuevo",
+          "sería útil poder hacer X",
+          "queremos modificar este proceso"
+        ],
+        "examples_negative": [
+          "hay que cambiar permisos",
+          "qué significa este valor",
+          "da error al generar albarán"
+        ],
+        "examples": [
+          "necesitamos un campo nuevo",
+          "queremos un informe nuevo",
+          "sería útil poder hacer X",
+          "queremos modificar este proceso"
+        ]
+      },
+      {
+        "id": "usuario_acceso",
+        "label": "Usuario / acceso",
+        "description": "Problemas de acceso, autenticación, contraseña, permisos o visibilidad de módulos.",
+        "keywords_positive": [
+          "no puedo entrar",
+          "contraseña",
+          "usuario bloqueado",
+          "caducado",
+          "acceso",
+          "login",
+          "sesión",
+          "no me deja acceder",
+          "permisos denegados",
+          "no veo el módulo",
+          "no aparece la opción",
+          "no tengo acceso"
+        ],
+        "keywords_negative": [
+          "crear usuario",
+          "cambiar permisos de configuración",
+          "cómo se hace",
+          "nuevo campo"
+        ],
+        "decision_rules": [
+          "Usar cuando el síntoma principal es acceso denegado, bloqueo de usuario o visibilidad por permisos.",
+          "No usar para altas/bajas de usuario si son tareas de configuración planificadas.",
+          "Si el caso combina acceso y rendimiento, priorizar acceso si no puede entrar."
+        ],
+        "confusion_with": [
+          "configuracion",
+          "rendimiento_bloqueo",
+          "incidencia_error"
+        ],
+        "examples_positive": [
+          "no puedo entrar",
+          "contraseña incorrecta",
+          "me ha caducado el acceso",
+          "no me deja acceder a este módulo",
+          "usuario bloqueado"
+        ],
+        "examples_negative": [
+          "crear un usuario nuevo",
+          "configurar permisos",
+          "va muy lento al entrar"
+        ],
+        "examples": [
+          "no puedo entrar",
+          "contraseña incorrecta",
+          "me ha caducado el acceso",
+          "no me deja acceder a este módulo",
+          "usuario bloqueado"
+        ]
+      },
+      {
+        "id": "instalacion_entorno",
+        "label": "Instalación / entorno técnico",
+        "description": "Instalación, actualización, equipos, VPN, red, servidor o dependencias de entorno.",
+        "keywords_positive": [
+          "instalar",
+          "actualizar",
+          "vpn",
+          "equipo nuevo",
+          "servidor",
+          "red",
+          "conexión",
+          "entorno",
+          "puesto",
+          "driver",
+          "impresora",
+          "dependencia",
+          "backup",
+          "copia",
+          "versión",
+          "certificado"
+        ],
+        "keywords_negative": [
+          "cómo se hace",
+          "nuevo informe",
+          "qué significa",
+          "no me deja acceder por permisos"
+        ],
+        "decision_rules": [
+          "Usar cuando el problema está en el entorno técnico y no en la lógica funcional del programa.",
+          "Priorizar sobre error general si la incidencia depende claramente de instalación, puesto o infraestructura."
+        ],
+        "confusion_with": [
+          "usuario_acceso",
+          "rendimiento_bloqueo",
+          "incidencia_error"
+        ],
+        "examples_positive": [
+          "instalar el programa en un equipo nuevo",
+          "configurar VPN",
+          "actualizar versión",
+          "problema con el servidor"
+        ],
+        "examples_negative": [
+          "no genera la factura",
+          "cómo exporto a Excel",
+          "queremos un campo nuevo"
+        ],
+        "examples": [
+          "instalar el programa en un equipo nuevo",
+          "configurar VPN",
+          "actualizar versión",
+          "problema con el servidor"
+        ]
+      },
+      {
+        "id": "importacion_exportacion",
+        "label": "Importación / exportación / integración",
+        "description": "Carga o salida de datos, ficheros, integraciones o intercambio con otros sistemas.",
+        "keywords_positive": [
+          "importar",
+          "exportar",
+          "csv",
+          "excel",
+          "xml",
+          "fichero",
+          "integración",
+          "api",
+          "intercambio",
+          "subir datos",
+          "descargar datos",
+          "migración",
+          "conector"
+        ],
+        "keywords_negative": [
+          "nuevo campo",
+          "cómo se hace",
+          "no puedo entrar"
+        ],
+        "decision_rules": [
+          "Usar cuando el eje del caso es el movimiento de datos entre sistemas o ficheros.",
+          "No usar si el problema real es de informe visual o solo de consulta funcional."
+        ],
+        "confusion_with": [
+          "incidencia_error",
+          "peticion_cambio_mejora",
+          "consulta_funcional"
+        ],
+        "examples_positive": [
+          "importar fichero CSV",
+          "exportar a Excel",
+          "error al importar datos",
+          "integración con otro sistema"
+        ],
+        "examples_negative": [
+          "queremos un nuevo formato de informe",
+          "qué significa este campo",
+          "no me deja iniciar sesión"
+        ],
+        "examples": [
+          "importar fichero CSV",
+          "exportar a Excel",
+          "error al importar datos",
+          "integración con otro sistema"
+        ]
+      },
+      {
+        "id": "rendimiento_bloqueo",
+        "label": "Rendimiento / bloqueo / lentitud",
+        "description": "Lentitud, bloqueo, cuelgues o problemas de sesión/comportamiento repetido sin mensaje de error claro.",
+        "keywords_positive": [
+          "va lento",
+          "se queda colgado",
+          "bloqueado",
+          "tarda mucho",
+          "no responde",
+          "se para",
+          "sesión colgada",
+          "se congela",
+          "hay que reiniciar",
+          "intermitente"
+        ],
+        "keywords_negative": [
+          "cómo se hace",
+          "nuevo campo",
+          "contraseña incorrecta"
+        ],
+        "decision_rules": [
+          "Usar cuando el síntoma principal es rendimiento o bloqueo, aunque el dominio funcional no esté claro.",
+          "Si hay mensaje de error claro y reproducible, valorar incidencia_error."
+        ],
+        "confusion_with": [
+          "incidencia_error",
+          "instalacion_entorno",
+          "usuario_acceso"
+        ],
+        "examples_positive": [
+          "va muy lento",
+          "se queda colgado al abrir",
+          "la sesión se queda bloqueada",
+          "hay que reiniciar para seguir"
+        ],
+        "examples_negative": [
+          "usuario bloqueado",
+          "da error al guardar",
+          "cómo se crea un presupuesto"
+        ],
+        "examples": [
+          "va muy lento",
+          "se queda colgado al abrir",
+          "la sesión se queda bloqueada",
+          "hay que reiniciar para seguir"
+        ]
+      },
+      {
+        "id": "ambigua_no_clasificada",
+        "label": "Ambiguo / no clasificado",
+        "description": "No hay suficiente información para clasificar con seguridad. Usar solo como último recurso.",
+        "keywords_positive": [],
+        "keywords_negative": [],
+        "decision_rules": [
+          "Usar solo cuando tras interpretación y preguntas mínimas sigue sin haber base suficiente.",
+          "Debe activar revisión humana o pregunta adicional."
+        ],
+        "confusion_with": [],
+        "examples_positive": [
+          "no me va",
+          "hay un problema",
+          "revisad esto"
+        ],
+        "examples_negative": [
+          "no puedo entrar",
+          "queremos un informe nuevo",
+          "cómo exporto un listado"
+        ],
+        "examples": [
+          "no me va",
+          "hay un problema",
+          "revisad esto"
+        ]
+      }
+    ]
+  },
+  "domain": {
+    "description": "Dominio funcional principal. Elegir el área del producto o de la operación donde ocurre el caso.",
+    "values": [
+      {
+        "id": "usuarios_accesos",
+        "label": "Usuarios y accesos",
+        "description": "Usuarios, login, permisos, visibilidad, roles, accesos y seguridad operativa.",
+        "keywords_positive": [
+          "usuario",
+          "login",
+          "acceso",
+          "contraseña",
+          "permiso",
+          "rol",
+          "no veo",
+          "no aparece el módulo",
+          "usuario bloqueado",
+          "sesión"
+        ],
+        "keywords_negative": [
+          "factura",
+          "pedido",
+          "presupuesto",
+          "gmao",
+          "movilsat"
+        ],
+        "confusion_with": [
+          "servidor_sistemas",
+          "funcionamiento_general"
+        ],
+        "examples_positive": [
+          "no puedo entrar con mi usuario",
+          "hay que cambiar permisos",
+          "no me aparece la opción"
+        ],
+        "examples": [
+          "no puedo entrar con mi usuario",
+          "hay que cambiar permisos",
+          "no me aparece la opción"
+        ]
+      },
+      {
+        "id": "informes_documentos",
+        "label": "Informes y documentos",
+        "description": "Informes, listados, PDFs, plantillas, impresión y salidas documentales.",
+        "keywords_positive": [
+          "informe",
+          "listado",
+          "pdf",
+          "imprimir",
+          "plantilla",
+          "documento",
+          "albarán",
+          "factura impresa",
+          "presupuesto impreso",
+          "columna",
+          "filtro"
+        ],
+        "keywords_negative": [
+          "usuario",
+          "login",
+          "vpn"
+        ],
+        "confusion_with": [
+          "ventas_facturacion",
+          "funcionamiento_general"
+        ],
+        "examples_positive": [
+          "el informe sale mal",
+          "hay que añadir una columna al listado",
+          "no genera el PDF"
+        ],
+        "examples": [
+          "el informe sale mal",
+          "hay que añadir una columna al listado",
+          "no genera el PDF"
+        ]
+      },
+      {
+        "id": "sesiones_conectividad",
+        "label": "Sesiones y conectividad",
+        "description": "Sesiones colgadas, desconexiones, conectividad, sincronización y acceso remoto.",
+        "keywords_positive": [
+          "sesión",
+          "conexión",
+          "desconecta",
+          "vpn",
+          "sincronización",
+          "remoto",
+          "caduca",
+          "intermitente",
+          "red"
+        ],
+        "keywords_negative": [
+          "nuevo informe",
+          "campo nuevo"
+        ],
+        "confusion_with": [
+          "servidor_sistemas",
+          "usuarios_accesos",
+          "rendimiento_bloqueo"
+        ],
+        "examples_positive": [
+          "se corta la conexión",
+          "la sesión se queda colgada",
+          "problema con la sincronización"
+        ],
+        "examples": [
+          "se corta la conexión",
+          "la sesión se queda colgada",
+          "problema con la sincronización"
+        ]
+      },
+      {
+        "id": "funcionamiento_general",
+        "label": "Funcionamiento general",
+        "description": "Casos funcionales del núcleo del sistema cuando no puede inferirse un dominio más específico.",
+        "keywords_positive": [
+          "programa",
+          "general",
+          "pantalla",
+          "opción",
+          "proceso",
+          "funcionamiento"
+        ],
+        "keywords_negative": [
+          "factura",
+          "pedido",
+          "stock",
+          "gmao",
+          "movilsat",
+          "usuario",
+          "vpn",
+          "informe"
+        ],
+        "confusion_with": [
+          "ventas_facturacion",
+          "compras",
+          "almacen_stocks",
+          "usuarios_accesos",
+          "informes_documentos"
+        ],
+        "examples_positive": [
+          "el programa no responde en esta pantalla",
+          "no aparece una opción general"
+        ],
+        "examples": [
+          "el programa no responde en esta pantalla",
+          "no aparece una opción general"
+        ]
+      },
+      {
+        "id": "compras",
+        "label": "Compras",
+        "description": "Procesos de compra, pedidos de compra, proveedores y recepción asociada.",
+        "keywords_positive": [
+          "compra",
+          "pedido de compra",
+          "proveedor",
+          "recepción",
+          "pedido proveedor"
+        ],
+        "keywords_negative": [
+          "cliente",
+          "factura de venta"
+        ],
+        "confusion_with": [
+          "ventas_facturacion",
+          "almacen_stocks"
+        ],
+        "examples_positive": [
+          "no guarda el pedido de compra",
+          "problema con proveedor"
+        ],
+        "examples": [
+          "no guarda el pedido de compra",
+          "problema con proveedor"
+        ]
+      },
+      {
+        "id": "ventas_facturacion",
+        "label": "Ventas y facturación",
+        "description": "Ventas, facturas, cobros, albaranes, presupuestos comerciales y procesos asociados.",
+        "keywords_positive": [
+          "factura",
+          "venta",
+          "albarán",
+          "presupuesto",
+          "cobro",
+          "cliente",
+          "abono",
+          "pedido de venta",
+          "iva",
+          "serie"
+        ],
+        "keywords_negative": [
+          "compra",
+          "proveedor",
+          "vpn"
+        ],
+        "confusion_with": [
+          "financiero",
+          "informes_documentos",
+          "ofertas_comerciales"
+        ],
+        "examples_positive": [
+          "no genera la factura",
+          "el abono sale mal",
+          "descuadre en el IVA"
+        ],
+        "examples": [
+          "no genera la factura",
+          "el abono sale mal",
+          "descuadre en el IVA"
+        ]
+      },
+      {
+        "id": "almacen_stocks",
+        "label": "Almacén y stocks",
+        "description": "Stocks, lotes, series, movimientos de almacén y logística interna.",
+        "keywords_positive": [
+          "stock",
+          "almacén",
+          "lote",
+          "serie",
+          "inventario",
+          "movimiento",
+          "ubicación"
+        ],
+        "keywords_negative": [
+          "factura",
+          "usuario"
+        ],
+        "confusion_with": [
+          "compras",
+          "ventas_facturacion"
+        ],
+        "examples_positive": [
+          "no actualiza el stock",
+          "problema con lotes"
+        ],
+        "examples": [
+          "no actualiza el stock",
+          "problema con lotes"
+        ]
+      },
+      {
+        "id": "gmao",
+        "label": "GMAO",
+        "description": "Órdenes de trabajo, mantenimiento, reglamentos, partes y elementos GMAO.",
+        "keywords_positive": [
+          "gmao",
+          "ot",
+          "orden de trabajo",
+          "parte",
+          "reglamento",
+          "mantenimiento"
+        ],
+        "keywords_negative": [
+          "factura",
+          "crm"
+        ],
+        "confusion_with": [
+          "portal_ot",
+          "movilsat"
+        ],
+        "examples_positive": [
+          "no sale la OT",
+          "problema con reglamentos"
+        ],
+        "examples": [
+          "no sale la OT",
+          "problema con reglamentos"
+        ]
+      },
+      {
+        "id": "movilsat",
+        "label": "Movilsat",
+        "description": "Operativa relacionada con Movilsat y sus procesos propios.",
+        "keywords_positive": [
+          "movilsat",
+          "app movilsat",
+          "parte movilsat",
+          "sincronización movilsat"
+        ],
+        "keywords_negative": [
+          "gmao",
+          "portal ot"
+        ],
+        "confusion_with": [
+          "gmao",
+          "portal_ot"
+        ],
+        "examples_positive": [
+          "no sincroniza Movilsat",
+          "problema en parte de Movilsat"
+        ],
+        "examples": [
+          "no sincroniza Movilsat",
+          "problema en parte de Movilsat"
+        ]
+      },
+      {
+        "id": "portal_ot",
+        "label": "Portal OT",
+        "description": "Portal de órdenes de trabajo y operativa asociada.",
+        "keywords_positive": [
+          "portal ot",
+          "portal",
+          "orden de trabajo",
+          "parte portal",
+          "acceso portal"
+        ],
+        "keywords_negative": [
+          "movilsat",
+          "gmao"
+        ],
+        "confusion_with": [
+          "gmao",
+          "movilsat"
+        ],
+        "examples_positive": [
+          "no accede al portal ot",
+          "problema con orden en portal"
+        ],
+        "examples": [
+          "no accede al portal ot",
+          "problema con orden en portal"
+        ]
+      },
+      {
+        "id": "presupuestos_proyectos",
+        "label": "Presupuestos y proyectos",
+        "description": "Obras, proyectos, presupuestos de obra, costes y partidas.",
+        "keywords_positive": [
+          "obra",
+          "proyecto",
+          "partida",
+          "coste",
+          "presupuesto de obra",
+          "medición"
+        ],
+        "keywords_negative": [
+          "oferta comercial",
+          "factura"
+        ],
+        "confusion_with": [
+          "ofertas_comerciales",
+          "ventas_facturacion"
+        ],
+        "examples_positive": [
+          "no calcula el coste de la obra",
+          "problema con partida"
+        ],
+        "examples": [
+          "no calcula el coste de la obra",
+          "problema con partida"
+        ]
+      },
+      {
+        "id": "financiero",
+        "label": "Financiero",
+        "description": "Contabilidad, balances, asientos, tesorería, impuestos y pagos.",
+        "keywords_positive": [
+          "contabilidad",
+          "balance",
+          "impuesto",
+          "pago",
+          "tesorería",
+          "asiento",
+          "cuenta",
+          "iva",
+          "modelo fiscal",
+          "cobro",
+          "remesa"
+        ],
+        "keywords_negative": [
+          "pedido",
+          "ot",
+          "vpn"
+        ],
+        "confusion_with": [
+          "ventas_facturacion",
+          "informes_documentos"
+        ],
+        "examples_positive": [
+          "problema con asiento",
+          "descuadre en balance"
+        ],
+        "examples": [
+          "problema con asiento",
+          "descuadre en balance"
+        ]
+      },
+      {
+        "id": "crm",
+        "label": "CRM",
+        "description": "Gestión comercial, oportunidades, seguimiento y clientes potenciales.",
+        "keywords_positive": [
+          "crm",
+          "oportunidad",
+          "comercial",
+          "seguimiento",
+          "cliente potencial",
+          "contacto"
+        ],
+        "keywords_negative": [
+          "factura",
+          "stock"
+        ],
+        "confusion_with": [
+          "ofertas_comerciales"
+        ],
+        "examples_positive": [
+          "no guarda la oportunidad",
+          "problema con contacto"
+        ],
+        "examples": [
+          "no guarda la oportunidad",
+          "problema con contacto"
+        ]
+      },
+      {
+        "id": "ofertas_comerciales",
+        "label": "Ofertas comerciales",
+        "description": "Ofertas y propuestas comerciales.",
+        "keywords_positive": [
+          "oferta",
+          "propuesta comercial",
+          "presupuesto comercial"
+        ],
+        "keywords_negative": [
+          "obra",
+          "partida",
+          "factura"
+        ],
+        "confusion_with": [
+          "presupuestos_proyectos",
+          "ventas_facturacion"
+        ],
+        "examples_positive": [
+          "no genera la oferta",
+          "queremos modificar la propuesta comercial"
+        ],
+        "examples": [
+          "no genera la oferta",
+          "queremos modificar la propuesta comercial"
+        ]
+      },
+      {
+        "id": "planificador_inteligente",
+        "label": "Planificador inteligente",
+        "description": "Planificación de recursos o producción en PI.",
+        "keywords_positive": [
+          "planificador",
+          "planificación",
+          "pi",
+          "planificador inteligente"
+        ],
+        "keywords_negative": [],
+        "confusion_with": [],
+        "examples_positive": [
+          "problema en planificador",
+          "no calcula planificación"
+        ],
+        "examples": [
+          "problema en planificador",
+          "no calcula planificación"
+        ]
+      },
+      {
+        "id": "app_fichajes",
+        "label": "App fichajes",
+        "description": "Control horario, fichajes y registro de jornada.",
+        "keywords_positive": [
+          "fichaje",
+          "fichar",
+          "control horario",
+          "registro jornada",
+          "app fichajes"
+        ],
+        "keywords_negative": [],
+        "confusion_with": [],
+        "examples_positive": [
+          "no deja fichar",
+          "error en registro de jornada"
+        ],
+        "examples": [
+          "no deja fichar",
+          "error en registro de jornada"
+        ]
+      },
+      {
+        "id": "servidor_sistemas",
+        "label": "Servidor / sistemas",
+        "description": "Infraestructura, servidores, backups, instalaciones, equipos y base técnica.",
+        "keywords_positive": [
+          "servidor",
+          "backup",
+          "copia de seguridad",
+          "instalación",
+          "equipo",
+          "red",
+          "conexión",
+          "base de datos",
+          "servicio",
+          "certificado"
+        ],
+        "keywords_negative": [
+          "factura",
+          "pedido",
+          "crm"
+        ],
+        "confusion_with": [
+          "sesiones_conectividad",
+          "usuarios_accesos"
+        ],
+        "examples_positive": [
+          "problema con servidor",
+          "copia de seguridad falla"
+        ],
+        "examples": [
+          "problema con servidor",
+          "copia de seguridad falla"
+        ]
+      },
+      {
+        "id": "tarifas_catalogos",
+        "label": "Tarifas y catálogos",
+        "description": "Tarifas, catálogos, precios y listas relacionadas.",
+        "keywords_positive": [
+          "tarifa",
+          "catálogo",
+          "precio",
+          "lista de precios",
+          "artículo",
+          "referencia"
+        ],
+        "keywords_negative": [],
+        "confusion_with": [
+          "almacen_stocks",
+          "ventas_facturacion"
+        ],
+        "examples_positive": [
+          "no actualiza la tarifa",
+          "problema con catálogo"
+        ],
+        "examples": [
+          "no actualiza la tarifa",
+          "problema con catálogo"
+        ]
+      },
+      {
+        "id": "dominio_no_claro",
+        "label": "Dominio no claro",
+        "description": "No se puede determinar el dominio funcional. Minimizar su uso.",
+        "keywords_positive": [],
+        "keywords_negative": [],
+        "confusion_with": [],
+        "examples_positive": [
+          "hay un problema",
+          "revisad esto"
+        ],
+        "examples": [
+          "hay un problema",
+          "revisad esto"
+        ]
+      }
+    ]
+  },
+  "object": {
+    "description": "Entidad principal afectada o sobre la que actúa la incidencia. Elegir el objeto más concreto posible.",
+    "values": [
+      {
+        "id": "usuario",
+        "label": "Usuario",
+        "description": "Usuario, cuenta, credencial o identidad de acceso.",
+        "keywords": [
+          "usuario",
+          "cuenta",
+          "credencial",
+          "login",
+          "empleado"
+        ],
+        "examples": [
+          "crear usuario",
+          "usuario bloqueado"
+        ]
+      },
+      {
+        "id": "permiso_rol",
+        "label": "Permiso / rol",
+        "description": "Permisos, perfiles, roles o visibilidad.",
+        "keywords": [
+          "permiso",
+          "rol",
+          "perfil",
+          "acceso",
+          "visibilidad"
+        ],
+        "examples": [
+          "cambiar permisos",
+          "no veo el módulo"
+        ]
+      },
+      {
+        "id": "sesion",
+        "label": "Sesión",
+        "description": "Sesión, autenticación o persistencia de acceso.",
+        "keywords": [
+          "sesión",
+          "caduca",
+          "desconecta",
+          "expira"
+        ],
+        "examples": [
+          "la sesión caduca",
+          "se corta la sesión"
+        ]
+      },
+      {
+        "id": "empresa",
+        "label": "Empresa",
+        "description": "Empresa o configuración global de empresa.",
+        "keywords": [
+          "empresa",
+          "razón social",
+          "datos empresa",
+          "serie empresa"
+        ],
+        "examples": [
+          "configurar empresa"
+        ]
+      },
+      {
+        "id": "cliente",
+        "label": "Cliente",
+        "description": "Ficha o entidad cliente.",
+        "keywords": [
+          "cliente",
+          "ficha cliente"
+        ],
+        "examples": [
+          "error en cliente"
+        ]
+      },
+      {
+        "id": "proveedor",
+        "label": "Proveedor",
+        "description": "Ficha o entidad proveedor.",
+        "keywords": [
+          "proveedor",
+          "ficha proveedor"
+        ],
+        "examples": [
+          "problema con proveedor"
+        ]
+      },
+      {
+        "id": "articulo",
+        "label": "Artículo",
+        "description": "Artículo, referencia o producto.",
+        "keywords": [
+          "artículo",
+          "producto",
+          "referencia",
+          "catálogo"
+        ],
+        "examples": [
+          "precio del artículo",
+          "alta de artículo"
+        ]
+      },
+      {
+        "id": "tarifa",
+        "label": "Tarifa",
+        "description": "Tarifa, precio o lista de precios.",
+        "keywords": [
+          "tarifa",
+          "precio",
+          "lista de precios"
+        ],
+        "examples": [
+          "actualizar tarifa"
+        ]
+      },
+      {
+        "id": "stock",
+        "label": "Stock",
+        "description": "Stock, lote, serie, inventario o movimiento de almacén.",
+        "keywords": [
+          "stock",
+          "inventario",
+          "lote",
+          "serie",
+          "movimiento"
+        ],
+        "examples": [
+          "no actualiza stock"
+        ]
+      },
+      {
+        "id": "presupuesto",
+        "label": "Presupuesto",
+        "description": "Presupuesto comercial o de obra.",
+        "keywords": [
+          "presupuesto",
+          "oferta",
+          "propuesta"
+        ],
+        "examples": [
+          "no genera presupuesto"
+        ]
+      },
+      {
+        "id": "pedido",
+        "label": "Pedido",
+        "description": "Pedido de venta o de compra.",
+        "keywords": [
+          "pedido",
+          "pedido de compra",
+          "pedido de venta"
+        ],
+        "examples": [
+          "no guarda pedido"
+        ]
+      },
+      {
+        "id": "albaran",
+        "label": "Albarán",
+        "description": "Albarán o documento de entrega.",
+        "keywords": [
+          "albarán",
+          "entrega"
+        ],
+        "examples": [
+          "error en albarán"
+        ]
+      },
+      {
+        "id": "factura",
+        "label": "Factura",
+        "description": "Factura, abono o documento de facturación.",
+        "keywords": [
+          "factura",
+          "abono",
+          "rectificativa"
+        ],
+        "examples": [
+          "no genera factura"
+        ]
+      },
+      {
+        "id": "asiento",
+        "label": "Asiento",
+        "description": "Asiento contable o apunte financiero.",
+        "keywords": [
+          "asiento",
+          "contabilizar",
+          "apunte"
+        ],
+        "examples": [
+          "error al contabilizar"
+        ]
+      },
+      {
+        "id": "impuesto",
+        "label": "Impuesto",
+        "description": "IVA, retención, modelo fiscal o impuesto.",
+        "keywords": [
+          "iva",
+          "impuesto",
+          "retención",
+          "modelo"
+        ],
+        "examples": [
+          "descuadre de IVA"
+        ]
+      },
+      {
+        "id": "informe",
+        "label": "Informe",
+        "description": "Informe, listado, consulta o reporte.",
+        "keywords": [
+          "informe",
+          "listado",
+          "reporte",
+          "consulta"
+        ],
+        "examples": [
+          "el informe sale mal"
+        ]
+      },
+      {
+        "id": "documento",
+        "label": "Documento",
+        "description": "Documento generado, salida documental o impreso.",
+        "keywords": [
+          "documento",
+          "pdf",
+          "impreso",
+          "plantilla"
+        ],
+        "examples": [
+          "no genera el PDF"
+        ]
+      },
+      {
+        "id": "plantilla",
+        "label": "Plantilla",
+        "description": "Plantilla de impresión o formato documental.",
+        "keywords": [
+          "plantilla",
+          "formato",
+          "modelo"
+        ],
+        "examples": [
+          "modificar plantilla"
+        ]
+      },
+      {
+        "id": "fichero",
+        "label": "Fichero",
+        "description": "Archivo de importación o exportación.",
+        "keywords": [
+          "fichero",
+          "csv",
+          "excel",
+          "xml",
+          "archivo"
+        ],
+        "examples": [
+          "importar fichero CSV"
+        ]
+      },
+      {
+        "id": "integracion",
+        "label": "Integración",
+        "description": "Conector, API o intercambio con tercero.",
+        "keywords": [
+          "integración",
+          "api",
+          "conector",
+          "sincronización"
+        ],
+        "examples": [
+          "problema con integración"
+        ]
+      },
+      {
+        "id": "ot",
+        "label": "Orden de trabajo",
+        "description": "OT, parte o elemento de GMAO/portal.",
+        "keywords": [
+          "ot",
+          "orden de trabajo",
+          "parte",
+          "reglamento"
+        ],
+        "examples": [
+          "no sale la OT"
+        ]
+      },
+      {
+        "id": "obra_proyecto",
+        "label": "Obra / proyecto",
+        "description": "Obra, proyecto, partida o medición.",
+        "keywords": [
+          "obra",
+          "proyecto",
+          "partida",
+          "medición"
+        ],
+        "examples": [
+          "problema con partida"
+        ]
+      },
+      {
+        "id": "pantalla_opcion",
+        "label": "Pantalla / opción",
+        "description": "Pantalla, ventana, botón o opción visual.",
+        "keywords": [
+          "pantalla",
+          "ventana",
+          "botón",
+          "opción",
+          "menú"
+        ],
+        "examples": [
+          "no aparece la opción"
+        ]
+      },
+      {
+        "id": "impresora",
+        "label": "Impresora",
+        "description": "Impresora o dispositivo de impresión.",
+        "keywords": [
+          "impresora",
+          "imprimir",
+          "etiqueta"
+        ],
+        "examples": [
+          "configurar impresora"
+        ]
+      },
+      {
+        "id": "equipo_servidor",
+        "label": "Equipo / servidor",
+        "description": "Equipo, puesto, servidor o infraestructura.",
+        "keywords": [
+          "equipo",
+          "puesto",
+          "servidor",
+          "pc",
+          "terminal"
+        ],
+        "examples": [
+          "instalar en equipo nuevo"
+        ]
+      },
+      {
+        "id": "copia_seguridad",
+        "label": "Copia de seguridad",
+        "description": "Backups, restauraciones o copias.",
+        "keywords": [
+          "backup",
+          "copia de seguridad",
+          "restaurar"
+        ],
+        "examples": [
+          "falla la copia"
+        ]
+      },
+      {
+        "id": "objeto_no_claro",
+        "label": "Objeto no claro",
+        "description": "No se puede identificar con claridad el objeto afectado.",
+        "keywords": [],
+        "examples": [
+          "revisad esto"
+        ]
+      }
+    ]
+  },
+  "action": {
+    "description": "Operación principal o síntoma dominante asociado a la incidencia. Elegir la acción más representativa.",
+    "values": [
+      {
+        "id": "acceder_login",
+        "label": "Acceder / iniciar sesión",
+        "description": "Entrar, autenticarse o abrir sesión.",
+        "keywords": [
+          "entrar",
+          "acceder",
+          "login",
+          "iniciar sesión",
+          "autenticar"
+        ],
+        "examples": [
+          "no puedo entrar"
+        ]
+      },
+      {
+        "id": "crear_alta",
+        "label": "Crear / dar de alta",
+        "description": "Crear, alta o generación inicial de una entidad.",
+        "keywords": [
+          "crear",
+          "alta",
+          "dar de alta",
+          "nuevo"
+        ],
+        "examples": [
+          "crear usuario",
+          "alta de artículo"
+        ]
+      },
+      {
+        "id": "editar_modificar",
+        "label": "Editar / modificar",
+        "description": "Cambiar, actualizar o editar algo existente.",
+        "keywords": [
+          "editar",
+          "modificar",
+          "cambiar",
+          "actualizar",
+          "ajustar"
+        ],
+        "examples": [
+          "cambiar permisos"
+        ]
+      },
+      {
+        "id": "borrar_baja",
+        "label": "Borrar / dar de baja",
+        "description": "Eliminar, desactivar o dar de baja.",
+        "keywords": [
+          "borrar",
+          "eliminar",
+          "dar de baja",
+          "desactivar"
+        ],
+        "examples": [
+          "dar de baja usuario"
+        ]
+      },
+      {
+        "id": "guardar",
+        "label": "Guardar",
+        "description": "Guardar, grabar o persistir cambios.",
+        "keywords": [
+          "guardar",
+          "grabar"
+        ],
+        "examples": [
+          "da error al guardar"
+        ]
+      },
+      {
+        "id": "generar_emitir",
+        "label": "Generar / emitir",
+        "description": "Generar documento, emitir o producir una salida.",
+        "keywords": [
+          "generar",
+          "emitir",
+          "sacar",
+          "crear pdf"
+        ],
+        "examples": [
+          "no genera la factura"
+        ]
+      },
+      {
+        "id": "calcular",
+        "label": "Calcular",
+        "description": "Calcular importes, costes, impuestos o resultados.",
+        "keywords": [
+          "calcular",
+          "recalcular",
+          "descuadra",
+          "importe"
+        ],
+        "examples": [
+          "no calcula bien el IVA"
+        ]
+      },
+      {
+        "id": "contabilizar",
+        "label": "Contabilizar",
+        "description": "Contabilizar, asentar o enviar a contabilidad.",
+        "keywords": [
+          "contabilizar",
+          "asiento",
+          "apunte"
+        ],
+        "examples": [
+          "error al contabilizar"
+        ]
+      },
+      {
+        "id": "imprimir",
+        "label": "Imprimir",
+        "description": "Imprimir o sacar documentos físicos o PDF.",
+        "keywords": [
+          "imprimir",
+          "pdf",
+          "etiqueta",
+          "impreso"
+        ],
+        "examples": [
+          "no imprime el informe"
+        ]
+      },
+      {
+        "id": "importar",
+        "label": "Importar",
+        "description": "Cargar datos o ficheros al sistema.",
+        "keywords": [
+          "importar",
+          "cargar fichero",
+          "subir"
+        ],
+        "examples": [
+          "error al importar CSV"
+        ]
+      },
+      {
+        "id": "exportar",
+        "label": "Exportar",
+        "description": "Sacar datos, listados o ficheros fuera del sistema.",
+        "keywords": [
+          "exportar",
+          "descargar",
+          "sacar excel"
+        ],
+        "examples": [
+          "exportar a Excel"
+        ]
+      },
+      {
+        "id": "sincronizar",
+        "label": "Sincronizar",
+        "description": "Sincronizar datos o estados entre sistemas.",
+        "keywords": [
+          "sincronizar",
+          "sincronización",
+          "replicar"
+        ],
+        "examples": [
+          "no sincroniza Movilsat"
+        ]
+      },
+      {
+        "id": "configurar",
+        "label": "Configurar",
+        "description": "Parametrizar o ajustar opciones existentes.",
+        "keywords": [
+          "configurar",
+          "parametrizar",
+          "ajustar"
+        ],
+        "examples": [
+          "configurar impresora"
+        ]
+      },
+      {
+        "id": "consultar_ver",
+        "label": "Consultar / ver",
+        "description": "Consultar, visualizar o revisar información.",
+        "keywords": [
+          "ver",
+          "consultar",
+          "mostrar",
+          "aparece"
+        ],
+        "examples": [
+          "no aparece la opción"
+        ]
+      },
+      {
+        "id": "buscar_filtrar",
+        "label": "Buscar / filtrar",
+        "description": "Buscar, localizar o aplicar filtros.",
+        "keywords": [
+          "buscar",
+          "filtrar",
+          "localizar"
+        ],
+        "examples": [
+          "no encuentra registros"
+        ]
+      },
+      {
+        "id": "adjuntar_enviar",
+        "label": "Adjuntar / enviar",
+        "description": "Adjuntar documentos, enviar correos o remitir información.",
+        "keywords": [
+          "adjuntar",
+          "enviar",
+          "mandar",
+          "correo"
+        ],
+        "examples": [
+          "no adjunta el archivo"
+        ]
+      },
+      {
+        "id": "instalar_actualizar",
+        "label": "Instalar / actualizar",
+        "description": "Instalar software, actualizar versión o desplegar.",
+        "keywords": [
+          "instalar",
+          "actualizar",
+          "versión",
+          "desplegar"
+        ],
+        "examples": [
+          "actualizar versión"
+        ]
+      },
+      {
+        "id": "rendir_bloquear",
+        "label": "Lentitud / bloqueo",
+        "description": "Síntoma dominante de lentitud, cuelgue o bloqueo.",
+        "keywords": [
+          "va lento",
+          "bloqueado",
+          "se cuelga",
+          "no responde",
+          "intermitente"
+        ],
+        "examples": [
+          "se queda colgado"
+        ]
+      },
+      {
+        "id": "explicar_ensenar",
+        "label": "Explicar / enseñar",
+        "description": "Necesidad de guía o explicación de un proceso.",
+        "keywords": [
+          "cómo se hace",
+          "explicar",
+          "enseñar",
+          "ayudar"
+        ],
+        "examples": [
+          "cómo se hace un abono"
+        ]
+      },
+      {
+        "id": "solicitar_mejora",
+        "label": "Solicitar mejora",
+        "description": "Solicitar una nueva capacidad o cambio de comportamiento.",
+        "keywords": [
+          "queremos",
+          "necesitamos",
+          "añadir",
+          "nuevo campo",
+          "nuevo informe",
+          "mejora"
+        ],
+        "examples": [
+          "queremos un campo nuevo"
+        ]
+      },
+      {
+        "id": "accion_no_clara",
+        "label": "Acción no clara",
+        "description": "No puede determinarse la acción principal.",
+        "keywords": [],
+        "examples": [
+          "hay un problema"
+        ]
+      }
+    ]
+  }
+}

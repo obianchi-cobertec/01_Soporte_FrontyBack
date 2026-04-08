@@ -1,0 +1,203 @@
+{
+  "version": "2.0.0",
+  "description": "Taxonomía real de Cobertec — basada en especificación de clasificación confirmada",
+
+  "nature": {
+    "values": [
+      {
+        "id": "incidencia_error",
+        "label": "Incidencia o error",
+        "description": "Fallo funcional o técnico, algo no funciona como debería",
+        "examples": ["da error al guardar", "no genera la factura", "se queda colgado", "aparece un mensaje de error", "no cuadran los números"]
+      },
+      {
+        "id": "consulta_funcional",
+        "label": "Consulta funcional",
+        "description": "Duda operativa sobre cómo funciona algo, qué significa un campo, por qué aparece un valor",
+        "examples": ["qué significa este campo", "es normal que aparezca esto", "cuándo se aplica este descuento", "por qué me sale este importe"]
+      },
+      {
+        "id": "formacion_duda_uso",
+        "label": "Formación o duda de uso",
+        "description": "El usuario necesita que le expliquen o enseñen cómo hacer algo",
+        "examples": ["cómo se hace un abono", "no sé dónde está la opción", "necesito que me expliquéis", "cómo exporto un listado", "cómo creo un usuario"]
+      },
+      {
+        "id": "configuracion",
+        "label": "Configuración",
+        "description": "Crear, eliminar o modificar configuración de usuarios, permisos, parámetros del sistema",
+        "examples": ["necesito crear un usuario", "hay que cambiar permisos", "configurar impresora", "dar de baja un usuario"]
+      },
+      {
+        "id": "peticion_cambio_mejora",
+        "label": "Petición de cambio o mejora",
+        "description": "El cliente solicita algo nuevo, un cambio en el programa, una funcionalidad que no existe",
+        "examples": ["necesitamos un campo nuevo", "queremos un informe nuevo", "sería útil poder hacer X", "queremos modificar este proceso"]
+      },
+      {
+        "id": "usuario_acceso",
+        "label": "Usuario / acceso",
+        "description": "Problemas de acceso, login, contraseña, sesión caducada, permisos denegados",
+        "examples": ["no puedo entrar", "contraseña incorrecta", "me ha caducado el acceso", "no me deja acceder a este módulo", "usuario bloqueado"]
+      },
+      {
+        "id": "instalacion_entorno",
+        "label": "Instalación / entorno técnico",
+        "description": "Instalar programa, actualizar, configurar VPN, problemas de servidor o equipos",
+        "examples": ["instalar el programa en un equipo nuevo", "configurar VPN", "actualizar versión", "problema con el servidor"]
+      },
+      {
+        "id": "importacion_exportacion",
+        "label": "Importación / exportación / integración",
+        "description": "Importar datos, exportar listados, integraciones con otros sistemas",
+        "examples": ["importar fichero CSV", "exportar a Excel", "error al importar datos", "integración con otro sistema"]
+      },
+      {
+        "id": "rendimiento_bloqueo",
+        "label": "Rendimiento / bloqueo / lentitud",
+        "description": "El sistema va lento, se queda bloqueado, no responde, tiempos de espera excesivos",
+        "examples": ["va muy lento", "se queda colgado", "tarda mucho en abrir", "no responde", "se desconecta constantemente"]
+      },
+      {
+        "id": "ambiguo",
+        "label": "Ambiguo / no clasificado",
+        "description": "No encaja claramente en ninguna categoría anterior. Minimizar su uso.",
+        "examples": []
+      }
+    ]
+  },
+
+  "domain": {
+    "values": [
+      {
+        "id": "funcionamiento_general",
+        "label": "Funcionamiento general",
+        "description": "Aspectos generales del programa Expertis que no pertenecen a un módulo específico",
+        "keywords": ["general", "programa", "Expertis", "pantalla principal", "menú"]
+      },
+      {
+        "id": "compras",
+        "label": "Compras",
+        "description": "Gestión de compras, pedidos a proveedores, recepciones",
+        "keywords": ["compra", "proveedor", "pedido a proveedor", "recepción", "orden de compra"]
+      },
+      {
+        "id": "ventas_facturacion",
+        "label": "Ventas y facturación",
+        "description": "Ventas, facturación, pedidos de cliente, albaranes, cobros",
+        "keywords": ["venta", "factura", "albarán", "pedido", "cobro", "cliente", "precio", "IVA", "descuento", "presupuesto de venta"]
+      },
+      {
+        "id": "almacen_stocks",
+        "label": "Almacén y stocks",
+        "description": "Gestión de almacén, stocks, lotes, series, inventarios, movimientos de material",
+        "keywords": ["almacén", "stock", "lote", "serie", "inventario", "ubicación", "movimiento", "material"]
+      },
+      {
+        "id": "gmao",
+        "label": "GMAO",
+        "description": "Gestión de mantenimiento asistido por ordenador, órdenes de trabajo, mantenimiento preventivo",
+        "keywords": ["GMAO", "mantenimiento", "orden de trabajo", "OT", "preventivo", "correctivo", "reglamento"]
+      },
+      {
+        "id": "movilsat",
+        "label": "Movilsat",
+        "description": "Aplicación móvil Movilsat, partes de trabajo móviles, sincronización",
+        "keywords": ["Movilsat", "móvil", "parte de trabajo", "app", "sincronización", "tablet"]
+      },
+      {
+        "id": "portal_ot",
+        "label": "Portal OT",
+        "description": "Portal web de órdenes de trabajo para clientes o técnicos externos",
+        "keywords": ["portal", "portal OT", "web OT", "acceso externo"]
+      },
+      {
+        "id": "presupuestos_proyectos",
+        "label": "Presupuestos y proyectos",
+        "description": "Gestión de presupuestos, proyectos, obras, costes de proyecto",
+        "keywords": ["presupuesto", "proyecto", "obra", "coste", "partida"]
+      },
+      {
+        "id": "financiero",
+        "label": "Financiero",
+        "description": "Contabilidad, balances, impuestos, pagos, tesorería",
+        "keywords": ["contabilidad", "balance", "impuesto", "pago", "tesorería", "asiento", "cuenta", "IVA", "modelo fiscal"]
+      },
+      {
+        "id": "crm",
+        "label": "CRM",
+        "description": "Gestión de relaciones con clientes, oportunidades, seguimiento comercial",
+        "keywords": ["CRM", "oportunidad", "comercial", "seguimiento", "cliente potencial", "contacto"]
+      },
+      {
+        "id": "ofertas_comerciales",
+        "label": "Ofertas comerciales",
+        "description": "Elaboración y gestión de ofertas comerciales",
+        "keywords": ["oferta", "oferta comercial", "propuesta comercial"]
+      },
+      {
+        "id": "planificador_inteligente",
+        "label": "Planificador inteligente",
+        "description": "Módulo de planificación inteligente de recursos o producción",
+        "keywords": ["planificador", "planificación", "PI", "planificador inteligente"]
+      },
+      {
+        "id": "app_fichajes",
+        "label": "App fichajes",
+        "description": "Aplicación de fichajes, control horario, registro de jornada",
+        "keywords": ["fichaje", "fichar", "control horario", "registro jornada", "app fichajes"]
+      },
+      {
+        "id": "servidor_sistemas",
+        "label": "Servidor / sistemas",
+        "description": "Infraestructura técnica, servidores, VPN, copias de seguridad, instalaciones",
+        "keywords": ["servidor", "VPN", "copia de seguridad", "backup", "instalación", "equipo", "red", "conexión"]
+      },
+      {
+        "id": "tarifas_catalogos",
+        "label": "Tarifas y catálogos",
+        "description": "Gestión de tarifas, catálogos de productos, precios",
+        "keywords": ["tarifa", "catálogo", "precio", "lista de precios"]
+      },
+      {
+        "id": "dominio_no_claro",
+        "label": "Dominio no claro",
+        "description": "No se puede determinar el dominio funcional. Minimizar su uso.",
+        "keywords": []
+      }
+    ]
+  },
+
+  "object": {
+    "description": "Objeto afectado dentro del sistema. El LLM debe inferirlo de la descripción.",
+    "values": [
+      "usuario", "permiso", "sesión", "pantalla", "campo", "listado", "filtro",
+      "informe", "pedido", "albarán", "factura", "cobro", "pago", "proveedor",
+      "cliente", "OT", "obra", "presupuesto", "sincronización", "VPN",
+      "instalación", "tarifa", "catálogo", "stock", "lote", "serie",
+      "impuesto", "balance", "copia de seguridad", "otro"
+    ]
+  },
+
+  "action": {
+    "description": "Acción operativa detectada. El LLM debe inferirla de la descripción.",
+    "values": [
+      "no funciona / da error",
+      "no aparece / no se ve",
+      "no deja acceder",
+      "hay que crear",
+      "hay que modificar",
+      "hay que eliminar",
+      "hay que configurar",
+      "hay que instalar",
+      "hay que importar",
+      "hay que exportar",
+      "hay que revisar permisos",
+      "hay que analizar o consultar",
+      "hay que formar / explicar",
+      "hay que mejorar / ampliar",
+      "va lento / se bloquea",
+      "no está claro"
+    ]
+  }
+}

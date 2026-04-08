@@ -1,0 +1,123 @@
+{
+  "version": "2.0.0",
+  "description": "Mapeo real de taxonomía intermedia a bloques, módulos y necesidades de Redmine — Cobertec",
+
+  "need_resolution": {
+    "description": "Reglas para resolver la necesidad (need) a partir de naturaleza + acción",
+    "rules": [
+      { "nature": "incidencia_error", "action_contains": "error", "need": "error" },
+      { "nature": "incidencia_error", "action_contains": "no funciona", "need": "error" },
+      { "nature": "incidencia_error", "action_contains": "no aparece", "need": "error" },
+      { "nature": "consulta_funcional", "need": "formacion" },
+      { "nature": "formacion_duda_uso", "need": "formacion" },
+      { "nature": "configuracion", "action_contains": "usuario", "need": "configuracion" },
+      { "nature": "configuracion", "action_contains": "configurar", "need": "configuracion" },
+      { "nature": "configuracion", "action_contains": "permisos", "need": "permisos" },
+      { "nature": "usuario_acceso", "action_contains": "permisos", "need": "permisos" },
+      { "nature": "usuario_acceso", "action_contains": "sesión", "need": "sesion" },
+      { "nature": "usuario_acceso", "need": "configuracion" },
+      { "nature": "instalacion_entorno", "action_contains": "instalar", "need": "instalar" },
+      { "nature": "instalacion_entorno", "action_contains": "VPN", "need": "vpn2" },
+      { "nature": "instalacion_entorno", "need": "instalar" },
+      { "nature": "importacion_exportacion", "action_contains": "importar", "need": "importdatos" },
+      { "nature": "importacion_exportacion", "action_contains": "exportar", "need": "importdatos" },
+      { "nature": "importacion_exportacion", "need": "importdatos" },
+      { "nature": "rendimiento_bloqueo", "action_contains": "sesión", "need": "sesion" },
+      { "nature": "rendimiento_bloqueo", "need": "error" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "campo", "object_contains": "campo", "need": "campo" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "mostrar", "object_contains": "campo", "need": "sacarcampo" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "informe", "object_contains": "informe", "need": "modificar-informe" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "proceso", "need": "proceso" },
+      { "nature": "peticion_cambio_mejora", "need": "proceso" }
+    ],
+    "default": "error"
+  },
+
+  "domain_to_block": {
+    "funcionamiento_general": "general",
+    "compras": "general",
+    "ventas_facturacion": "general",
+    "almacen_stocks": "general",
+    "gmao": "gmao",
+    "movilsat": "movilsat",
+    "portal_ot": "portalot",
+    "presupuestos_proyectos": "obras",
+    "financiero": "general",
+    "crm": "crm",
+    "ofertas_comerciales": "general",
+    "planificador_inteligente": "pi",
+    "app_fichajes": "appfichar",
+    "servidor_sistemas": "servidor",
+    "tarifas_catalogos": "tarifas",
+    "dominio_no_claro": "general"
+  },
+
+  "domain_to_module": {
+    "funcionamiento_general": "*",
+    "compras": "*",
+    "ventas_facturacion": "*",
+    "almacen_stocks": "*",
+    "gmao": "*",
+    "movilsat": "*",
+    "portal_ot": "*",
+    "presupuestos_proyectos": "*",
+    "financiero": "*",
+    "crm": "*",
+    "ofertas_comerciales": "*",
+    "planificador_inteligente": "*",
+    "app_fichajes": "*",
+    "servidor_sistemas": "*",
+    "tarifas_catalogos": "*",
+    "dominio_no_claro": "*"
+  },
+
+  "special_module_rules": [
+    { "domain": "servidor_sistemas", "nature": "rendimiento_bloqueo", "module": "sesiones" },
+    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "action_contains": "sesión", "module": "sesiones" },
+    { "domain": "funcionamiento_general", "nature": "usuario_acceso", "module": "accesos" },
+    { "domain": "funcionamiento_general", "nature": "instalacion_entorno", "module": "instalarprog" },
+    { "domain": "funcionamiento_general", "nature": "rendimiento_bloqueo", "module": "sesionesgeneral" },
+    { "domain": "funcionamiento_general", "nature": "importacion_exportacion", "module": "exportacion" },
+    { "domain": "gmao", "object_contains": "OT", "nature": "consulta_funcional", "module": "listadootmov" },
+    { "domain": "gmao", "object_contains": "reglamento", "module": "reglamentos" }
+  ],
+
+  "need_catalogue": {
+    "error": "¿Hay un error?",
+    "campo": "¿Deseas crear campos nuevos?",
+    "modificar-informe": "¿Crear informe nuevo?",
+    "formacion": "¿Dudas / formación?",
+    "sacarcampo": "¿Necesitas mostrar un campo en alguna pantalla?",
+    "infor": "¿Modificar informe existente?",
+    "proceso": "Crear nuevo proceso, listado o ventana",
+    "configuracion": "¿Necesitas crear o eliminar un usuario?",
+    "permisos": "¿Cambio configuración permisos?",
+    "instalar": "¿Necesitas instalar el programa en un equipo?",
+    "sesion": "¿Se ha quedado colgada tu sesión?",
+    "importdatos": "¿Necesitas importar datos a Expertis?",
+    "vpn2": "¿Necesitas configurar la VPN en un equipo?",
+    "licencia": "¿Necesitas más licencias de usuario de Expertis?",
+    "contratacion1": "¿Deseas contratar nuevos módulos de Expertis?"
+  },
+
+  "priority_mapping": {
+    "normal": "__PENDIENTE_PRIORITY_ID__",
+    "high": "__PENDIENTE_PRIORITY_ID__",
+    "urgent": "__PENDIENTE_PRIORITY_ID__"
+  },
+
+  "redmine_defaults": {
+    "tracker_id": "__PENDIENTE__",
+    "status_id_initial": "__PENDIENTE__",
+    "default_assignee": "Soporte"
+  },
+
+  "custom_fields": {
+    "nature": { "id": "__CF_NATURE__", "name": "Naturaleza IA" },
+    "block": { "id": "__CF_BLOCK__", "name": "Bloque inferido" },
+    "module": { "id": "__CF_MODULE__", "name": "Módulo inferido" },
+    "need": { "id": "__CF_NEED__", "name": "Necesidad inferida" },
+    "confidence": { "id": "__CF_CONFIDENCE__", "name": "Confianza IA" },
+    "review_status": { "id": "__CF_REVIEW_STATUS__", "name": "Estado revisión IA" }
+  }
+}

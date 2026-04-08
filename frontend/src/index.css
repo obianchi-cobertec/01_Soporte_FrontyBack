@@ -1,0 +1,618 @@
+/* =============================================================================
+   Cobertec Intake — Estilos v2
+   Diseño limpio, profesional y funcional.
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+:root {
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-text: #1c1c28;
+  --color-text-secondary: #6e7181;
+  --color-text-hint: #9ea2b0;
+  --color-primary: #3b5bdb;
+  --color-primary-hover: #364fc7;
+  --color-primary-light: #edf2ff;
+  --color-border: #e2e4ea;
+  --color-border-light: #eef0f4;
+  --color-error: #e03131;
+  --color-error-bg: #fff1f1;
+  --color-success: #2b8a3e;
+  --color-success-bg: #ebfbee;
+  --color-warning-bg: #fff9db;
+  --color-warning-text: #e67700;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 0.875rem 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header h1 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.app-header h1 span {
+  color: var(--color-primary);
+}
+
+.app-main {
+  flex: 1;
+  max-width: 580px;
+  width: 100%;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1.25rem;
+  color: var(--color-text-hint);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+/* Card wrapper for main content */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+/* Intake Form */
+.intake-form h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.375rem;
+}
+
+.form-hint {
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.intake-form textarea {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 140px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--color-surface);
+}
+
+.intake-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+}
+
+.intake-form textarea::placeholder {
+  color: var(--color-text-hint);
+}
+
+.form-error {
+  color: var(--color-error);
+  font-size: 0.8rem;
+  margin-top: 0.375rem;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--color-text-hint);
+  margin-top: 0.25rem;
+}
+
+/* Attachments */
+.attachments-section {
+  margin: 1.25rem 0;
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  transition: all 0.2s;
+}
+
+.file-label:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.file-label input[type="file"] { display: none; }
+
+.file-list {
+  list-style: none;
+  margin-top: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.remove-file {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-hint);
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  margin-left: auto;
+  transition: color 0.15s;
+}
+
+.remove-file:hover { color: var(--color-error); }
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 1.25rem;
+}
+
+.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1.25rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Confirmation View */
+.confirmation-view h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.confirmation-card {
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+.confirmation-field {
+  margin-bottom: 1rem;
+}
+
+.confirmation-field:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-hint);
+  margin-bottom: 0.25rem;
+}
+
+.confirmation-field p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.confirmation-field ul {
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Dynamic Questions */
+.questions-view h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+  letter-spacing: -0.02em;
+}
+
+.questions-view .form-hint {
+  margin-bottom: 1.5rem;
+}
+
+.question-block {
+  margin-bottom: 1.5rem;
+}
+
+.question-block:last-of-type {
+  margin-bottom: 0;
+}
+
+.question-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.question-option {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  background: var(--color-surface);
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.question-option:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.question-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.question-freetext {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  transition: border-color 0.2s;
+}
+
+.question-freetext:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Ticket Result */
+.ticket-result {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-weight: 600;
+}
+
+.ticket-number {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0.375rem 0 0.75rem;
+}
+
+.ticket-link {
+  display: inline-block;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.ticket-link:hover { text-decoration: underline; }
+
+.result-message {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* Error Display */
+.error-display {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: var(--color-error-bg);
+  border-radius: var(--radius);
+}
+
+.error-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-error);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.875rem;
+}
+
+.error-display h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+.error-display p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 3.5rem 0;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Impact badge */
+.impact-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.impact-badge.high {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* Step indicator */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: all 0.3s;
+}
+
+.step-dot.active {
+  background: var(--color-primary);
+  width: 24px;
+  border-radius: 100px;
+}
+
+.step-dot.done {
+  background: var(--color-success);
+}
+
+/* Navigation */
+.nav-link {
+  background: none;
+  border: none;
+  color: var(--color-text-hint);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.nav-link:hover { color: var(--color-primary); }
+
+/* Dashboard */
+.dashboard h2 {
+  letter-spacing: -0.02em;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-card {
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  padding: 1rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-hint);
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+/* Ticket list */
+.ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-row {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ticket-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ticket-row-id {
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 55px;
+}
+
+.ticket-row-nature {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.ticket-row-domain {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.ticket-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-hint);
+}
+
+.confidence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+

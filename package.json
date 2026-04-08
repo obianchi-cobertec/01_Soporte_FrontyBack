@@ -1,0 +1,12 @@
+{
+  "name": "cobertec-intake",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema de intake inteligente para soporte técnico Cobertec — Fase 1 MVP",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "test": "cd backend && npm test",
+    "test:classifier": "cd backend && npm run test:classifier"
+  }
+}
