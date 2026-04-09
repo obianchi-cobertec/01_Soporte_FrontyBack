@@ -23,6 +23,10 @@ const DOMAIN_LABELS: Record<string, string> = {
   app_fichajes: 'App fichajes',
   servidor_sistemas: 'Servidor / sistemas',
   tarifas_catalogos: 'Tarifas y catálogos',
+  usuarios_accesos: 'Usuarios y accesos',
+  informes_documentos: 'Informes y documentos',
+  sesiones_conectividad: 'Sesiones y conectividad',
+  solucionesia: 'Soluciones IA',
   dominio_no_claro: 'Pendiente de clasificar',
 };
 

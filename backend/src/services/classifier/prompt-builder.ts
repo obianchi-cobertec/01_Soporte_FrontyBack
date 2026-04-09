@@ -13,7 +13,6 @@ export function buildSystemPrompt(): string {
       const examplesNeg = n.examples_negative ?? [];
       const rules = n.decision_rules ?? [];
       const confusesWith = n.confusion_with ?? [];
-
       let block = `- "${n.id}" (${n.label}): ${n.description}`;
       if (examples.length > 0)
         block += `\n  ✓ Ejemplos: "${examples.join('", "')}"`;
@@ -27,171 +26,192 @@ export function buildSystemPrompt(): string {
     })
     .join('\n\n');
 
-  // Dominios
-  const domainBlock = taxonomy.domain.values
-    .map(d => {
-      const keywords = d.keywords ?? d.keywords_positive ?? [];
-      const keywordsNeg = d.keywords_negative ?? [];
-      const rules = d.decision_rules ?? [];
-      const confusesWith = d.confusion_with ?? [];
-      const examples = d.examples ?? d.examples_positive ?? [];
-
-      let block = `- "${d.id}" (${d.label}): ${d.description}`;
-      if (keywords.length > 0)
-        block += `\n  ✓ Palabras clave: ${keywords.join(', ')}`;
-      if (keywordsNeg.length > 0)
-        block += `\n  ✗ Descartar si aparece: ${keywordsNeg.join(', ')}`;
-      if (examples.length > 0)
-        block += `\n  ✓ Ejemplos: "${examples.join('", "')}"`;
-      if (rules.length > 0)
-        block += `\n  → Reglas: ${rules.join(' | ')}`;
-      if (confusesWith.length > 0)
-        block += `\n  ⚠ Se confunde con: ${confusesWith.join(', ')}`;
-      return block;
+  // Soluciones con pesos
+  const solutionRules = mapping.solution_resolution?.rules ?? [];
+  const solutionBlock = solutionRules
+    .sort((a, b) => b.weight - a.weight)
+    .map(r => {
+      const kw = r.keywords_any?.length
+        ? `\n  Señales: ${r.keywords_any.slice(0, 8).join(', ')}`
+        : '';
+      return `- "${r.solution}" (peso ${Math.round(r.weight * 100)}%)${kw}`;
     })
-    .join('\n\n');
+    .join('\n');
 
-  // Objetos
-  const objectBlock = (taxonomy.object?.values ?? []).join(', ');
+  // Módulos Expertis con keywords
+  const expertisRules = mapping.expertis_module_resolution?.rules ?? [];
+  const expertisBlock = expertisRules
+    .map(r => `- "${r.module_expertis}": ${r.keywords_any.slice(0, 10).join(', ')}`)
+    .join('\n');
 
-  // Acciones
-  const actionBlock = (taxonomy.action?.values ?? []).map(a => `- ${a}`).join('\n');
+  const priorityHint = (mapping.expertis_module_resolution?.priority_hint ?? []).join(' > ');
 
-  // Catálogo de necesidades
+  // Necesidades
   const needCatalogue = Object.entries(mapping.need_catalogue ?? {})
     .map(([id, label]) => `- "${id}": ${label}`)
     .join('\n');
 
-  // Mapeo dominio → bloque
+  // Bloques Redmine
   const domainToBlock = Object.entries(mapping.domain_to_block ?? {})
     .map(([d, b]) => `- ${d} → bloque "${b}"`)
     .join('\n');
 
   // Reglas de asignación
+    const rolFuncional = assignment.rol_funcional ?? {};
+
   const topRules = (assignment.master_rules ?? [])
     .slice(0, 20)
-    .map(r => `- bloque=${r.block}, módulo=${r.module}, need=${r.need} → ${r.assignee}`)
+    .map(r => {
+      const rolNombre = rolFuncional[r.assignee] ?? r.assignee;
+      const sol = r.solution ? `, solución=${r.solution}` : '';
+      return `- bloque=${r.block}, módulo=${r.module}, need=${r.need}${sol} → "${r.assignee}" (${rolNombre})`;
+    })
     .join('\n');
 
-  const genericRules = (assignment.master_rules ?? [])
+    const genericRules = (assignment.master_rules ?? [])
     .filter(r => r.block === '*')
-    .map(r => `- need="${r.need}" → ${r.assignee} (regla genérica)`)
+    .map(r => {
+      const rolNombre = rolFuncional[r.assignee] ?? r.assignee;
+      return `- need="${r.need}" → "${r.assignee}" (${rolNombre}) (genérica)`;
+    })
     .join('\n');
 
-  return `Eres el clasificador de incidencias de soporte técnico de Cobertec, empresa que desarrolla y da soporte del software ERP Expertis.
+  const defaultAssignee = assignment.default_assignee ?? 'soporte_errores_expertis';
+  const defaultRolNombre = rolFuncional[defaultAssignee] ?? defaultAssignee;
 
-Tu tarea es analizar la descripción que un cliente envía y producir una clasificación estructurada en JSON.
 
-## REGLAS FUNDAMENTALES
+  return `Eres el clasificador de incidencias de soporte técnico de Cobertec, empresa que desarrolla y da soporte del software ERP Expertis (también llamado Movilsat ERP).
 
-1. El dominio manda sobre el bloque.
-2. El objeto ayuda a resolver el módulo.
-3. Naturaleza + acción resuelven la necesidad (need).
-4. Gana siempre la regla más específica frente a la genérica.
-5. Nunca dejar una incidencia sin responsable.
-6. No pidas al cliente bloque, módulo ni necesidad — infiere todo tú.
+## REGLA SEMÁNTICA CRÍTICA
 
-## TAXONOMÍA DE NATURALEZA
+- "Expertis" = "Movilsat ERP" → son el mismo producto. Siempre usar solution_associated = "Expertis / Movilsat ERP".
+- "Movilsat" SIN complemento = aplicación móvil de campo, producto distinto. solution_associated = "Movilsat".
+- Esta distinción es OBLIGATORIA.
 
-Clasifica en una de estas naturalezas. Lee las reglas de frontera antes de decidir:
+## FLUJO DE DECISIÓN (seguir en este orden)
+
+1. Determinar NATURALEZA
+2. Resolver SOLUCIÓN ASOCIADA
+3. Si solución = "Expertis / Movilsat ERP" → resolver MÓDULO EXPERTIS
+4. Resolver BLOQUE y MÓDULO de Redmine
+5. Resolver NECESIDAD (need)
+6. Determinar RESPONSABLE
+
+---
+
+## PASO 1 — NATURALEZA
 
 ${natureBlock}
 
-## DOMINIOS FUNCIONALES
+---
 
-Identifica el dominio del producto Expertis. Usa las palabras clave de descarte para evitar asignaciones incorrectas:
+## PASO 2 — SOLUCIÓN ASOCIADA
 
-${domainBlock}
+El 80% de las incidencias son de Expertis / Movilsat ERP. Ante ambigüedad, usar ese como valor por defecto.
 
-## OBJETOS AFECTADOS
+${solutionBlock}
 
-Posibles objetos: ${objectBlock}
+Valor por defecto si no hay señal clara: "${mapping.solution_resolution?.default ?? 'Expertis / Movilsat ERP'}"
 
-Si el objeto no está en la lista, infiere el más cercano o usa "otro".
+---
 
-## ACCIONES OPERATIVAS
+## PASO 3 — MÓDULO EXPERTIS (solo si solution_associated = "Expertis / Movilsat ERP")
 
-${actionBlock}
+Prioridad de módulos: ${priorityHint}
 
-## CATÁLOGO DE NECESIDADES (NEED) PARA REDMINE
+Palabras clave por módulo:
+${expertisBlock}
 
-${needCatalogue}
+Módulos residuales (< 1% de casos): crm, calidad, rrhh, fabricacion — solo asignar si hay señal explícita.
+Valor por defecto si no se puede inferir: "general"
 
-## RESOLUCIÓN DE NECESIDAD
+Si solution_associated ≠ "Expertis / Movilsat ERP" → expertis_module = null
 
-Aplica estas reglas para determinar el need:
-- Si es incidencia/error → need = "error"
-- Si es consulta funcional o formación → need = "formacion"
-- Si es configuración de usuario → need = "configuracion"
-- Si es cambio de permisos → need = "permisos"
-- Si es sesión bloqueada o lentitud de sesión → need = "sesion"
-- Si es instalación → need = "instalar"
-- Si es VPN → need = "vpn2"
-- Si es importar/exportar datos → need = "importdatos"
-- Si es petición de campo nuevo → need = "campo"
-- Si es mostrar campo existente → need = "sacarcampo"
-- Si es modificar informe → need = "infor"
-- Si es crear informe nuevo → need = "modificar-informe"
-- Si es nuevo proceso/funcionalidad → need = "proceso"
+---
 
-## MAPEO DOMINIO → BLOQUE REDMINE
+## PASO 4 — BLOQUE Y MÓDULO REDMINE
 
 ${domainToBlock}
 
-## REGLAS DE ASIGNACIÓN DE RESPONSABLE
+---
 
-Reglas específicas (prevalecen sobre genéricas):
+## PASO 5 — NECESIDAD (NEED)
+
+${needCatalogue}
+
+Reglas de resolución:
+- incidencia_error → need = "error"
+- consulta_funcional o formacion_duda_uso → need = "formacion"
+- configuracion + permisos → need = "permisos"
+- configuracion → need = "configuracion"
+- usuario_acceso + sesión → need = "sesion"
+- usuario_acceso + permisos → need = "permisos"
+- usuario_acceso → need = "configuracion"
+- instalacion_entorno + VPN → need = "vpn2"
+- instalacion_entorno → need = "instalar"
+- importacion_exportacion → need = "importdatos"
+- rendimiento_bloqueo → need = "error"
+- peticion_cambio_mejora + campo nuevo → need = "campo"
+- peticion_cambio_mejora + mostrar/sacar campo → need = "sacarcampo"
+- peticion_cambio_mejora + informe → need = "infor"
+- peticion_cambio_mejora + proceso/automatización → need = "proceso"
+
+---
+
+## PASO 6 — RESPONSABLE
+
+Reglas específicas (menor número = más específica):
 ${topRules}
 
-Reglas genéricas (aplican si no hay regla específica):
+Reglas genéricas:
 ${genericRules}
 
-Responsable por defecto si nada encaja: ${assignment.default_assignee ?? 'Soporte'}
+Responsable por defecto: ${defaultAssignee}
+
+---
 
 ## INSTRUCCIONES DE SALIDA
 
-Responde SOLO con un objeto JSON válido. Sin texto adicional.
+Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
 
 {
-  "summary": "string — resumen operativo en español, 1-2 frases, para el técnico",
+  "summary": "string — resumen operativo en español, 1-2 frases, para el técnico receptor",
   "classification": {
-    "nature": "string — uno de los IDs de naturaleza",
-    "domain": "string — uno de los IDs de dominio",
+    "nature": "string — ID de naturaleza",
+    "domain": "string — dominio funcional inferido",
     "object": "string — objeto afectado",
     "action": "string — acción operativa detectada"
   },
+  "solution_associated": "string — una de: Expertis / Movilsat ERP | Movilsat | Sistemas | Portal OT | App Fichajes / Gastos / Vacaciones | Soluciones IA | Planificador Inteligente | Business Intelligence | Comercial | Resto",
+  "expertis_module": "string | null — general | financiero | logistica | comercial | proyectos | gmao | crm | calidad | rrhh | fabricacion | no_aplica | no_claro — null si solution_associated ≠ Expertis / Movilsat ERP",
   "redmine_mapping": {
-    "block": "string — bloque Redmine inferido",
-    "module": "string — módulo Redmine inferido (o '*' si no se puede determinar)",
-    "need": "string — need ID de Redmine"
+    "block": "string — bloque Redmine",
+    "module": "string — módulo Redmine (o '*')",
+    "need": "string — need ID"
   },
   "confidence": "high | medium | low",
   "review_status": "auto_ok | review_recommended | ambiguous | out_of_map | human_required",
   "suggested_priority": "normal | high | urgent",
-  "suggested_assignee": "string — responsable según tabla de asignación",
-  "reasoning": "string — justificación interna breve de la clasificación"
+  "suggested_assignee": "string — rol funcional id según tabla (ej: soporte_errores_expertis, gmao_formacion...)",
+  "reasoning": "string — solución elegida y por qué, módulo Expertis si aplica, need aplicado, regla de asignación usada"
 }
 
 ## REGLAS DE CONFIANZA
 
-- confidence = "high": coincidencia clara con naturaleza, dominio y necesidad conocidos.
-- confidence = "medium": clasificación probable pero algún elemento ambiguo.
-- confidence = "low": información insuficiente para clasificar con seguridad.
-
+- confidence = "high": naturaleza, solución, módulo Expertis y need todos claros.
+- confidence = "medium": algún elemento ambiguo pero clasificación probable.
+- confidence = "low": información insuficiente.
 - review_status = "auto_ok" solo si confidence = "high".
 - review_status = "review_recommended" si confidence = "medium".
-- review_status = "ambiguous" si el caso no permite clasificación fiable.
-- review_status = "out_of_map" si no encaja en nada (ej: consulta comercial ajena al soporte).
-- review_status = "human_required" si requiere intervención humana inmediata.
+- review_status = "ambiguous" si no hay clasificación fiable.
+- review_status = "out_of_map" si no encaja (ej: consulta comercial ajena al soporte).
 
-## REGLAS ADICIONALES
+## REGLAS FINALES
 
 - Siempre devuelve TODOS los campos.
-- suggested_assignee NUNCA puede ser null — usa "${assignment.default_assignee ?? 'Soporte'}" si no hay regla.
-- El resumen debe ser útil para un técnico: qué pasa, dónde, qué necesita el cliente.
-- Si la descripción menciona urgencia, bloqueo total o muchos usuarios afectados → priority "high" o "urgent".
+- suggested_assignee NUNCA puede ser null — usa "${defaultAssignee}" (${defaultRolNombre}) si no hay regla.
 - No inventes información que no esté en la descripción.
-- El reasoning es interno, no lo verá el cliente.`;
+- reasoning debe mencionar: solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada.`;
 }
 
 export function buildUserPrompt(request: ClassificationRequest): string {
@@ -209,7 +229,7 @@ ${request.description}
     prompt += `\n- Archivos adjuntos: ${request.attachment_names.join(', ')}`;
   }
 
-  prompt += `\n\nClasifica esta incidencia. Responde SOLO con JSON válido.`;
+  prompt += `\n\nClasifica esta incidencia siguiendo el flujo de decisión. Responde SOLO con JSON válido.`;
 
   return prompt;
 }

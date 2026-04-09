@@ -31,17 +31,63 @@ export interface TaxonomyDomainValue {
   confusion_with?: string[];
 }
 
+export interface TaxonomyObjectValue {
+  id: string;
+  label: string;
+  description: string;
+  keywords?: string[];
+  examples?: string[];
+}
+
+export interface TaxonomyActionValue {
+  id: string;
+  label: string;
+  description: string;
+  keywords?: string[];
+  examples?: string[];
+}
+
 export interface TaxonomyConfig {
   version: string;
   nature: { values: TaxonomyNatureValue[] };
   domain: { values: TaxonomyDomainValue[] };
-  object?: { description: string; values: string[] };
-  action?: { description: string; values: string[] };
+  object?: { description: string; values: TaxonomyObjectValue[] };
+  action?: { description: string; values: TaxonomyActionValue[] };
+}
+
+export interface SolutionResolutionRule {
+  solution: string;
+  keywords_any?: string[];
+  block_any?: string[];
+  priority: number;
+  weight: number;
+}
+
+export interface ExpertisModuleRule {
+  module_expertis: string;
+  keywords_any: string[];
+}
+
+export interface ExpertisModuleResolution {
+  applies_when_solution: string;
+  priority_hint: string[];
+  residual_modules: string[];
+  rules: ExpertisModuleRule[];
+  default: string;
+}
+
+export interface NeedResolutionRule {
+  nature: string;
+  need: string;
+  object_contains?: string;
+  action_contains?: string;
 }
 
 export interface RedmineMappingConfig {
   version: string;
-  need_resolution?: { rules: Array<Record<string, string>>; default: string };
+  need_resolution?: { rules: NeedResolutionRule[]; default: string };
+  solution_resolution?: { rules: SolutionResolutionRule[]; default: string };
+  expertis_module_resolution?: ExpertisModuleResolution;
   domain_to_block?: Record<string, string>;
   domain_to_module?: Record<string, string>;
   special_module_rules?: Array<Record<string, string>>;
@@ -77,7 +123,7 @@ export interface AssignmentConfig {
   rules?: AssignmentRule[];
   default_assignee?: string;
   default_assignee_id?: string;
-  assignee_names?: Record<string, string>;
+  rol_funcional?: Record<string, string>;
   review_status_overrides: Record<string, string>;
 }
 
@@ -112,7 +158,6 @@ export function getAssignmentRules(): AssignmentConfig {
   return assignmentCache;
 }
 
-/** Fuerza recarga de configuración (útil para tests o hot-reload en piloto) */
 export function reloadConfig(): void {
   taxonomyCache = null;
   redmineMappingCache = null;

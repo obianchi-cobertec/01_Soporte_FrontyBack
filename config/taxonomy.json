@@ -193,7 +193,9 @@
           "contador",
           "empresa",
           "rol",
-          "licencia"
+          "licencia",
+          "licencias",
+          "todas las licencias ocupadas"
         ],
         "keywords_negative": [
           "queremos algo nuevo",
@@ -216,7 +218,9 @@
           "necesito crear un usuario",
           "hay que cambiar permisos",
           "configurar impresora",
-          "dar de baja un usuario"
+          "dar de baja un usuario",
+          "hay que ampliar licencias",
+          "no pueden entrar porque están todas las licencias ocupadas"
         ],
         "examples_negative": [
           "queremos un campo nuevo",
@@ -227,7 +231,9 @@
           "necesito crear un usuario",
           "hay que cambiar permisos",
           "configurar impresora",
-          "dar de baja un usuario"
+          "dar de baja un usuario",
+          "hay que ampliar licencias",
+          "no pueden entrar porque están todas las licencias ocupadas"
         ]
       },
       {
@@ -249,7 +255,15 @@
           "nuevo listado",
           "sacar campo",
           "mostrar campo",
-          "adaptar"
+          "adaptar",
+          "personalización",
+          "personalizacion",
+          "a medida",
+          "desarrollo a medida",
+          "automatización",
+          "automatizacion",
+          "nuevo módulo",
+          "nuevo modulo"
         ],
         "keywords_negative": [
           "configurar",
@@ -272,7 +286,10 @@
           "necesitamos un campo nuevo",
           "queremos un informe nuevo",
           "sería útil poder hacer X",
-          "queremos modificar este proceso"
+          "queremos modificar este proceso",
+          "necesitamos una personalización a medida",
+          "queremos automatizar este proceso",
+          "hay que desarrollar una solución a medida"
         ],
         "examples_negative": [
           "hay que cambiar permisos",
@@ -283,7 +300,10 @@
           "necesitamos un campo nuevo",
           "queremos un informe nuevo",
           "sería útil poder hacer X",
-          "queremos modificar este proceso"
+          "queremos modificar este proceso",
+          "necesitamos una personalización a medida",
+          "queremos automatizar este proceso",
+          "hay que desarrollar una solución a medida"
         ]
       },
       {
@@ -302,7 +322,10 @@
           "permisos denegados",
           "no veo el módulo",
           "no aparece la opción",
-          "no tengo acceso"
+          "no tengo acceso",
+          "licencias ocupadas",
+          "todas las licencias ocupadas",
+          "sin licencias libres"
         ],
         "keywords_negative": [
           "crear usuario",
@@ -325,7 +348,8 @@
           "contraseña incorrecta",
           "me ha caducado el acceso",
           "no me deja acceder a este módulo",
-          "usuario bloqueado"
+          "usuario bloqueado",
+          "no puede acceder porque están todas las licencias ocupadas"
         ],
         "examples_negative": [
           "crear un usuario nuevo",
@@ -337,7 +361,8 @@
           "contraseña incorrecta",
           "me ha caducado el acceso",
           "no me deja acceder a este módulo",
-          "usuario bloqueado"
+          "usuario bloqueado",
+          "no puede acceder porque están todas las licencias ocupadas"
         ]
       },
       {
@@ -412,7 +437,11 @@
           "subir datos",
           "descargar datos",
           "migración",
-          "conector"
+          "conector",
+          "exportación",
+          "exportacion",
+          "importación",
+          "importacion"
         ],
         "keywords_negative": [
           "nuevo campo",
@@ -495,7 +524,7 @@
         ]
       },
       {
-        "id": "ambigua_no_clasificada",
+        "id": "ambiguo",
         "label": "Ambiguo / no clasificado",
         "description": "No hay suficiente información para clasificar con seguridad. Usar solo como último recurso.",
         "keywords_positive": [],
@@ -639,14 +668,17 @@
       {
         "id": "funcionamiento_general",
         "label": "Funcionamiento general",
-        "description": "Casos funcionales del núcleo del sistema cuando no puede inferirse un dominio más específico.",
+        "description": "Casos funcionales del núcleo del ERP Expertis / Movilsat ERP cuando no puede inferirse un dominio más específico.",
         "keywords_positive": [
           "programa",
           "general",
           "pantalla",
           "opción",
           "proceso",
-          "funcionamiento"
+          "funcionamiento",
+          "expertis",
+          "movilsat erp",
+          "erp"
         ],
         "keywords_negative": [
           "factura",
@@ -667,11 +699,15 @@
         ],
         "examples_positive": [
           "el programa no responde en esta pantalla",
-          "no aparece una opción general"
+          "no aparece una opción general",
+          "error general en Expertis",
+          "problema general en Movilsat ERP"
         ],
         "examples": [
           "el programa no responde en esta pantalla",
-          "no aparece una opción general"
+          "no aparece una opción general",
+          "error general en Expertis",
+          "problema general en Movilsat ERP"
         ]
       },
       {
@@ -801,16 +837,25 @@
       {
         "id": "movilsat",
         "label": "Movilsat",
-        "description": "Operativa relacionada con Movilsat y sus procesos propios.",
+        "description": "Operativa relacionada con la app móvil Movilsat. Cuando se menciona Movilsat sin complemento, se refiere a la aplicación móvil y no al ERP.",
         "keywords_positive": [
           "movilsat",
           "app movilsat",
           "parte movilsat",
-          "sincronización movilsat"
+          "sincronización movilsat",
+          "app móvil",
+          "app movil",
+          "móvil",
+          "movil",
+          "tablet",
+          "smartphone"
         ],
         "keywords_negative": [
           "gmao",
-          "portal ot"
+          "portal ot",
+          "expertis",
+          "erp",
+          "movilsat erp"
         ],
         "confusion_with": [
           "gmao",
@@ -818,11 +863,15 @@
         ],
         "examples_positive": [
           "no sincroniza Movilsat",
-          "problema en parte de Movilsat"
+          "problema en parte de Movilsat",
+          "problema en la app móvil de Movilsat",
+          "no sincroniza la app de Movilsat"
         ],
         "examples": [
           "no sincroniza Movilsat",
-          "problema en parte de Movilsat"
+          "problema en parte de Movilsat",
+          "problema en la app móvil de Movilsat",
+          "no sincroniza la app de Movilsat"
         ]
       },
       {
@@ -1073,6 +1122,48 @@
         "examples": [
           "no actualiza la tarifa",
           "problema con catálogo"
+        ]
+      },
+      {
+        "id": "solucionesia",
+        "label": "Soluciones IA",
+        "description": "Agentes de IA, automatizaciones y soluciones basadas en IA o flujos automáticos.",
+        "keywords_positive": [
+          "ia",
+          "i.a.",
+          "inteligencia artificial",
+          "agente",
+          "agentes",
+          "chatgpt",
+          "openai",
+          "automatización",
+          "automatizacion",
+          "n8n",
+          "workflow",
+          "flujo automático",
+          "flujo automatico"
+        ],
+        "keywords_negative": [
+          "factura",
+          "pedido",
+          "stock",
+          "contabilidad"
+        ],
+        "confusion_with": [
+          "funcionamiento_general",
+          "servidor_sistemas"
+        ],
+        "examples_positive": [
+          "automatización con IA",
+          "agente de IA",
+          "flujo n8n",
+          "integración con OpenAI"
+        ],
+        "examples": [
+          "automatización con IA",
+          "agente de IA",
+          "flujo n8n",
+          "integración con OpenAI"
         ]
       },
       {
@@ -1457,6 +1548,55 @@
         ]
       },
       {
+        "id": "licencia",
+        "label": "Licencia",
+        "description": "Licencia, puesto licenciado o disponibilidad de licencias.",
+        "keywords": [
+          "licencia",
+          "licencias",
+          "licencias ocupadas",
+          "puesto licenciado"
+        ],
+        "examples": [
+          "no hay licencias libres"
+        ]
+      },
+      {
+        "id": "automatizacion_ia",
+        "label": "Automatización / IA",
+        "description": "Agente de IA, automatización, flujo o solución inteligente.",
+        "keywords": [
+          "ia",
+          "inteligencia artificial",
+          "agente",
+          "automatización",
+          "automatizacion",
+          "n8n",
+          "openai",
+          "workflow"
+        ],
+        "examples": [
+          "automatización con IA",
+          "agente OpenAI"
+        ]
+      },
+      {
+        "id": "campo",
+        "label": "Campo",
+        "description": "Campo de pantalla, dato visible o atributo nuevo/existente.",
+        "keywords": [
+          "campo",
+          "columna",
+          "mostrar campo",
+          "sacar campo",
+          "nuevo campo"
+        ],
+        "examples": [
+          "necesitamos un campo nuevo",
+          "hay que sacar un campo en pantalla"
+        ]
+      },
+      {
         "id": "objeto_no_claro",
         "label": "Objeto no claro",
         "description": "No se puede identificar con claridad el objeto afectado.",
@@ -1479,7 +1619,9 @@
           "acceder",
           "login",
           "iniciar sesión",
-          "autenticar"
+          "autenticar",
+          "licencias ocupadas",
+          "sin licencias libres"
         ],
         "examples": [
           "no puedo entrar"
@@ -1642,10 +1784,14 @@
         "keywords": [
           "configurar",
           "parametrizar",
-          "ajustar"
+          "ajustar",
+          "licencia",
+          "licencias"
         ],
         "examples": [
-          "configurar impresora"
+          "configurar impresora",
+          "ampliar licencias",
+          "configurar licencias"
         ]
       },
       {
@@ -1742,10 +1888,18 @@
           "añadir",
           "nuevo campo",
           "nuevo informe",
-          "mejora"
+          "mejora",
+          "personalización",
+          "personalizacion",
+          "a medida",
+          "desarrollo a medida",
+          "automatización",
+          "automatizacion"
         ],
         "examples": [
-          "queremos un campo nuevo"
+          "queremos un campo nuevo",
+          "necesitamos una personalización a medida",
+          "queremos una automatización con IA"
         ]
       },
       {

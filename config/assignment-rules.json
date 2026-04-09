@@ -1,70 +1,98 @@
 {
-  "version": "2.0.0",
-  "description": "Reglas reales de asignación de Cobertec — tabla maestra de responsables",
+  "version": "3.0.0",
+  "description": "Reglas de asignación de Cobertec — tabla maestra por rol funcional",
 
   "master_rules": [
-    { "priority": 1, "block": "movilsat", "module": "*", "need": "error", "assignee": "b.garcia" },
-    { "priority": 2, "block": "movilsat", "module": "*", "need": "configuracion", "assignee": "b.garcia" },
-    { "priority": 3, "block": "movilsat", "module": "*", "need": "permisos", "assignee": "b.garcia" },
-    { "priority": 4, "block": "movilsat", "module": "*", "need": "sacarcampo", "assignee": "b.garcia" },
-    { "priority": 5, "block": "movilsat", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
+    { "priority": 1, "block": "*", "module": "*", "need": "campo", "solution": "Expertis / Movilsat ERP", "assignee": "desarrollo_campos" },
+    { "priority": 1, "block": "*", "module": "*", "need": "sacarcampo", "solution": "Expertis / Movilsat ERP", "assignee": "desarrollo_campos" },
+    { "priority": 1, "block": "*", "module": "*", "need": "error", "solution": "Expertis / Movilsat ERP", "assignee": "soporte_errores_expertis" },
+    { "priority": 1, "block": "*", "module": "*", "need": "formacion", "solution": "Expertis / Movilsat ERP", "assignee": "financiero_formacion" },
+    { "priority": 1, "block": "*", "module": "*", "need": "infor", "solution": "Expertis / Movilsat ERP", "assignee": "soporte_informes" },
+    { "priority": 1, "block": "*", "module": "*", "need": "modificar-informe", "solution": "Expertis / Movilsat ERP", "assignee": "soporte_informes" },
+    { "priority": 1, "block": "*", "module": "*", "need": "proceso", "solution": "Expertis / Movilsat ERP", "assignee": "desarrollo_procesos" },
+    { "priority": 1, "block": "*", "module": "*", "need": "personalizacion", "solution": "Expertis / Movilsat ERP", "assignee": "desarrollo_procesos" },
 
-    { "priority": 10, "block": "gmao", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
-    { "priority": 11, "block": "gmao", "module": "listadootmov", "need": "*", "assignee": "b.garcia" },
-    { "priority": 12, "block": "gmao", "module": "movilsatparte", "need": "*", "assignee": "b.garcia" },
-    { "priority": 13, "block": "gmao", "module": "reglamentos", "need": "*", "assignee": "desarrollo4" },
+    { "priority": 2, "block": "appfichar", "module": "app plataforma", "need": "*", "solution": "App Fichajes / Gastos / Vacaciones", "assignee": "app_fichajes_operativa" },
+    { "priority": 2, "block": "appfichar", "module": "app movil", "need": "*", "solution": "App Fichajes / Gastos / Vacaciones", "assignee": "app_fichajes_operativa" },
 
-    { "priority": 20, "block": "portalot", "module": "*", "need": "formacion", "assignee": "j.quintanilla" },
-    { "priority": 21, "block": "portalot", "module": "*", "need": "*", "assignee": "b.garcia" },
+    { "priority": 2, "block": "crm", "module": "*", "need": "formacion", "solution": "Expertis / Movilsat ERP", "assignee": "crm_formacion" },
 
-    { "priority": 30, "block": "crm", "module": "*", "need": "formacion", "assignee": "j.ares" },
+    { "priority": 2, "block": "general", "module": "accesos", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "soporte_accesos" },
+    { "priority": 2, "block": "general", "module": "conexion", "need": "*", "solution": "Sistemas", "assignee": "soporte_conectividad" },
+    { "priority": 2, "block": "general", "module": "exportacion", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "desarrollo_exportaciones" },
+    { "priority": 2, "block": "general", "module": "instalarprog", "need": "*", "solution": "Sistemas", "assignee": "soporte_instalaciones" },
+    { "priority": 2, "block": "general", "module": "modulosnew", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "general_modulos_formacion" },
+    { "priority": 2, "block": "general", "module": "sesionesgeneral", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "soporte_sesiones_generales" },
 
-    { "priority": 40, "block": "obras", "module": "*", "need": "formacion", "assignee": "alvaro" },
+    { "priority": 2, "block": "gmao", "module": "*", "need": "formacion", "solution": "Expertis / Movilsat ERP", "assignee": "gmao_formacion" },
+    { "priority": 2, "block": "gmao", "module": "listadootmov", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "gmao_listado_ot_mov" },
+    { "priority": 2, "block": "gmao", "module": "movilsatparte", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "gmao_movilsat_parte" },
+    { "priority": 2, "block": "gmao", "module": "reglamentos", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "gmao_reglamentos_desarrollo" },
 
-    { "priority": 50, "block": "pi", "module": "*", "need": "*", "assignee": "a.arnaiz" },
-    { "priority": 51, "block": "appfichar", "module": "*", "need": "*", "assignee": "a.arnaiz" },
-    { "priority": 52, "block": "tarifas", "module": "*", "need": "*", "assignee": "a.arnaiz" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "configuracion", "solution": "Movilsat", "assignee": "movilsat_configuracion" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "error", "solution": "Movilsat", "assignee": "movilsat_errores" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "formacion", "solution": "Movilsat", "assignee": "movilsat_formacion" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "permisos", "solution": "Movilsat", "assignee": "movilsat_permisos" },
+    { "priority": 2, "block": "movilsat", "module": "*", "need": "sacarcampo", "solution": "Movilsat", "assignee": "movilsat_campos" },
 
-    { "priority": 60, "block": "servidor", "module": "sesiones", "need": "*", "assignee": "a.martinez" },
-    { "priority": 61, "block": "servidor", "module": "*", "need": "*", "assignee": "Soporte" },
+    { "priority": 2, "block": "obras", "module": "*", "need": "formacion", "solution": "Expertis / Movilsat ERP", "assignee": "obras_formacion" },
 
-    { "priority": 70, "block": "general", "module": "accesos", "need": "*", "assignee": "Soporte" },
-    { "priority": 71, "block": "general", "module": "conexion", "need": "*", "assignee": "Soporte" },
-    { "priority": 72, "block": "general", "module": "instalarprog", "need": "*", "assignee": "Soporte" },
-    { "priority": 73, "block": "general", "module": "sesionesgeneral", "need": "sesion", "assignee": "a.martinez" },
-    { "priority": 74, "block": "general", "module": "sesionesgeneral", "need": "*", "assignee": "a.martinez" },
-    { "priority": 75, "block": "general", "module": "exportacion", "need": "*", "assignee": "desarrollo4" },
-    { "priority": 76, "block": "general", "module": "modulosnew", "need": "*", "assignee": "j.ares" },
+    { "priority": 2, "block": "pi", "module": "*", "need": "*", "solution": "Planificador Inteligente", "assignee": "pi_operativa" },
 
-    { "priority": 100, "block": "*", "module": "*", "need": "campo", "assignee": "desarrollo4" },
-    { "priority": 101, "block": "*", "module": "*", "need": "sacarcampo", "assignee": "desarrollo4" },
-    { "priority": 102, "block": "*", "module": "*", "need": "error", "assignee": "SAT_Exp" },
-    { "priority": 103, "block": "*", "module": "*", "need": "formacion", "assignee": "Financiero" },
-    { "priority": 104, "block": "*", "module": "*", "need": "infor", "assignee": "Soporte" },
-    { "priority": 105, "block": "*", "module": "*", "need": "modificar-informe", "assignee": "Soporte" },
-    { "priority": 106, "block": "*", "module": "*", "need": "proceso", "assignee": "SAT_Exp" }
+    { "priority": 2, "block": "portalot", "module": "*", "need": "formacion", "solution": "Portal OT", "assignee": "portalot_formacion" },
+    { "priority": 2, "block": "portalot", "module": "*", "need": "*", "solution": "Portal OT", "assignee": "portalot_operativa" },
+
+    { "priority": 2, "block": "servidor", "module": "sesiones", "need": "*", "solution": "Sistemas", "assignee": "soporte_sesiones_servidor" },
+    { "priority": 2, "block": "servidor", "module": "*", "need": "*", "solution": "Sistemas", "assignee": "soporte_servidores" },
+
+    { "priority": 2, "block": "solucionesia", "module": "*", "need": "*", "solution": "Soluciones IA", "assignee": "solucionesia_operativa" },
+    { "priority": 2, "block": "tarifas", "module": "*", "need": "*", "solution": "Expertis / Movilsat ERP", "assignee": "tarifas_operativa" },
+    { "priority": 2, "block": "presupuesto", "module": "*", "need": "*", "solution": "Comercial", "assignee": "presupuesto" },
+    { "priority": 2, "block": "otros", "module": "*", "need": "*", "solution": "Resto", "assignee": "otras_operativa" }
   ],
 
-  "match_logic": "La regla más específica gana. Prioridad menor = más específica. Un campo con '*' coincide con cualquier valor. Para que una regla aplique, todos sus campos no-wildcard deben coincidir.",
+  "match_logic": "La regla más específica gana. Prioridad menor = más específica. Un campo con '*' coincide con cualquier valor. Para que una regla aplique, todos sus campos no-wildcard deben coincidir. El campo solution actúa como filtro adicional cuando está presente.",
 
-  "assignee_names": {
-    "desarrollo4": "Hildegart Nieto",
-    "SAT_Exp": "Alberto San Miguel",
-    "Soporte": "Sergio García",
-    "Financiero": "Financiero",
-    "b.garcia": "b.garcia",
-    "j.quintanilla": "j.quintanilla",
-    "j.ares": "j.ares",
-    "a.arnaiz": "a.arnaiz",
-    "a.martinez": "a.martinez",
-    "alvaro": "alvaro"
+  "rol_funcional": {
+    "app_fichajes_operativa": "App fichajes operativa",
+    "crm_formacion": "CRM formación",
+    "desarrollo_campos": "Desarrollo campos",
+    "desarrollo_exportaciones": "Desarrollo exportaciones",
+    "desarrollo_procesos": "Desarrollo procesos",
+    "financiero_formacion": "Financiero formación",
+    "gmao_formacion": "GMAO formación",
+    "gmao_listado_ot_mov": "GMAO listado OT mov",
+    "gmao_movilsat_parte": "GMAO Movilsat parte",
+    "gmao_reglamentos_desarrollo": "GMAO reglamentos desarrollo",
+    "general_modulos_formacion": "General módulos formación",
+    "movilsat_campos": "Movilsat campos",
+    "movilsat_configuracion": "Movilsat configuración",
+    "movilsat_errores": "Movilsat errores",
+    "movilsat_formacion": "Movilsat formación",
+    "movilsat_permisos": "Movilsat permisos",
+    "obras_formacion": "Obras formación",
+    "pi_operativa": "PI operativa",
+    "portalot_formacion": "Portal OT formación",
+    "portalot_operativa": "Portal OT operativa",
+    "soporte_accesos": "Soporte accesos",
+    "soporte_conectividad": "Soporte conectividad",
+    "soporte_errores_expertis": "Soporte errores Expertis",
+    "soporte_informes": "Soporte informes",
+    "soporte_instalaciones": "Soporte instalaciones",
+    "soporte_servidores": "Soporte servidores",
+    "soporte_sesiones_generales": "Soporte sesiones generales",
+    "soporte_sesiones_servidor": "Soporte sesiones servidor",
+    "tarifas_operativa": "Tarifas operativa",
+    "solucionesia_operativa": "Soluciones IA operativa",
+    "presupuesto": "Solicitud de presupuesto",
+    "otras_operativa": "Otras operativa"
   },
 
-  "default_assignee": "Soporte",
+  "default_assignee": "soporte_errores_expertis",
 
   "review_status_overrides": {
-    "ambiguous": "Soporte",
-    "out_of_map": "Soporte",
-    "human_required": "Soporte"
+    "ambiguous": "soporte_errores_expertis",
+    "out_of_map": "soporte_errores_expertis",
+    "human_required": "soporte_errores_expertis"
   }
 }

@@ -1,9 +1,6 @@
 // =============================================================================
 // Contratos de datos — Tipos centrales del MVP
-// Fuente: Especificación técnica del MVP Fase 1
 // =============================================================================
-
-// --- Valores de taxonomía ---
 
 export const NATURE_VALUES = [
   'incidencia_error', 'consulta_funcional', 'formacion_duda_uso', 'configuracion',
@@ -16,9 +13,31 @@ export const DOMAIN_VALUES = [
   'funcionamiento_general', 'compras', 'ventas_facturacion', 'almacen_stocks',
   'gmao', 'movilsat', 'portal_ot', 'presupuestos_proyectos', 'financiero',
   'crm', 'ofertas_comerciales', 'planificador_inteligente', 'app_fichajes',
-  'servidor_sistemas', 'tarifas_catalogos', 'dominio_no_claro'
+  'servidor_sistemas', 'tarifas_catalogos',
+  'usuarios_accesos', 'informes_documentos', 'sesiones_conectividad', 'solucionesia',
+  'dominio_no_claro'
 ] as const;
 export type Domain = typeof DOMAIN_VALUES[number];
+
+export const SOLUTION_VALUES = [
+  'Expertis / Movilsat ERP',
+  'Movilsat',
+  'Sistemas',
+  'Portal OT',
+  'App Fichajes / Gastos / Vacaciones',
+  'Soluciones IA',
+  'Planificador Inteligente',
+  'Business Intelligence',
+  'Comercial',
+  'Resto',
+] as const;
+export type Solution = typeof SOLUTION_VALUES[number];
+
+export const EXPERTIS_MODULE_VALUES = [
+  'general', 'financiero', 'logistica', 'comercial', 'proyectos',
+  'gmao', 'crm', 'calidad', 'rrhh', 'fabricacion', 'no_aplica', 'no_claro'
+] as const;
+export type ExpertisModule = typeof EXPERTIS_MODULE_VALUES[number];
 
 export const CONFIDENCE_VALUES = ['high', 'medium', 'low'] as const;
 export type Confidence = typeof CONFIDENCE_VALUES[number];
@@ -31,12 +50,12 @@ export type ReviewStatus = typeof REVIEW_STATUS_VALUES[number];
 export const PRIORITY_VALUES = ['normal', 'high', 'urgent'] as const;
 export type Priority = typeof PRIORITY_VALUES[number];
 
-// --- Payload de intake (Frontend → Backend) ---
+// --- Payload de intake ---
 
 export interface Attachment {
   filename: string;
   content_type: string;
-  data: string; // base64
+  data: string;
 }
 
 export interface IntakePayload {
@@ -46,10 +65,10 @@ export interface IntakePayload {
   company_name: string;
   description: string;
   attachments: Attachment[];
-  timestamp: string; // ISO 8601
+  timestamp: string;
 }
 
-// --- Payload de clasificación (Backend → Motor IA) ---
+// --- Payload de clasificación ---
 
 export interface ClassificationRequest {
   session_id: string;
@@ -63,11 +82,11 @@ export interface ClassificationRequest {
   attempt: number;
 }
 
-// --- Respuesta de clasificación (Motor IA → Backend) ---
+// --- Respuesta de clasificación ---
 
 export interface Classification {
   nature: Nature;
-  domain: Domain;
+  domain: string;
   object: string;
   action: string;
 }
@@ -82,6 +101,8 @@ export interface ClassificationResponse {
   session_id: string;
   summary: string;
   classification: Classification;
+  solution_associated: Solution;
+  expertis_module: ExpertisModule | null;
   redmine_mapping: RedmineMapping;
   confidence: Confidence;
   review_status: ReviewStatus;
@@ -90,7 +111,7 @@ export interface ClassificationResponse {
   reasoning: string;
 }
 
-// --- Payload de confirmación (Frontend → Backend) ---
+// --- Payload de confirmación ---
 
 export interface ConfirmationPayload {
   session_id: string;
@@ -129,7 +150,7 @@ export interface ErrorResponse {
 
 export type IntakeResponse = ClassifiedResponse | CreatedResponse | ErrorResponse;
 
-// --- Eventos (métricas) ---
+// --- Eventos ---
 
 export const EVENT_TYPES = [
   'flow_started', 'description_submitted', 'classification_requested',

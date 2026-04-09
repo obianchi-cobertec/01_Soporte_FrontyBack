@@ -1,19 +1,10 @@
 import { buildSystemPrompt, buildUserPrompt } from './prompt-builder.js';
 import { validateClassificationResponse, buildFallbackResponse } from './response-validator.js';
+import { resolveAssignee } from './assignee-resolver.js';
 import type { LLMProvider, LLMProviderConfig } from './llm-provider.js';
 import { AnthropicProvider } from './provider-anthropic.js';
 import { OpenAIProvider } from './provider-openai.js';
 import type { ClassificationRequest, ClassificationResponse } from '../../types.js';
-
-// =============================================================================
-// Classifier Service — Motor IA v1
-//
-// Orquesta el flujo completo de clasificación:
-// 1. Construye prompts desde configuración externalizada
-// 2. Llama al LLM (Anthropic o OpenAI, según LLM_PROVIDER)
-// 3. Valida y sanitiza la respuesta
-// 4. Devuelve clasificación estructurada o fallback
-// =============================================================================
 
 export interface ClassifierResult {
   response: ClassificationResponse;
@@ -52,6 +43,9 @@ export class ClassifierService {
       const validation = validateClassificationResponse(llmResponse.text, request.session_id);
 
       if (validation.success) {
+        // Resolver determinista: sobreescribe el assignee del LLM con la regla correcta
+        validation.data.suggested_assignee = resolveAssignee(validation.data);
+
         return {
           response: validation.data,
           durationMs,
@@ -85,10 +79,6 @@ export class ClassifierService {
     }
   }
 }
-
-// =============================================================================
-// Factory — lee variables de entorno y crea el proveedor correcto
-// =============================================================================
 
 const DEFAULT_MODELS: Record<string, string> = {
   anthropic: 'claude-sonnet-4-20250514',

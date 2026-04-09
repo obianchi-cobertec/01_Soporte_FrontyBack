@@ -1,31 +1,39 @@
 {
-  "version": "2.0.0",
-  "description": "Mapeo real de taxonomía intermedia a bloques, módulos y necesidades de Redmine — Cobertec",
+  "version": "3.1.0",
+  "description": "Mapeo real de taxonomía intermedia a solución asociada, módulo Expertis, bloques, módulos y necesidades de Redmine — Cobertec",
 
   "need_resolution": {
-    "description": "Reglas para resolver la necesidad (need) a partir de naturaleza + acción",
+    "description": "Reglas para resolver necesidad (need) a partir de naturaleza + acción + objeto.",
     "rules": [
-      { "nature": "incidencia_error", "action_contains": "error", "need": "error" },
-      { "nature": "incidencia_error", "action_contains": "no funciona", "need": "error" },
-      { "nature": "incidencia_error", "action_contains": "no aparece", "need": "error" },
+      { "nature": "incidencia_error", "need": "error" },
       { "nature": "consulta_funcional", "need": "formacion" },
       { "nature": "formacion_duda_uso", "need": "formacion" },
-      { "nature": "configuracion", "action_contains": "usuario", "need": "configuracion" },
-      { "nature": "configuracion", "action_contains": "configurar", "need": "configuracion" },
+      { "nature": "configuracion", "object_contains": "licencia", "need": "licencia" },
       { "nature": "configuracion", "action_contains": "permisos", "need": "permisos" },
-      { "nature": "usuario_acceso", "action_contains": "permisos", "need": "permisos" },
+      { "nature": "configuracion", "action_contains": "configurar", "need": "configuracion" },
+      { "nature": "configuracion", "object_contains": "usuario", "need": "configuracion" },
+      { "nature": "usuario_acceso", "object_contains": "licencia", "need": "sesion" },
+      { "nature": "usuario_acceso", "action_contains": "licencias ocupadas", "need": "sesion" },
       { "nature": "usuario_acceso", "action_contains": "sesión", "need": "sesion" },
+      { "nature": "usuario_acceso", "action_contains": "permisos", "need": "permisos" },
       { "nature": "usuario_acceso", "need": "configuracion" },
-      { "nature": "instalacion_entorno", "action_contains": "instalar", "need": "instalar" },
       { "nature": "instalacion_entorno", "action_contains": "VPN", "need": "vpn2" },
+      { "nature": "instalacion_entorno", "action_contains": "instalar", "need": "instalar" },
       { "nature": "instalacion_entorno", "need": "instalar" },
       { "nature": "importacion_exportacion", "action_contains": "importar", "need": "importdatos" },
       { "nature": "importacion_exportacion", "action_contains": "exportar", "need": "importdatos" },
       { "nature": "importacion_exportacion", "need": "importdatos" },
-      { "nature": "rendimiento_bloqueo", "action_contains": "sesión", "need": "sesion" },
+      { "nature": "rendimiento_bloqueo", "object_contains": "sesion", "need": "sesion" },
       { "nature": "rendimiento_bloqueo", "need": "error" },
+      { "nature": "peticion_cambio_mejora", "object_contains": "automatizacion_ia", "need": "personalizacion" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "automatización", "need": "personalizacion" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "automatizacion", "need": "personalizacion" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "a medida", "need": "personalizacion" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "personalización", "need": "personalizacion" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "personalizacion", "need": "personalizacion" },
       { "nature": "peticion_cambio_mejora", "action_contains": "campo", "object_contains": "campo", "need": "campo" },
       { "nature": "peticion_cambio_mejora", "action_contains": "mostrar", "object_contains": "campo", "need": "sacarcampo" },
+      { "nature": "peticion_cambio_mejora", "action_contains": "sacar", "object_contains": "campo", "need": "sacarcampo" },
       { "nature": "peticion_cambio_mejora", "action_contains": "informe", "object_contains": "informe", "need": "modificar-informe" },
       { "nature": "peticion_cambio_mejora", "action_contains": "proceso", "need": "proceso" },
       { "nature": "peticion_cambio_mejora", "need": "proceso" }
@@ -49,6 +57,10 @@
     "app_fichajes": "appfichar",
     "servidor_sistemas": "servidor",
     "tarifas_catalogos": "tarifas",
+    "usuarios_accesos": "general",
+    "informes_documentos": "general",
+    "sesiones_conectividad": "servidor",
+    "solucionesia": "solucionesia",
     "dominio_no_claro": "general"
   },
 
@@ -68,18 +80,32 @@
     "app_fichajes": "*",
     "servidor_sistemas": "*",
     "tarifas_catalogos": "*",
+    "usuarios_accesos": "accesos",
+    "informes_documentos": "*",
+    "sesiones_conectividad": "sesiones",
+    "solucionesia": "*",
     "dominio_no_claro": "*"
   },
 
   "special_module_rules": [
     { "domain": "servidor_sistemas", "nature": "rendimiento_bloqueo", "module": "sesiones" },
+    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "object_contains": "licencia", "module": "sesiones" },
     { "domain": "servidor_sistemas", "nature": "usuario_acceso", "action_contains": "sesión", "module": "sesiones" },
     { "domain": "funcionamiento_general", "nature": "usuario_acceso", "module": "accesos" },
+    { "domain": "usuarios_accesos", "module": "accesos" },
     { "domain": "funcionamiento_general", "nature": "instalacion_entorno", "module": "instalarprog" },
+    { "domain": "servidor_sistemas", "nature": "instalacion_entorno", "module": "conexion" },
     { "domain": "funcionamiento_general", "nature": "rendimiento_bloqueo", "module": "sesionesgeneral" },
+    { "domain": "sesiones_conectividad", "module": "sesiones" },
     { "domain": "funcionamiento_general", "nature": "importacion_exportacion", "module": "exportacion" },
-    { "domain": "gmao", "object_contains": "OT", "nature": "consulta_funcional", "module": "listadootmov" },
-    { "domain": "gmao", "object_contains": "reglamento", "module": "reglamentos" }
+    { "domain": "informes_documentos", "nature": "importacion_exportacion", "module": "exportacion" },
+    { "domain": "funcionamiento_general", "nature": "formacion_duda_uso", "module": "modulosnew" },
+    { "domain": "gmao", "object_contains": "ot", "module": "listadootmov" },
+    { "domain": "gmao", "keywords_any": ["movilsatparte", "parte movilsat"], "module": "movilsatparte" },
+    { "domain": "gmao", "object_contains": "reglamento", "module": "reglamentos" },
+    { "domain": "movilsat", "nature": "peticion_cambio_mejora", "object_contains": "campo", "module": "*" },
+    { "domain": "app_fichajes", "keywords_any": ["app móvil", "app movil"], "module": "app movil" },
+    { "domain": "app_fichajes", "keywords_any": ["plataforma", "web", "panel"], "module": "app plataforma" }
   ],
 
   "need_catalogue": {
@@ -97,7 +123,9 @@
     "importdatos": "¿Necesitas importar datos a Expertis?",
     "vpn2": "¿Necesitas configurar la VPN en un equipo?",
     "licencia": "¿Necesitas más licencias de usuario de Expertis?",
-    "contratacion1": "¿Deseas contratar nuevos módulos de Expertis?"
+    "contratacion1": "¿Deseas contratar nuevos módulos de Expertis?",
+    "personalizacion": "¿Necesitas un desarrollo o personalización a medida?",
+    "presupuesto": "¿Solicitas un presupuesto sobre una solución de Cobertec?"
   },
 
   "priority_mapping": {
@@ -109,15 +137,136 @@
   "redmine_defaults": {
     "tracker_id": "__PENDIENTE__",
     "status_id_initial": "__PENDIENTE__",
-    "default_assignee": "Soporte"
+    "default_assignee": "soporte_errores_expertis"
   },
 
   "custom_fields": {
     "nature": { "id": "__CF_NATURE__", "name": "Naturaleza IA" },
+    "solution_associated": { "id": "__CF_SOLUTION__", "name": "Solución asociada IA" },
+    "expertis_module": { "id": "__CF_EXPERTIS_MODULE__", "name": "Módulo Expertis IA" },
     "block": { "id": "__CF_BLOCK__", "name": "Bloque inferido" },
     "module": { "id": "__CF_MODULE__", "name": "Módulo inferido" },
     "need": { "id": "__CF_NEED__", "name": "Necesidad inferida" },
     "confidence": { "id": "__CF_CONFIDENCE__", "name": "Confianza IA" },
     "review_status": { "id": "__CF_REVIEW_STATUS__", "name": "Estado revisión IA" }
+  },
+
+  "normalization_aliases": {
+    "domain": {
+      "facturación y ventas": "ventas_facturacion",
+      "facturacion y ventas": "ventas_facturacion",
+      "ventas y facturación": "ventas_facturacion",
+      "ventas y facturacion": "ventas_facturacion",
+      "almacén y stocks": "almacen_stocks",
+      "almacen y stocks": "almacen_stocks",
+      "usuarios y accesos": "usuarios_accesos",
+      "informes y documentos": "informes_documentos",
+      "sesiones y conectividad": "sesiones_conectividad",
+      "planificado inteligente": "planificador_inteligente",
+      "planificador inteligente": "planificador_inteligente",
+      "app fichajes": "app_fichajes",
+      "servidor / sistemas": "servidor_sistemas",
+      "tarifas y catálogos": "tarifas_catalogos",
+      "tarifas y catalogos": "tarifas_catalogos",
+      "soluciones ia": "solucionesia",
+      "ia": "solucionesia",
+      "movilsat erp": "funcionamiento_general",
+      "expertis": "funcionamiento_general"
+    },
+    "nature": {
+      "incidencia o error": "incidencia_error",
+      "petición de cambio o mejora": "peticion_cambio_mejora",
+      "peticion de cambio o mejora": "peticion_cambio_mejora",
+      "usuario / acceso": "usuario_acceso",
+      "instalación / entorno técnico": "instalacion_entorno",
+      "instalacion / entorno tecnico": "instalacion_entorno",
+      "importación / exportación / integración": "importacion_exportacion",
+      "importacion / exportacion / integracion": "importacion_exportacion",
+      "rendimiento / bloqueo / lentitud": "rendimiento_bloqueo",
+      "ambiguo / no clasificado": "ambiguo",
+      "ambigua_no_clasificada": "ambiguo"
+    },
+    "solution": {
+      "expertis": "Expertis / Movilsat ERP",
+      "movilsat erp": "Expertis / Movilsat ERP",
+      "expertis / movilsat erp": "Expertis / Movilsat ERP",
+      "movilsat": "Movilsat",
+      "app movilsat": "Movilsat",
+      "sistemas": "Sistemas",
+      "portal ot": "Portal OT",
+      "app fichajes": "App Fichajes / Gastos / Vacaciones",
+      "app gastos": "App Fichajes / Gastos / Vacaciones",
+      "app vacaciones": "App Fichajes / Gastos / Vacaciones",
+      "soluciones ia": "Soluciones IA",
+      "ia": "Soluciones IA",
+      "planificador inteligente": "Planificador Inteligente",
+      "business intelligence": "Business Intelligence",
+      "comercial": "Comercial",
+      "resto": "Resto"
+    },
+    "expertis_module": {
+      "general": "general",
+      "financiero": "financiero",
+      "logística": "logistica",
+      "logistica": "logistica",
+      "comercial": "comercial",
+      "proyectos": "proyectos",
+      "obras": "proyectos",
+      "gmao": "gmao",
+      "crm": "crm",
+      "calidad": "calidad",
+      "rrhh": "rrhh",
+      "fabricación": "fabricacion",
+      "fabricacion": "fabricacion"
+    }
+  },
+
+  "solution_resolution": {
+    "description": "Resolución de solución asociada. El LLM usa los pesos como sesgo probabilístico. Ante ambigüedad, Expertis / Movilsat ERP domina con un 80% del volumen histórico.",
+    "rules": [
+      { "solution": "Expertis / Movilsat ERP", "weight": 0.80, "priority": 1, "keywords_any": ["expertis", "movilsat erp", "erp", "el programa", "el sistema"] },
+      { "solution": "Movilsat", "weight": 0.05, "priority": 2, "keywords_any": ["movilsat", "app móvil", "app movil", "tablet", "smartphone", "parte movilsat"] },
+      { "solution": "Sistemas", "weight": 0.05, "priority": 3, "keywords_any": ["servidor", "vpn", "red", "conexión", "conexion", "instalación", "instalacion", "equipo nuevo", "puesto"] },
+      { "solution": "Portal OT", "weight": 0.02, "priority": 4, "keywords_any": ["portal ot", "portal de ot", "portal ordenes", "portal órdenes"] },
+      { "solution": "App Fichajes / Gastos / Vacaciones", "weight": 0.02, "priority": 5, "keywords_any": ["fichajes", "fichar", "gastos", "vacaciones app", "app fichajes"] },
+      { "solution": "Soluciones IA", "weight": 0.02, "priority": 6, "keywords_any": ["inteligencia artificial", "ia", "agente", "automatización ia", "automatizacion ia"] },
+      { "solution": "Planificador Inteligente", "weight": 0.01, "priority": 7, "keywords_any": ["planificador inteligente", "planificador", "rutas", "optimización de rutas"] },
+      { "solution": "Business Intelligence", "weight": 0.01, "priority": 8, "keywords_any": ["business intelligence", "bi", "cuadro de mando", "dashboard bi", "power bi"] },
+      { "solution": "Comercial", "weight": 0.01, "priority": 9, "keywords_any": ["presupuesto cobertec", "contratar", "nueva licencia", "nuevo módulo", "precio cobertec"] },
+      { "solution": "Resto", "weight": 0.01, "priority": 10, "keywords_any": [] }
+    ],
+    "default": "Expertis / Movilsat ERP"
+  },
+
+  "mapping_contract": {
+    "description": "Contrato de salida del mapping. El clasificador semántico nunca debe enviar labels sin normalizar a Redmine.",
+    "required_outputs": ["solution_associated", "block", "module", "need"],
+    "optional_outputs": ["expertis_module"],
+    "rules": [
+      "Si la solución asociada es Expertis / Movilsat ERP, intentar resolver también expertis_module.",
+      "Si la solución asociada no es Expertis / Movilsat ERP, expertis_module debe valer no_aplica.",
+      "Los dominios semánticos no son valores finales válidos de Redmine; deben traducirse siempre a block/module/need.",
+      "Aplicar normalization_aliases antes de cualquier validación estricta."
+    ]
+  },
+
+  "expertis_module_resolution": {
+    "description": "Solo aplica cuando la solución asociada es Expertis / Movilsat ERP.",
+    "applies_when_solution": "Expertis / Movilsat ERP",
+    "priority_hint": ["proyectos", "gmao", "logistica", "financiero", "general", "comercial", "crm", "calidad", "rrhh", "fabricacion"],
+    "residual_modules": ["crm", "calidad", "rrhh", "fabricacion"],
+    "rules": [
+      { "module_expertis": "gmao", "keywords_any": ["gmao", "ot", "orden de trabajo", "parte de trabajo", "detalle de ot", "listadoot", "otmov", "listado otmov", "gestor", "gestores", "reglamento", "reglamentos", "revisión", "revisiones", "revisiones programadas", "contrato de mantenimiento", "mantenimiento preventivo", "mantenimiento correctivo", "activo", "activos"] },
+      { "module_expertis": "proyectos", "keywords_any": ["obra", "obras", "proyecto", "proyectos", "presupuesto de obra", "presupuestos de obra", "análisis de proyectos", "analisis de proyectos", "certificación", "certificaciones", "compra de obra", "compras de obra", "partida", "partidas", "medición", "mediciones"] },
+      { "module_expertis": "logistica", "keywords_any": ["ventas", "compras", "stock", "stocks", "almacén", "almacen", "pedido de venta", "pedido de compra", "pedidos", "expedición", "expediciones", "albarán", "albaranes", "facturación de venta", "facturacion de venta", "facturación de compra", "facturacion de compra", "recepción", "recepciones", "almacenes"] },
+      { "module_expertis": "financiero", "keywords_any": ["factura de venta", "factura de compra", "facturas de venta", "facturas de compra", "contabilización", "contabilizacion", "contabilizar", "cobro", "cobros", "pago", "pagos", "impuesto", "impuestos", "contabilidad", "sepa", "inmovilizado", "sii", "verifactu", "tesorería", "tesoreria", "remesa", "asiento", "asientos"] },
+      { "module_expertis": "general", "keywords_any": ["cliente", "clientes", "artículo", "articulos", "artículo", "articulo", "proveedor", "proveedores", "rastreador de precios", "rastreador", "precio", "precios", "ficha cliente", "ficha proveedor", "catálogo", "catalogo"] },
+      { "module_expertis": "comercial", "keywords_any": ["oferta comercial", "ofertas comerciales", "oferta", "ofertas", "propuesta comercial", "presupuesto comercial"] },
+      { "module_expertis": "crm", "keywords_any": ["crm", "oportunidad", "oportunidades", "seguimiento comercial", "cliente potencial", "contacto comercial"] },
+      { "module_expertis": "calidad", "keywords_any": ["calidad", "no conformidad", "auditoría", "auditoria", "incidencia de calidad"] },
+      { "module_expertis": "rrhh", "keywords_any": ["rrhh", "recursos humanos", "empleado", "empleados", "nómina", "nomina", "vacaciones rrhh"] },
+      { "module_expertis": "fabricacion", "keywords_any": ["fabricación", "fabricacion", "orden de fabricación", "orden de fabricacion", "producción", "produccion", "parte de fabricación"] }
+    ],
+    "default": "general"
   }
 }

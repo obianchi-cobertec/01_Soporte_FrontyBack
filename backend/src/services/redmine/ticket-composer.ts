@@ -1,12 +1,5 @@
 import type { ClassificationResponse, IntakePayload } from '../../types.js';
 
-// =============================================================================
-// Ticket Composer — Bloque 6
-//
-// Genera el asunto y la descripción enriquecida del ticket para Redmine.
-// Sigue las reglas de composición definidas en la especificación.
-// =============================================================================
-
 const NATURE_LABELS: Record<string, string> = {
   incidencia_error: 'ERROR',
   consulta_funcional: 'CONSULTA',
@@ -20,32 +13,41 @@ const NATURE_LABELS: Record<string, string> = {
   ambiguo: 'REVISIÓN',
 };
 
-const DOMAIN_LABELS: Record<string, string> = {
-  funcionamiento_general: 'General',
-  compras: 'Compras',
-  ventas_facturacion: 'Ventas y facturación',
-  almacen_stocks: 'Almacén y stocks',
-  gmao: 'GMAO',
-  movilsat: 'Movilsat',
-  portal_ot: 'Portal OT',
-  presupuestos_proyectos: 'Presupuestos y proyectos',
+const EXPERTIS_MODULE_LABELS: Record<string, string> = {
+  general: 'General',
   financiero: 'Financiero',
+  logistica: 'Logística',
+  comercial: 'Comercial',
+  proyectos: 'Proyectos',
+  gmao: 'GMAO',
   crm: 'CRM',
-  ofertas_comerciales: 'Ofertas comerciales',
-  planificador_inteligente: 'Planificador inteligente',
-  app_fichajes: 'App fichajes',
-  servidor_sistemas: 'Servidor / sistemas',
-  tarifas_catalogos: 'Tarifas y catálogos',
-  dominio_no_claro: 'No clasificado',
+  calidad: 'Calidad',
+  rrhh: 'RRHH',
+  fabricacion: 'Fabricación',
+  no_aplica: '',
+  no_claro: '',
 };
 
 /**
- * Genera el asunto del ticket según la regla de composición:
- * [NATURALEZA] Dominio — Resumen breve (máx 80 caracteres en la parte libre)
- *
- * Si la confianza es baja o el caso está fuera de mapa:
- * [REVISIÓN] — Resumen breve
+ * Resuelve el área legible para el asunto a partir de solution_associated
+ * y expertis_module. Ejemplos:
+ *   Expertis / Movilsat ERP + gmao     → "Expertis — GMAO"
+ *   Expertis / Movilsat ERP + general  → "Expertis — General"
+ *   Movilsat                           → "Movilsat"
+ *   Portal OT                          → "Portal OT"
  */
+function resolveAreaLabel(classification: ClassificationResponse): string {
+  const solution = classification.solution_associated;
+
+  if (solution === 'Expertis / Movilsat ERP') {
+    const mod = classification.expertis_module;
+    const modLabel = mod ? (EXPERTIS_MODULE_LABELS[mod] ?? '') : '';
+    return modLabel ? `Expertis — ${modLabel}` : 'Expertis';
+  }
+
+  return solution;
+}
+
 export function composeSubject(classification: ClassificationResponse): string {
   const needsReview =
     classification.confidence === 'low' ||
@@ -58,21 +60,22 @@ export function composeSubject(classification: ClassificationResponse): string {
   }
 
   const natureLabel = NATURE_LABELS[classification.classification.nature] ?? 'OTRO';
-  const domainLabel = DOMAIN_LABELS[classification.classification.domain] ?? 'Otro';
+  const areaLabel = resolveAreaLabel(classification);
   const summary = truncate(classification.summary, 60);
 
-  return `[${natureLabel}] ${domainLabel} — ${summary}`;
+  return `[${natureLabel}] ${areaLabel} — ${summary}`;
 }
 
-/**
- * Genera la descripción enriquecida del ticket.
- * Incluye texto original, resumen IA, clasificación, datos del caso y contexto.
- */
 export function composeDescription(
   intake: IntakePayload,
   classification: ClassificationResponse
 ): string {
   const attachmentCount = intake.attachments.length;
+  const moduleLine = classification.expertis_module &&
+    classification.expertis_module !== 'no_aplica' &&
+    classification.expertis_module !== 'no_claro'
+    ? `\n- Módulo Expertis: ${EXPERTIS_MODULE_LABELS[classification.expertis_module] ?? classification.expertis_module}`
+    : '';
 
   return `## Descripción original del cliente
 
@@ -85,7 +88,7 @@ ${classification.summary}
 ## Clasificación propuesta
 
 - Naturaleza: ${classification.classification.nature}
-- Dominio: ${classification.classification.domain}
+- Solución: ${classification.solution_associated}${moduleLine}
 - Objeto: ${classification.classification.object}
 - Acción: ${classification.classification.action}
 - Bloque: ${classification.redmine_mapping.block}
@@ -111,10 +114,8 @@ ${classification.summary}
 }
 
 function truncate(text: string, maxLen: number): string {
-  // Tomar solo la primera frase si hay varias
   const firstSentence = text.split(/[.!?]\s/)[0];
   const base = firstSentence.length <= maxLen ? firstSentence : text;
-
   if (base.length <= maxLen) return base;
   return base.slice(0, maxLen - 3) + '...';
 }

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(xargs ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s http://localhost:3001/api/metrics)",
+      "Bash(curl:*)",
+      "Bash(npm run:*)",
+      "Bash(echo \"PID=$!\")"
+    ]
+  }
+}
