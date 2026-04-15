@@ -1,34 +1,38 @@
 /* =============================================================================
-   Cobertec Intake — Estilos v2
-   Diseño limpio, profesional y funcional.
+   Cobertec Intake — Estilos v3
+   Diseño alineado con marca Cobertec. Responsive mobile-first.
    ============================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
 :root {
-  --color-bg: #f4f5f7;
+  --color-bg: #f0f4f8;
   --color-surface: #ffffff;
-  --color-text: #1c1c28;
-  --color-text-secondary: #6e7181;
-  --color-text-hint: #9ea2b0;
-  --color-primary: #3b5bdb;
-  --color-primary-hover: #364fc7;
-  --color-primary-light: #edf2ff;
-  --color-border: #e2e4ea;
-  --color-border-light: #eef0f4;
-  --color-error: #e03131;
-  --color-error-bg: #fff1f1;
-  --color-success: #2b8a3e;
-  --color-success-bg: #ebfbee;
-  --color-warning-bg: #fff9db;
-  --color-warning-text: #e67700;
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow: 0 2px 8px rgba(0,0,0,0.06);
-  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --color-text: #1a2332;
+  --color-text-secondary: #556270;
+  --color-text-hint: #8d99a8;
+  --color-primary: #0891b2;
+  --color-primary-hover: #0e7490;
+  --color-primary-dark: #155e75;
+  --color-primary-light: #ecfeff;
+  --color-primary-glow: rgba(8, 145, 178, 0.12);
+  --color-border: #dce3eb;
+  --color-border-light: #e8edf2;
+  --color-error: #dc2626;
+  --color-error-bg: #fef2f2;
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-warning-bg: #fffbeb;
+  --color-warning-text: #d97706;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+  --shadow-primary: 0 4px 14px rgba(8, 145, 178, 0.25);
   --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --transition: 0.2s ease;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,7 +45,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Layout */
+/* =============================================================================
+   Layout
+   ============================================================================= */
+
 .app-container {
   min-height: 100vh;
   display: flex;
@@ -51,14 +58,24 @@ body {
 .app-header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-light);
-  padding: 0.875rem 2rem;
+  padding: 0 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
   box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-header > div {
+  width: 100%;
 }
 
 .app-header h1 {
   font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-text);
 }
 
@@ -68,9 +85,9 @@ body {
 
 .app-main {
   flex: 1;
-  max-width: 580px;
+  max-width: 600px;
   width: 100%;
-  margin: 2.5rem auto;
+  margin: 2rem auto;
   padding: 0 1.25rem;
 }
 
@@ -82,7 +99,30 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Card wrapper for main content */
+/* =============================================================================
+   Header — user info, nav, logout
+   ============================================================================= */
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.header-user {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =============================================================================
+   Card wrapper
+   ============================================================================= */
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
@@ -91,10 +131,241 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Intake Form */
+/* =============================================================================
+   Login Page
+   ============================================================================= */
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+}
+
+.login-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-card h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+}
+
+.login-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.form-field input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.form-field input::placeholder {
+  color: var(--color-text-hint);
+}
+
+.form-field input:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-hint);
+}
+
+.login-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.875rem;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.login-help {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-hint);
+  margin-top: 1.75rem;
+}
+
+/* =============================================================================
+   Company Selector
+   ============================================================================= */
+
+.company-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.company-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.company-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.company-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.company-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.company-logout {
+  display: block;
+  margin: 1.75rem auto 0;
+  font-size: 0.8rem;
+}
+
+/* =============================================================================
+   Buttons
+   ============================================================================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+  border-radius: var(--radius);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 2rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-top: 1.25rem;
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: 0 6px 20px rgba(8, 145, 178, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 2rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-top: 1.25rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* =============================================================================
+   Intake Form
+   ============================================================================= */
+
 .intake-form h2 {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 0.375rem;
 }
@@ -116,14 +387,14 @@ body {
   line-height: 1.55;
   resize: vertical;
   min-height: 140px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--transition), box-shadow var(--transition);
   background: var(--color-surface);
 }
 
 .intake-form textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .intake-form textarea::placeholder {
@@ -143,7 +414,10 @@ body {
   margin-top: 0.25rem;
 }
 
-/* Attachments */
+/* =============================================================================
+   Attachments
+   ============================================================================= */
+
 .attachments-section {
   margin: 1.25rem 0;
 }
@@ -158,7 +432,7 @@ body {
   cursor: pointer;
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-  transition: all 0.2s;
+  transition: all var(--transition);
 }
 
 .file-label:hover {
@@ -202,54 +476,13 @@ body {
 
 .remove-file:hover { color: var(--color-error); }
 
-/* Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 2rem;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius);
-  font-family: var(--font);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  margin-top: 1.25rem;
-}
+/* =============================================================================
+   Confirmation View
+   ============================================================================= */
 
-.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
-.btn-primary:active:not(:disabled) { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 2rem;
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-family: var(--font);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 1.25rem;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-/* Confirmation View */
 .confirmation-view h2 {
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1.25rem;
   letter-spacing: -0.02em;
 }
@@ -272,7 +505,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-hint);
+  color: var(--color-primary);
   margin-bottom: 0.25rem;
 }
 
@@ -293,10 +526,13 @@ body {
   margin-top: 1.5rem;
 }
 
-/* Dynamic Questions */
+/* =============================================================================
+   Dynamic Questions
+   ============================================================================= */
+
 .questions-view h2 {
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.375rem;
   letter-spacing: -0.02em;
 }
@@ -348,7 +584,7 @@ body {
 .question-option.selected {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   font-weight: 500;
 }
 
@@ -360,7 +596,7 @@ body {
   font-family: var(--font);
   font-size: 0.9rem;
   margin-top: 0.5rem;
-  transition: border-color 0.2s;
+  transition: border-color var(--transition);
 }
 
 .question-freetext:focus {
@@ -368,7 +604,10 @@ body {
   border-color: var(--color-primary);
 }
 
-/* Ticket Result */
+/* =============================================================================
+   Ticket Result
+   ============================================================================= */
+
 .ticket-result {
   text-align: center;
   padding: 1.5rem 0;
@@ -390,7 +629,7 @@ body {
 
 .ticket-number {
   font-size: 1.75rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.03em;
   margin: 0.375rem 0 0.75rem;
 }
@@ -413,7 +652,10 @@ body {
   line-height: 1.5;
 }
 
-/* Error Display */
+/* =============================================================================
+   Error Display
+   ============================================================================= */
+
 .error-display {
   text-align: center;
   padding: 2rem 1.5rem;
@@ -446,7 +688,10 @@ body {
   margin-bottom: 1.25rem;
 }
 
-/* Loading */
+/* =============================================================================
+   Loading
+   ============================================================================= */
+
 .loading {
   text-align: center;
   padding: 3.5rem 0;
@@ -469,7 +714,10 @@ body {
   font-size: 0.9rem;
 }
 
-/* Impact badge */
+/* =============================================================================
+   Impact Badge
+   ============================================================================= */
+
 .impact-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -483,7 +731,10 @@ body {
   color: var(--color-warning-text);
 }
 
-/* Step indicator */
+/* =============================================================================
+   Step Indicator
+   ============================================================================= */
+
 .step-indicator {
   display: flex;
   align-items: center;
@@ -510,7 +761,10 @@ body {
   background: var(--color-success);
 }
 
-/* Navigation */
+/* =============================================================================
+   Navigation
+   ============================================================================= */
+
 .nav-link {
   background: none;
   border: none;
@@ -520,11 +774,15 @@ body {
   cursor: pointer;
   padding: 0;
   transition: color 0.15s;
+  white-space: nowrap;
 }
 
 .nav-link:hover { color: var(--color-primary); }
 
-/* Dashboard */
+/* =============================================================================
+   Dashboard
+   ============================================================================= */
+
 .dashboard h2 {
   letter-spacing: -0.02em;
 }
@@ -554,7 +812,7 @@ body {
 
 .metric-value {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 
@@ -616,3 +874,360 @@ body {
   display: inline-block;
 }
 
+/* =============================================================================
+   Responsive — Tablet (max 768px)
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 1.25rem;
+    height: 56px;
+  }
+
+  .app-header h1 {
+    font-size: 1rem;
+  }
+
+  .app-main {
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+    border-radius: var(--radius);
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+    margin: 0 0.5rem;
+  }
+
+  .login-card h2 {
+    font-size: 1.3rem;
+  }
+
+  .header-right {
+    gap: 0.75rem;
+  }
+
+  .header-user {
+    max-width: 160px;
+    font-size: 0.75rem;
+  }
+
+  .confirmation-actions {
+    flex-direction: column;
+  }
+
+  .confirmation-actions .btn-primary,
+  .confirmation-actions .btn-secondary {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ticket-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .ticket-row-meta {
+    width: 100%;
+  }
+}
+
+/* =============================================================================
+   Responsive — Mobile (max 480px)
+   ============================================================================= */
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0 1rem;
+    height: 52px;
+  }
+
+  .app-header h1 {
+    font-size: 0.95rem;
+  }
+
+  .app-main {
+    margin: 1rem auto;
+    padding: 0 0.75rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .login-card {
+    padding: 1.75rem 1.25rem;
+    box-shadow: var(--shadow);
+  }
+
+  .login-card h2 {
+    font-size: 1.2rem;
+  }
+
+  .login-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .form-field input {
+    padding: 0.7rem 0.875rem;
+    font-size: 1rem; /* evita zoom en iOS */
+  }
+
+  .header-right {
+    gap: 0.5rem;
+  }
+
+  .header-user {
+    display: none; /* en móvil no cabe — se ve con /me */
+  }
+
+  .nav-link {
+    font-size: 0.75rem;
+  }
+
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    padding: 0.875rem;
+    font-size: 1rem;
+  }
+
+  .company-btn {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+
+  .intake-form textarea {
+    min-height: 120px;
+    font-size: 1rem;
+  }
+
+  .intake-form h2,
+  .confirmation-view h2,
+  .questions-view h2 {
+    font-size: 1.1rem;
+  }
+
+  .step-indicator {
+    margin-bottom: 1.25rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-number {
+    font-size: 1.4rem;
+  }
+}
+
+/* =============================================================================
+   Touch targets — mejora usabilidad táctil
+   ============================================================================= */
+
+@media (pointer: coarse) {
+  .btn-primary, .btn-secondary, .company-btn, .question-option {
+    min-height: 48px;
+  }
+
+  .nav-link {
+    padding: 0.5rem;
+    margin: -0.5rem;
+  }
+
+  .file-label {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ─── Cost warning ───────────────────────────────────────── */
+
+.cost-warning {
+  background: var(--color-warning-bg);
+  border: 1px solid #f59e0b33;
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+  text-align: center;
+}
+
+.cost-warning-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+}
+
+.cost-warning-text {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.cost-warning-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.cost-warning-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+/* ─── Header nav refactor ─────────────────────────────── */
+
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.header-user {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding: 0 0.5rem;
+  cursor: default;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+  margin: 0 0.35rem;
+  opacity: 0.5;
+}
+
+.nav-link {
+  background: none;
+  border: none;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.nav-link-active {
+  color: var(--color-primary) !important;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent) !important;
+}
+
+.nav-link-logout {
+  color: var(--color-error, #ef4444);
+  opacity: 0.7;
+}
+
+.nav-link-logout:hover {
+  background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent) !important;
+  color: var(--color-error, #ef4444) !important;
+  opacity: 1;
+}
+
+/* ─── Superadmin company picker ───────────────────────── */
+
+.superadmin-company-picker {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.superadmin-company-picker h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 1.25rem;
+}
+
+.company-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.company-picker-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.875rem 1.25rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.company-picker-btn:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+}
+
+.superadmin-company-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.superadmin-company-tag strong {
+  color: var(--color-text);
+}
+
+.superadmin-company-change {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+}

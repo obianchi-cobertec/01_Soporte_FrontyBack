@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ClassifiedResponse } from '../types';
 
 interface ConfirmationViewProps {
@@ -30,8 +31,13 @@ const DOMAIN_LABELS: Record<string, string> = {
   dominio_no_claro: 'Pendiente de clasificar',
 };
 
+/** Necesidades que implican coste para el cliente */
+const BILLABLE_NEEDS = new Set(['campo', 'sacarcampo', 'infor', 'modificar-informe']);
+
 export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: ConfirmationViewProps) {
   const areaLabel = DOMAIN_LABELS[data.display.estimated_area] ?? data.display.estimated_area;
+  const isBillable = data.display.need != null && BILLABLE_NEEDS.has(data.display.need);
+  const [costAccepted, setCostAccepted] = useState(false);
 
   return (
     <div className="confirmation-view">
@@ -67,12 +73,35 @@ export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: 
         )}
       </div>
 
+      {isBillable && (
+        <div className="cost-warning">
+          <div className="cost-warning-icon">€</div>
+          <p className="cost-warning-text">
+            Este tipo de petición tiene un coste mínimo de <strong>120 €</strong>. 
+            En caso de que el precio sea mayor, se lo indicaremos para su aprobación.
+          </p>
+          <label className="cost-warning-check">
+            <input
+              type="checkbox"
+              checked={costAccepted}
+              onChange={(e) => setCostAccepted(e.target.checked)}
+              disabled={disabled}
+            />
+            Estoy de acuerdo en crear la incidencia
+          </label>
+        </div>
+      )}
+
       <p style={{ fontSize: '0.85rem', color: 'var(--color-text-hint)', marginTop: '1rem' }}>
         Si algo no es correcto, puedes editar tu descripción.
       </p>
 
       <div className="confirmation-actions">
-        <button onClick={onConfirm} disabled={disabled} className="btn-primary">
+        <button
+          onClick={onConfirm}
+          disabled={disabled || (isBillable && !costAccepted)}
+          className="btn-primary"
+        >
           Crear incidencia
         </button>
         <button onClick={onEdit} disabled={disabled} className="btn-secondary">

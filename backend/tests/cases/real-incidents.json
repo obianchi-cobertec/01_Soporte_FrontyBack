@@ -1,0 +1,68 @@
+[
+  {
+    "id": "01-informe-fotos-gmao",
+    "description": "Buenas tardes,\n\nHe probado el informe con fotos que se añadió en expertis hace un tiempo con una orden de trabajo pero no me ha funcionado.\nSe trata de la OT25-00427. Tiene fotos adjuntas en la OT.\n\nMuchas gracias de antemano.\n\nUn saludo,\nIsabel",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "02-oferta-tasa-no-imprime",
+    "description": "Buenos días,\n\nAdjunto envío oferta de venta que estamos haciendo a un cliente.\n\nComo podéis ver en la captura de pantalla, en la oferta incluimos un gas, y automáticamente genera la tasa, pero al imprimir la oferta, la Tasa no aparece.\n\nSin embargo si imprimimos la oferta sin desglose, sale el importe incluyendo la tasa, pero no aparecen los conceptos.\n\nComo tenemos que pasar oferta al cliente vamos a modificar la oferta y a utilizar el código 00 para poder realizar la oferta correctamente, pero por favor mirar por que no podemos hacerla bien utilizando los códigos correctos.\n\nUn saludo",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "03-anticipo-certificaciones-obras",
+    "description": "Buenos días,\n\nTenemos una duda que no sabemos cómo resolver. Hasta donde nosotros sabemos se puede facturar de tres maneras en las obras, facturación por hitos, certificaciones y expediciones. Dado que normalmente suele realizarse una factura anticipada al momento de la firma y esto conlleva que se realice una factura antes de las certificaciones, ¿hay alguna manera automática de que se devuelva el anticipo proporcionalmente en las posteriores certificaciones? Actualmente no sabemos como resolverlo, estamos probando a realizar el anticipo como un hito, pero luego no se resta ese hito en las certificaciones. ¿Tenemos que marcar algo para que salga una línea de devolución proporcional del anticipo en las certificaciones?\n\nQuedamos a la espera de vuestras aclaraciones.\nUn saludo.",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "04-stock-negativo-no-actualiza",
+    "description": "buenos días,\nhemos recibido material que se ha enviado antes de dar entrada en el almacén (se quedaría en stock negativo)\ncuando doy de entrada ese material, no se actualiza. quiero decir, si he sacado 100 unid. y he dado de entrada 300 unid. el stock tendría que poner 200 unid.\ny lo que realmente pone son las 300 unid.\npor favor, lo puedes mirar o decir como corregirlo.\nhemos mirado los movimientos y esos que se han realizado con stock negativo no aparecen.\n\ngracias,",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "05-gmao-calderas-revisiones",
+    "description": "Buenos días,\n\nSoy David Cantero de Clibur.\nOs escribo porque solo me sale una revisión de la gestión energética de las calderas en el GMAO.\nDa igual que haya 1 caldera o 6, que solo sale 1.\nEsto, en 2022 que empezamos, fue bien.\nEn 2023 también fue bien.\nPero en 2024 dio problemas. Me dijisteis que estaban los reglamentos mal hecho. Y me rehicisteis los reglamentos de Gestión Energética de Calderas vosotros.\nHa estado bien todo 2024, pero al renovar en 2025, algo no está bien.\nLa primera revisión la de la caldera número 1 de cada revisión, pone que el inicio es un año entre 2028 y 2034 (en cada mantenimiento sale uno). Pero esta revisión si que se genera el informe.\nLas demás revisiones de gestión energéticas ponen inicio en 2024 pero no se generan.\n\nOs mando el ejemplo de un activo. Os mando archivos con captura de los reglamentos anuales, otros con las revisiones anuales asociadas a esos reglamentos, y otro con las revisiones que ha generado el programa en enero. Veréis que se ha generado en enero la OT asociada al reglamento GRV00012, pero no está ni el GRV00013, ni el GRV00014, ni el GRV00015.\n\nEchádmelo un vistazo y me decís.\n\nMuchas gracias.\n\nUn saludo,\nDavid Cantero",
+    "company_name": "Clibur",
+    "expected": {}
+  },
+  {
+    "id": "06-texto-defecto-facturas-electronicas",
+    "description": "Buenos días,\n\nNecesitaríamos cambiar el texto que sale por defecto a la hora de enviar las facturas electrónicas a través de la dirección facturas@beloki.org.\n\nEl texto que podría aparecer es:\n\n\"Buenos días,\n\nA continuación adjuntamos factura emitida.\n\nUn saludo\"",
+    "company_name": "Beloki",
+    "expected": {}
+  },
+  {
+    "id": "07-certificado-electronico-sii",
+    "description": "Buenos días,\n\nSe ha renovado el certificado electrónico de la empresa y ahora cuando voy a subir las facturas al SII me da un error, no sé si tengo que actualizarlo en algún sitio del expertis también.\n\nGracias!\n\nIris",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "08-computar-tiempo-proyecto",
+    "description": "Buenos días, como puedo computar el tiempo dedicado a cada proyecto/presupuesto, facturación de compras y ventas, entre otros, es posible?",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "09-error-pdf-factura-electronica",
+    "description": "Hola\n\nIntentamos enviar un factura electrónica y nos sale continuamente un error de generación de documento pdf, he cerrado y vuelto a abrir el programa pero el error persiste, ¿podeis indicarme a qué se debe?\n\nAdjunto captura\n\nGracias y saludos,",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "10-permisos-centro-gestion",
+    "description": "Me surge la siguiente duda...el responsable del departamento X tiene acceso al módulo logística para llevar un tracking de sus facturas y compras. Sin embargo, puede ver los datos de todos los demás compañeros y de la compañía.\n\nExiste la manera de capar el acceso de un trabajador a sólo el centro de gestión al que pertenece?\n\nGracias",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  },
+  {
+    "id": "11-albaran-abono-stock",
+    "description": "TENEMOS UN ALBARÁN DE COMPRA (ABONO) DE UN MATERIAL YA IMPUTADO A UNA OBRA. METEMOS ESE ALBARAN, DESDE CONTROL LO IMPUTAMOS PERO NO PODEMOS ACTUALIZAR STOCK.",
+    "company_name": "Cliente Cobertec",
+    "expected": {}
+  }
+]

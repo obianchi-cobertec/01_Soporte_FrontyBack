@@ -42,25 +42,26 @@ export class RedmineClient {
   private async uploadAttachments(
     attachments: Attachment[]
   ): Promise<Array<{ token: string; filename: string; content_type: string }>> {
-    const results = [];
-    for (const att of attachments) {
-      const buffer = Buffer.from(att.data, 'base64');
-      const response = await fetch(`${this.baseUrl}/uploads.json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'X-Redmine-API-Key': this.apiKey,
-        },
-        body: buffer,
-      });
-      if (!response.ok) {
-        console.error(`[Redmine] Error subiendo adjunto ${att.filename}: ${response.status}`);
-        continue;
-      }
-      const data = await response.json() as { upload: { token: string } };
-      results.push({ token: data.upload.token, filename: att.filename, content_type: att.content_type });
-    }
-    return results;
+    const uploads = await Promise.all(
+      attachments.map(async (att) => {
+        const buffer = Buffer.from(att.data, 'base64');
+        const response = await fetch(`${this.baseUrl}/uploads.json`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Redmine-API-Key': this.apiKey,
+          },
+          body: buffer,
+        });
+        if (!response.ok) {
+          console.error(`[Redmine] Error subiendo adjunto ${att.filename}: ${response.status}`);
+          return null;
+        }
+        const data = await response.json() as { upload: { token: string } };
+        return { token: data.upload.token, filename: att.filename, content_type: att.content_type };
+      })
+    );
+    return uploads.filter((u): u is NonNullable<typeof u> => u !== null);
   }
 
   private buildIssuePayload(
@@ -80,7 +81,8 @@ export class RedmineClient {
       ?? '__PENDIENTE__';
 
     const assigneeId = classification.suggested_assignee
-      ?? mapping.redmine_defaults.default_assignee_id;
+      ?? mapping.redmine_defaults.default_assignee_id
+      ?? null;
 
     const customFields = [
       {

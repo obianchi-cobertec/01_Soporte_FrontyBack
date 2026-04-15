@@ -1,5 +1,5 @@
 {
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Mapeo real de taxonomía intermedia a solución asociada, módulo Expertis, bloques, módulos y necesidades de Redmine — Cobertec",
 
   "need_resolution": {
@@ -50,7 +50,7 @@
     "movilsat": "movilsat",
     "portal_ot": "portalot",
     "presupuestos_proyectos": "obras",
-    "financiero": "general",
+    "financiero": "financiero",
     "crm": "crm",
     "ofertas_comerciales": "general",
     "planificador_inteligente": "pi",
@@ -59,7 +59,7 @@
     "tarifas_catalogos": "tarifas",
     "usuarios_accesos": "general",
     "informes_documentos": "general",
-    "sesiones_conectividad": "servidor",
+    "sesiones_conectividad": "general",
     "solucionesia": "solucionesia",
     "dominio_no_claro": "general"
   },
@@ -82,21 +82,21 @@
     "tarifas_catalogos": "*",
     "usuarios_accesos": "accesos",
     "informes_documentos": "*",
-    "sesiones_conectividad": "sesiones",
+    "sesiones_conectividad": "sesionesgeneral",
     "solucionesia": "*",
     "dominio_no_claro": "*"
   },
 
   "special_module_rules": [
-    { "domain": "servidor_sistemas", "nature": "rendimiento_bloqueo", "module": "sesiones" },
-    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "object_contains": "licencia", "module": "sesiones" },
-    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "action_contains": "sesión", "module": "sesiones" },
+    { "domain": "servidor_sistemas", "nature": "rendimiento_bloqueo", "module": "sesionesgeneral", "_comment": "Bloqueo en servidor con síntoma de sesión → sesiones generales" },
+    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "object_contains": "licencia", "module": "sesionesgeneral" },
+    { "domain": "servidor_sistemas", "nature": "usuario_acceso", "action_contains": "sesión", "module": "sesionesgeneral" },
     { "domain": "funcionamiento_general", "nature": "usuario_acceso", "module": "accesos" },
     { "domain": "usuarios_accesos", "module": "accesos" },
     { "domain": "funcionamiento_general", "nature": "instalacion_entorno", "module": "instalarprog" },
     { "domain": "servidor_sistemas", "nature": "instalacion_entorno", "module": "conexion" },
     { "domain": "funcionamiento_general", "nature": "rendimiento_bloqueo", "module": "sesionesgeneral" },
-    { "domain": "sesiones_conectividad", "module": "sesiones" },
+    { "domain": "sesiones_conectividad", "module": "sesionesgeneral" },
     { "domain": "funcionamiento_general", "nature": "importacion_exportacion", "module": "exportacion" },
     { "domain": "informes_documentos", "nature": "importacion_exportacion", "module": "exportacion" },
     { "domain": "funcionamiento_general", "nature": "formacion_duda_uso", "module": "modulosnew" },
@@ -137,7 +137,8 @@
   "redmine_defaults": {
     "tracker_id": "__PENDIENTE__",
     "status_id_initial": "__PENDIENTE__",
-    "default_assignee": "soporte_errores_expertis"
+    "default_assignee": "soporte_errores_expertis",
+    "default_assignee_id": null
   },
 
   "custom_fields": {
@@ -259,7 +260,7 @@
       { "module_expertis": "gmao", "keywords_any": ["gmao", "ot", "orden de trabajo", "parte de trabajo", "detalle de ot", "listadoot", "otmov", "listado otmov", "gestor", "gestores", "reglamento", "reglamentos", "revisión", "revisiones", "revisiones programadas", "contrato de mantenimiento", "mantenimiento preventivo", "mantenimiento correctivo", "activo", "activos"] },
       { "module_expertis": "proyectos", "keywords_any": ["obra", "obras", "proyecto", "proyectos", "presupuesto de obra", "presupuestos de obra", "análisis de proyectos", "analisis de proyectos", "certificación", "certificaciones", "compra de obra", "compras de obra", "partida", "partidas", "medición", "mediciones"] },
       { "module_expertis": "logistica", "keywords_any": ["ventas", "compras", "stock", "stocks", "almacén", "almacen", "pedido de venta", "pedido de compra", "pedidos", "expedición", "expediciones", "albarán", "albaranes", "facturación de venta", "facturacion de venta", "facturación de compra", "facturacion de compra", "recepción", "recepciones", "almacenes"] },
-      { "module_expertis": "financiero", "keywords_any": ["factura de venta", "factura de compra", "facturas de venta", "facturas de compra", "contabilización", "contabilizacion", "contabilizar", "cobro", "cobros", "pago", "pagos", "impuesto", "impuestos", "contabilidad", "sepa", "inmovilizado", "sii", "verifactu", "tesorería", "tesoreria", "remesa", "asiento", "asientos"] },
+      { "module_expertis": "financiero", "keywords_any": ["contabilización", "contabilizacion", "contabilizar", "cobro", "cobros", "pago", "pagos", "impuesto", "impuestos", "contabilidad", "sepa", "inmovilizado", "sii", "verifactu", "tesorería", "tesoreria", "remesa", "asiento", "asientos"] },
       { "module_expertis": "general", "keywords_any": ["cliente", "clientes", "artículo", "articulos", "artículo", "articulo", "proveedor", "proveedores", "rastreador de precios", "rastreador", "precio", "precios", "ficha cliente", "ficha proveedor", "catálogo", "catalogo"] },
       { "module_expertis": "comercial", "keywords_any": ["oferta comercial", "ofertas comerciales", "oferta", "ofertas", "propuesta comercial", "presupuesto comercial"] },
       { "module_expertis": "crm", "keywords_any": ["crm", "oportunidad", "oportunidades", "seguimiento comercial", "cliente potencial", "contacto comercial"] },

@@ -7,7 +7,9 @@
       "Bash(curl -s http://localhost:3001/api/metrics)",
       "Bash(curl:*)",
       "Bash(npm run:*)",
-      "Bash(echo \"PID=$!\")"
+      "Bash(echo \"PID=$!\")",
+      "Bash(ls \"D:/0_Soporte/cobertec-intake/\"*.md)",
+      "Bash(ls \"D:/0_Soporte/cobertec-intake/frontend/\"*.md)"
     ]
   }
 }

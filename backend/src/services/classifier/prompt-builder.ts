@@ -26,6 +26,33 @@ export function buildSystemPrompt(): string {
     })
     .join('\n\n');
 
+  // Dominios funcionales
+  const domainValues = taxonomy.domain?.values ?? [];
+  const domainBlock = domainValues
+    .map(d => {
+      const kwPos = d.keywords_positive ?? [];
+      const kwNeg = d.keywords_negative ?? [];
+      const examples = d.examples_positive ?? d.examples ?? [];
+      const examplesNeg = d.examples_negative ?? [];
+      const rules = d.decision_rules ?? [];
+      const confusesWith = d.confusion_with ?? [];
+      let block = `- "${d.id}" (${d.label}): ${d.description}`;
+      if (kwPos.length > 0)
+        block += `\n  Señales positivas: ${kwPos.join(', ')}`;
+      if (kwNeg.length > 0)
+        block += `\n  Señales negativas (NO usar si aparecen): ${kwNeg.join(', ')}`;
+      if (examples.length > 0)
+        block += `\n  ✓ Ejemplos: "${examples.join('", "')}"`;
+      if (examplesNeg.length > 0)
+        block += `\n  ✗ NO es este dominio si: "${examplesNeg.join('", "')}"`;
+      if (rules.length > 0)
+        block += `\n  → Reglas de decisión: ${rules.join(' | ')}`;
+      if (confusesWith.length > 0)
+        block += `\n  ⚠ Se confunde con: ${confusesWith.join(', ')}`;
+      return block;
+    })
+    .join('\n\n');
+
   // Soluciones con pesos
   const solutionRules = mapping.solution_resolution?.rules ?? [];
   const solutionBlock = solutionRules
@@ -91,11 +118,12 @@ export function buildSystemPrompt(): string {
 ## FLUJO DE DECISIÓN (seguir en este orden)
 
 1. Determinar NATURALEZA
-2. Resolver SOLUCIÓN ASOCIADA
-3. Si solución = "Expertis / Movilsat ERP" → resolver MÓDULO EXPERTIS
-4. Resolver BLOQUE y MÓDULO de Redmine
-5. Resolver NECESIDAD (need)
-6. Determinar RESPONSABLE
+2. Determinar DOMINIO FUNCIONAL
+3. Resolver SOLUCIÓN ASOCIADA
+4. Si solución = "Expertis / Movilsat ERP" → resolver MÓDULO EXPERTIS
+5. Resolver BLOQUE y MÓDULO de Redmine
+6. Resolver NECESIDAD (need)
+7. Determinar RESPONSABLE
 
 ---
 
@@ -105,9 +133,24 @@ ${natureBlock}
 
 ---
 
-## PASO 2 — SOLUCIÓN ASOCIADA
+## PASO 2 — DOMINIO FUNCIONAL
+
+Elegir el área funcional donde ocurre el problema. ATENCIÓN: respetar estrictamente las reglas de decisión y señales negativas de cada dominio. Si un dominio tiene señales negativas que coinciden con la descripción, DESCARTARLO.
+
+${domainBlock}
+
+Valor por defecto si no se puede inferir: "dominio_no_claro"
+
+---
+
+## PASO 3 — SOLUCIÓN ASOCIADA
 
 El 80% de las incidencias son de Expertis / Movilsat ERP. Ante ambigüedad, usar ese como valor por defecto.
+
+IMPORTANTE: La solución asociada debe ser COHERENTE con el dominio funcional elegido en el paso 2:
+- Si domain = "gmao" → solution_associated = "Expertis / Movilsat ERP" (GMAO es módulo de Expertis)
+- Si domain = "portal_ot" → solution_associated = "Portal OT"
+- Si domain = "movilsat" → solution_associated = "Movilsat"
 
 ${solutionBlock}
 
@@ -115,7 +158,7 @@ Valor por defecto si no hay señal clara: "${mapping.solution_resolution?.defaul
 
 ---
 
-## PASO 3 — MÓDULO EXPERTIS (solo si solution_associated = "Expertis / Movilsat ERP")
+## PASO 4 — MÓDULO EXPERTIS (solo si solution_associated = "Expertis / Movilsat ERP")
 
 Prioridad de módulos: ${priorityHint}
 
@@ -129,13 +172,13 @@ Si solution_associated ≠ "Expertis / Movilsat ERP" → expertis_module = null
 
 ---
 
-## PASO 4 — BLOQUE Y MÓDULO REDMINE
+## PASO 5 — BLOQUE Y MÓDULO REDMINE
 
 ${domainToBlock}
 
 ---
 
-## PASO 5 — NECESIDAD (NEED)
+## PASO 6 — NECESIDAD (NEED)
 
 ${needCatalogue}
 
@@ -158,7 +201,7 @@ Reglas de resolución:
 
 ---
 
-## PASO 6 — RESPONSABLE
+## PASO 7 — RESPONSABLE
 
 Reglas específicas (menor número = más específica):
 ${topRules}
@@ -178,7 +221,7 @@ Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
   "summary": "string — resumen operativo en español, 1-2 frases, para el técnico receptor",
   "classification": {
     "nature": "string — ID de naturaleza",
-    "domain": "string — dominio funcional inferido",
+    "domain": "string — ID de dominio funcional (del paso 2)",
     "object": "string — objeto afectado",
     "action": "string — acción operativa detectada"
   },
@@ -193,12 +236,12 @@ Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
   "review_status": "auto_ok | review_recommended | ambiguous | out_of_map | human_required",
   "suggested_priority": "normal | high | urgent",
   "suggested_assignee": "string — rol funcional id según tabla (ej: soporte_errores_expertis, gmao_formacion...)",
-  "reasoning": "string — solución elegida y por qué, módulo Expertis si aplica, need aplicado, regla de asignación usada"
+  "reasoning": "string — dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada"
 }
 
 ## REGLAS DE CONFIANZA
 
-- confidence = "high": naturaleza, solución, módulo Expertis y need todos claros.
+- confidence = "high": naturaleza, dominio, solución, módulo Expertis y need todos claros.
 - confidence = "medium": algún elemento ambiguo pero clasificación probable.
 - confidence = "low": información insuficiente.
 - review_status = "auto_ok" solo si confidence = "high".
@@ -211,7 +254,7 @@ Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
 - Siempre devuelve TODOS los campos.
 - suggested_assignee NUNCA puede ser null — usa "${defaultAssignee}" (${defaultRolNombre}) si no hay regla.
 - No inventes información que no esté en la descripción.
-- reasoning debe mencionar: solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada.`;
+- reasoning debe mencionar: dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada.`;
 }
 
 export function buildUserPrompt(request: ClassificationRequest): string {

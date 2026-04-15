@@ -806,34 +806,45 @@
         ]
       },
       {
-        "id": "gmao",
-        "label": "GMAO",
-        "description": "Órdenes de trabajo, mantenimiento, reglamentos, partes y elementos GMAO.",
-        "keywords_positive": [
-          "gmao",
-          "ot",
-          "orden de trabajo",
-          "parte",
-          "reglamento",
-          "mantenimiento"
-        ],
-        "keywords_negative": [
-          "factura",
-          "crm"
-        ],
-        "confusion_with": [
-          "portal_ot",
-          "movilsat"
-        ],
-        "examples_positive": [
-          "no sale la OT",
-          "problema con reglamentos"
-        ],
-        "examples": [
-          "no sale la OT",
-          "problema con reglamentos"
-        ]
-      },
+      "id": "gmao",
+      "label": "GMAO",
+      "description": "Gestión de órdenes de trabajo (OTs), partes de trabajo, mantenimiento preventivo y correctivo, reglamentos, revisiones y activos. Es el módulo donde se crean, envían y gestionan las OTs de los técnicos.",
+      "keywords_positive": [
+        "gmao", "ot", "ots", "orden de trabajo", "órdenes de trabajo",
+        "parte", "parte de trabajo", "partes de trabajo",
+        "reglamento", "reglamentos", "mantenimiento",
+        "mantenimiento preventivo", "mantenimiento correctivo",
+        "revisión", "revisiones", "activo", "activos",
+        "enviar ot", "enviar ots", "técnicos no ven",
+        "listado ot", "detalle de ot", "gestor", "gestores",
+        "contrato de mantenimiento"
+      ],
+      "keywords_negative": [
+        "factura", "crm", "portal ot", "portal de ot", "acceso al portal"
+      ],
+      "confusion_with": ["portal_ot", "movilsat"],
+      "decision_rules": [
+        "Cualquier mención a OTs, partes de trabajo, técnicos que reciben OTs, o mantenimiento → GMAO.",
+        "Solo usar portal_ot si el cliente menciona explícitamente 'portal' o 'portal OT'.",
+        "En caso de duda entre GMAO y Portal OT, elegir GMAO."
+      ],
+      "examples_positive": [
+        "no sale la OT", "problema con reglamentos",
+        "cuando envío OTs a los técnicos no las ven",
+        "las OTs llegan con errores a los técnicos",
+        "problema con partes de trabajo",
+        "el mantenimiento preventivo no se genera"
+      ],
+      "examples_negative": [
+        "no puedo acceder al portal OT",
+        "el portal no carga"
+      ],
+      "examples": [
+        "no sale la OT", "problema con reglamentos",
+        "cuando envío OTs a los técnicos no las ven",
+        "problema con partes de trabajo"
+      ]
+    },
       {
         "id": "movilsat",
         "label": "Movilsat",
@@ -875,33 +886,39 @@
         ]
       },
       {
-        "id": "portal_ot",
-        "label": "Portal OT",
-        "description": "Portal de órdenes de trabajo y operativa asociada.",
-        "keywords_positive": [
-          "portal ot",
-          "portal",
-          "orden de trabajo",
-          "parte portal",
-          "acceso portal"
-        ],
-        "keywords_negative": [
-          "movilsat",
-          "gmao"
-        ],
-        "confusion_with": [
-          "gmao",
-          "movilsat"
-        ],
-        "examples_positive": [
-          "no accede al portal ot",
-          "problema con orden en portal"
-        ],
-        "examples": [
-          "no accede al portal ot",
-          "problema con orden en portal"
-        ]
-      },
+      "id": "portal_ot",
+      "label": "Portal OT",
+      "description": "Portal web de órdenes de trabajo. Usar SOLO cuando el cliente menciona explícitamente 'portal' o 'portal OT'. Si habla de OTs sin mencionar portal, usar GMAO.",
+      "keywords_positive": [
+        "portal ot", "portal de ot", "portal de órdenes",
+        "acceso portal", "acceso al portal",
+        "el portal no carga", "el portal no funciona"
+      ],
+      "keywords_negative": [
+        "movilsat", "gmao", "enviar ot", "técnicos",
+        "partes de trabajo", "mantenimiento", "reglamento"
+      ],
+      "confusion_with": ["gmao", "movilsat"],
+      "decision_rules": [
+        "Usar SOLO si el cliente menciona explícitamente la palabra 'portal'.",
+        "Si habla de OTs, partes, técnicos o mantenimiento sin mencionar 'portal' → usar GMAO.",
+        "En caso de duda entre Portal OT y GMAO, elegir GMAO."
+      ],
+      "examples_positive": [
+        "no accede al portal OT",
+        "problema con el portal de órdenes",
+        "el portal no carga"
+      ],
+      "examples_negative": [
+        "cuando envío OTs a los técnicos no las ven",
+        "problema con partes de trabajo",
+        "las OTs llegan con errores"
+      ],
+      "examples": [
+        "no accede al portal OT",
+        "problema con el portal de órdenes"
+      ]
+    },
       {
         "id": "presupuestos_proyectos",
         "label": "Presupuestos y proyectos",

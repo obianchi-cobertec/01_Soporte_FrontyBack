@@ -18,6 +18,8 @@ import type {
 //
 // POST /api/intake/submit   → Recibe descripción, clasifica, devuelve confirmación
 // POST /api/intake/confirm  → Confirma o edita, crea ticket en Redmine
+//
+// Ambas rutas requieren JWT con empresa seleccionada (requireCompany).
 // =============================================================================
 
 // Almacén temporal de sesiones en memoria.
@@ -34,6 +36,9 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/intake/submit
   // ─────────────────────────────────────────────
   app.post('/api/intake/submit', async (request, reply) => {
+    // ── Auth: exigir JWT con empresa seleccionada ──
+    const auth = request.requireCompany();
+
     // Validar payload
     const parseResult = IntakePayloadSchema.safeParse(request.body);
     if (!parseResult.success) {
@@ -50,6 +55,11 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
 
     const intake = parseResult.data as IntakePayload;
     const sessionId = intake.session_id;
+
+    // ── Sobreescribir con datos del JWT (fuente de verdad) ──
+    intake.user_id = auth.sub;
+    intake.company_id = auth.company_id;
+    intake.company_name = auth.company_name;
 
     try {
       // Registrar eventos
@@ -112,6 +122,7 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
             ? `Prioridad sugerida: ${result.response.suggested_priority}`
             : null,
           attachments_received: intake.attachments.map(a => a.filename),
+          need: result.response.redmine_mapping?.need ?? null,
         },
         questions: questions.length > 0 ? questions : undefined,
       };
@@ -142,6 +153,9 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/intake/confirm
   // ─────────────────────────────────────────────
   app.post('/api/intake/confirm', async (request, reply) => {
+    // ── Auth: exigir JWT con empresa seleccionada ──
+    request.requireCompany();
+
     // Validar payload
     const parseResult = ConfirmationPayloadSchema.safeParse(request.body);
     if (!parseResult.success) {
@@ -229,6 +243,7 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
             ? `Prioridad sugerida: ${result.response.suggested_priority}`
             : null,
           attachments_received: session.intake.attachments.map(a => a.filename),
+          need: result.response.redmine_mapping?.need ?? null,
         },
         questions: editQuestions.length > 0 ? editQuestions : undefined,
       };
