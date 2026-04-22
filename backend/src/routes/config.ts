@@ -38,8 +38,46 @@ export async function configRoutes(app: FastifyInstance) {
     }
 
     const filePath = path.join(CONFIG_DIR, `${file}.json`);
+    console.log('[config GET] Reading:', filePath);
     const raw = await fs.readFile(filePath, 'utf-8');
     return reply.header('Content-Type', 'application/json').send(raw);
+  });
+
+  // GET /api/config/redmine-users — lista usuarios internos de Redmine (solo @cobertec.com)
+  app.get('/config/redmine-users', async (request, reply) => {
+    request.requireAuth();
+    const store = getIdentityStore();
+    const isSuperAdmin = store.isSuperAdmin(request.auth!.sub);
+    if (!isSuperAdmin) {
+      const role = store.getUserCompanyRole(request.auth!.sub, request.auth!.company_id ?? '');
+      if (role !== 'admin') return reply.status(403).send({ error: 'admin_required' });
+    }
+
+    const baseUrl = process.env.REDMINE_URL;
+    const apiKey = process.env.REDMINE_API_KEY;
+    if (!baseUrl || !apiKey) {
+      return reply.status(503).send({ error: 'redmine_not_configured' });
+    }
+
+    try {
+      const pages = await Promise.all(
+        [0, 200, 400, 600].map(offset =>
+          fetch(`${baseUrl}/users.json?limit=200&offset=${offset}`, {
+            headers: { 'X-Redmine-API-Key': apiKey },
+          }).then(r => r.json() as Promise<{ users?: Array<{ id: number; login: string; firstname: string; lastname: string; mail: string }> }>)
+        )
+      );
+
+      const all = pages.flatMap(p => p.users ?? []);
+      const internal = all
+        .filter(u => u.mail?.endsWith('@cobertec.com'))
+        .map(u => ({ id: u.id, login: u.login, name: `${u.firstname} ${u.lastname}`.trim() }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return reply.send(internal);
+    } catch {
+      return reply.status(502).send({ error: 'redmine_fetch_failed' });
+    }
   });
 
   // PUT /api/config/:file
@@ -87,6 +125,7 @@ export async function configRoutes(app: FastifyInstance) {
     }
 
     const filePath = path.join(CONFIG_DIR, `${file}.json`);
+    console.log('[config GET] Reading:', filePath);
     const backupPath = `${filePath}.bak`;
     try {
       await fs.copyFile(filePath, backupPath);

@@ -1,0 +1,836 @@
+﻿[
+    {
+        "id":  376,
+        "name":  "AIDESEGI (Bilbao)",
+        "identifier":  "aidesegi_general",
+        "IDCliente":  "000000582"
+    },
+    {
+        "id":  347,
+        "name":  "AIDESEGI (Madrid)",
+        "identifier":  "aidesegi_madrid",
+        "IDCliente":  "000000582"
+    },
+    {
+        "id":  227,
+        "name":  "AIDESEGI (Mantenimientos)",
+        "identifier":  "aidesegui_sat",
+        "IDCliente":  "000000582"
+    },
+    {
+        "id":  254,
+        "name":  "AIRFRES_sat",
+        "identifier":  "airfres_sat",
+        "IDCliente":  "000000653"
+    },
+    {
+        "id":  242,
+        "name":  "AIRLAN_sat",
+        "identifier":  "airlan_sat",
+        "IDCliente":  "000000640"
+    },
+    {
+        "id":  371,
+        "name":  "ALC.CARRILLOGERMAN_sat",
+        "identifier":  "alc-carrillogerman_sat",
+        "IDCliente":  "000000811"
+    },
+    {
+        "id":  343,
+        "name":  "ALITER_sat",
+        "identifier":  "aliter_sat",
+        "IDCliente":  "000000771"
+    },
+    {
+        "id":  264,
+        "name":  "ALYSAT_sat",
+        "identifier":  "alysat_sat",
+        "IDCliente":  "000000669"
+    },
+    {
+        "id":  269,
+        "name":  "ANASTASIOTERUEL_sat",
+        "identifier":  "anastasioteruel_sat",
+        "IDCliente":  "000000668"
+    },
+    {
+        "id":  248,
+        "name":  "ANDALCLIMA_sat",
+        "identifier":  "andalclima_sat",
+        "IDCliente":  "000000646"
+    },
+    {
+        "id":  339,
+        "name":  "ARCEREDILLO_sat",
+        "identifier":  "arceredillo_sat",
+        "IDCliente":  "000000202"
+    },
+    {
+        "id":  333,
+        "name":  "ARITZMANCHADO_sat",
+        "identifier":  "aritzmanchado_sat",
+        "IDCliente":  "000000761"
+    },
+    {
+        "id":  265,
+        "name":  "ASOFRIO_sat",
+        "identifier":  "asofrio_sat",
+        "IDCliente":  "000000672"
+    },
+    {
+        "id":  252,
+        "name":  "BARRIOGLASS_sat",
+        "identifier":  "barrioglass_sat",
+        "IDCliente":  "000000654"
+    },
+    {
+        "id":  391,
+        "name":  "BELOKI_sat",
+        "identifier":  "beloki_sat",
+        "IDCliente":  "000000853"
+    },
+    {
+        "id":  286,
+        "name":  "BERCLIMA_sat",
+        "identifier":  "berclima_sat",
+        "IDCliente":  "000000714"
+    },
+    {
+        "id":  325,
+        "name":  "BERPRA_sat",
+        "identifier":  "berpra_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  290,
+        "name":  "BIZKAIFRIO_sat",
+        "identifier":  "bizkaifrio_sat",
+        "IDCliente":  "000000692"
+    },
+    {
+        "id":  328,
+        "name":  "BULCAT07_SAT",
+        "identifier":  "bulcat07_sat",
+        "IDCliente":  "000000759"
+    },
+    {
+        "id":  336,
+        "name":  "CATALANACLIMAYREFRIGERACION_sat",
+        "identifier":  "catalanaclimayrefrigeracion_sat",
+        "IDCliente":  "000000764"
+    },
+    {
+        "id":  311,
+        "name":  "CLIBUR_sat",
+        "identifier":  "clibur_sat",
+        "IDCliente":  "000000742"
+    },
+    {
+        "id":  257,
+        "name":  "CLIMAHABITAT_sat (ATC C.)",
+        "identifier":  "climahabitat_sat",
+        "IDCliente":  "000000861"
+    },
+    {
+        "id":  289,
+        "name":  "CLIMAINSULAR_sat",
+        "identifier":  "climainsular_sat",
+        "IDCliente":  "000000717"
+    },
+    {
+        "id":  374,
+        "name":  "CLIMAMEDIDA_sat",
+        "identifier":  "climamedida_sat",
+        "IDCliente":  "000000821"
+    },
+    {
+        "id":  291,
+        "name":  "CLIMASAM_sat",
+        "identifier":  "climasam_sat",
+        "IDCliente":  "000000720"
+    },
+    {
+        "id":  361,
+        "name":  "CLIMATEX_sat",
+        "identifier":  "climatex_sat",
+        "IDCliente":  "000000796"
+    },
+    {
+        "id":  338,
+        "name":  "CLYER_sat",
+        "identifier":  "clyer_sat",
+        "IDCliente":  "000000766"
+    },
+    {
+        "id":  394,
+        "name":  "COFRISA_sat",
+        "identifier":  "cofrisa_sat",
+        "IDCliente":  "000000856"
+    },
+    {
+        "id":  287,
+        "name":  "COMELEC_sat",
+        "identifier":  "comelec_sat",
+        "IDCliente":  "000000712"
+    },
+    {
+        "id":  335,
+        "name":  "COMERCIALFRIOBALEAR_sat",
+        "identifier":  "comercialfriobalear_sat",
+        "IDCliente":  "000000762"
+    },
+    {
+        "id":  372,
+        "name":  "COMERCIALLOSADA_sat",
+        "identifier":  "comerciallosada_sat",
+        "IDCliente":  "000000816"
+    },
+    {
+        "id":  357,
+        "name":  "COMONTAIR_sat",
+        "identifier":  "comontair_sat",
+        "IDCliente":  "000000787"
+    },
+    {
+        "id":  425,
+        "name":  "COOLTECH_sat",
+        "identifier":  "cooltech_sat",
+        "IDCliente":  "000000899"
+    },
+    {
+        "id":  363,
+        "name":  "CUTEMSA_sat",
+        "identifier":  "cutemsa_sat",
+        "IDCliente":  "000000795"
+    },
+    {
+        "id":  240,
+        "name":  "DAVOFRIO_sat",
+        "identifier":  "davofrio_sat",
+        "IDCliente":  "000000636"
+    },
+    {
+        "id":  200,
+        "name":  "DG_sat",
+        "identifier":  "dg_sat",
+        "IDCliente":  "000000561"
+    },
+    {
+        "id":  216,
+        "name":  "EBROFRIO_sat",
+        "identifier":  "ebrofrio",
+        "IDCliente":  "000000583"
+    },
+    {
+        "id":  390,
+        "name":  "EGACLIMA_sat",
+        "identifier":  "egaclima_sat",
+        "IDCliente":  "000000833"
+    },
+    {
+        "id":  389,
+        "name":  "EJIFRIN_SAT",
+        "identifier":  "ejifrin_sat",
+        "IDCliente":  "000000842"
+    },
+    {
+        "id":  368,
+        "name":  "ELECTRICIDADRUIZ_sat",
+        "identifier":  "electricidadruiz_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  392,
+        "name":  "ELECTRICIDAD_TENERIFE_sat",
+        "identifier":  "electricidad_tenerife_sat",
+        "IDCliente":  "000000854"
+    },
+    {
+        "id":  427,
+        "name":  "ELIASEQUIPAMIENTOS_sat",
+        "identifier":  "eliasequipamientos_sat",
+        "IDCliente":  "000000907"
+    },
+    {
+        "id":  260,
+        "name":  "ENERKIA_sat",
+        "identifier":  "enerkia_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  263,
+        "name":  "ESCOBAR_sat",
+        "identifier":  "escobar_sat",
+        "IDCliente":  "000000666"
+    },
+    {
+        "id":  219,
+        "name":  "EUROFOR_sat",
+        "identifier":  "eurofor_sat",
+        "IDCliente":  "000000147"
+    },
+    {
+        "id":  421,
+        "name":  "EZENTIS_sat",
+        "identifier":  "ezentis_sat",
+        "IDCliente":  "000000891"
+    },
+    {
+        "id":  424,
+        "name":  "FEMAR_sat",
+        "identifier":  "femar_sat",
+        "IDCliente":  "000000898"
+    },
+    {
+        "id":  317,
+        "name":  "FLUIDSA_sat",
+        "identifier":  "fluidsa_sat",
+        "IDCliente":  "000000749"
+    },
+    {
+        "id":  414,
+        "name":  "FONTANERIASIERRA_sat",
+        "identifier":  "fontaneriasierra_sat",
+        "IDCliente":  "000000855"
+    },
+    {
+        "id":  301,
+        "name":  "FONTANEROSBURGOS_sat",
+        "identifier":  "fontanerosburgos_sat",
+        "IDCliente":  "000000730"
+    },
+    {
+        "id":  258,
+        "name":  "FORNELA_sat",
+        "identifier":  "fornela_sat",
+        "IDCliente":  "000000661"
+    },
+    {
+        "id":  388,
+        "name":  "FRICALEX_sat",
+        "identifier":  "fricalex_sat",
+        "IDCliente":  "000000839"
+    },
+    {
+        "id":  331,
+        "name":  "FRIHOSNA_sat",
+        "identifier":  "frihosna_sat",
+        "IDCliente":  "000000760"
+    },
+    {
+        "id":  316,
+        "name":  "FRIOSOL_sat",
+        "identifier":  "friosol_sat",
+        "IDCliente":  "000000748"
+    },
+    {
+        "id":  353,
+        "name":  "FRIOTENA_sat",
+        "identifier":  "friotena_sat",
+        "IDCliente":  "000000778"
+    },
+    {
+        "id":  224,
+        "name":  "GESECO_RESÍDUOS_SAT",
+        "identifier":  "geseco_residuos",
+        "IDCliente":  "000000044"
+    },
+    {
+        "id":  393,
+        "name":  "GRUPO_KESMA_sat",
+        "identifier":  "grupo_kesma_sat",
+        "IDCliente":  "000000852"
+    },
+    {
+        "id":  299,
+        "name":  "GUADALCLIMA_sat",
+        "identifier":  "guadalclima_sat",
+        "IDCliente":  "000000728"
+    },
+    {
+        "id":  321,
+        "name":  "HEMSA_sat",
+        "identifier":  "hemsa_sat",
+        "IDCliente":  "000000755"
+    },
+    {
+        "id":  379,
+        "name":  "HERGOPAS_sat",
+        "identifier":  "hergopas_sat",
+        "IDCliente":  "000000823"
+    },
+    {
+        "id":  241,
+        "name":  "HERJAI_sat",
+        "identifier":  "herjai_sat",
+        "IDCliente":  "000000457"
+    },
+    {
+        "id":  218,
+        "name":  "HIERROSENCARTACIONES_sat",
+        "identifier":  "hierrosencartaciones_sat",
+        "IDCliente":  "000000458"
+    },
+    {
+        "id":  352,
+        "name":  "HOSCAFROST_sat",
+        "identifier":  "hoscafrost_sat",
+        "IDCliente":  "000000775"
+    },
+    {
+        "id":  334,
+        "name":  "HYDRA_sat",
+        "identifier":  "hydra_sat",
+        "IDCliente":  "000000763"
+    },
+    {
+        "id":  370,
+        "name":  "IMD_sat",
+        "identifier":  "imd_sat",
+        "IDCliente":  "000000810"
+    },
+    {
+        "id":  319,
+        "name":  "INDERTEC_sat",
+        "identifier":  "indertec",
+        "IDCliente":  "000000754"
+    },
+    {
+        "id":  320,
+        "name":  "INFRIBAR_sat",
+        "identifier":  "infribar_sat",
+        "IDCliente":  "000000750"
+    },
+    {
+        "id":  341,
+        "name":  "INGAS_sat  (SIMAN EFICIENCIA)",
+        "identifier":  "ingas_sat",
+        "IDCliente":  "000000790"
+    },
+    {
+        "id":  420,
+        "name":  "INGESA_sat",
+        "identifier":  "ingesa_sat",
+        "IDCliente":  "000000871"
+    },
+    {
+        "id":  359,
+        "name":  "INMAREPRO_SAT",
+        "identifier":  "inmarepro_sat",
+        "IDCliente":  "000000792"
+    },
+    {
+        "id":  278,
+        "name":  "INMOTECHNIA_sat",
+        "identifier":  "inmotechnia_sat",
+        "IDCliente":  "000000701"
+    },
+    {
+        "id":  426,
+        "name":  "INSSVALENCIA_sat",
+        "identifier":  "inssvalencia_sat",
+        "IDCliente":  "000000896"
+    },
+    {
+        "id":  288,
+        "name":  "INSTALACIONESBORO_sat",
+        "identifier":  "instalacionesboro_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  422,
+        "name":  "INSTALACIONESSEGOVIA_SAT",
+        "identifier":  "instalacionessegovia_sat",
+        "IDCliente":  "000000869"
+    },
+    {
+        "id":  345,
+        "name":  "INTECSER_sat",
+        "identifier":  "intecser_sat",
+        "IDCliente":  "000000773"
+    },
+    {
+        "id":  354,
+        "name":  "INTEKLIMA_sat",
+        "identifier":  "inteklima_sat",
+        "IDCliente":  "000000780"
+    },
+    {
+        "id":  279,
+        "name":  "INTERSUR_sat",
+        "identifier":  "intersur_sat",
+        "IDCliente":  "000000702"
+    },
+    {
+        "id":  249,
+        "name":  "INTRAGAS_sat",
+        "identifier":  "intragas_sat",
+        "IDCliente":  "000000650"
+    },
+    {
+        "id":  214,
+        "name":  "IPARFRIO_sat",
+        "identifier":  "iparfrio_sat",
+        "IDCliente":  "000000580"
+    },
+    {
+        "id":  283,
+        "name":  "ISLADELVALLE_SAT",
+        "identifier":  "isladelvalle_sat",
+        "IDCliente":  "000000708"
+    },
+    {
+        "id":  322,
+        "name":  "ITSFRIO_sat",
+        "identifier":  "itsfrio_sat",
+        "IDCliente":  "000000757"
+    },
+    {
+        "id":  308,
+        "name":  "JACINTOREDONDO_sat",
+        "identifier":  "jacintoredondo_sat",
+        "IDCliente":  "000000745"
+    },
+    {
+        "id":  355,
+        "name":  "JOSEBERNAD_sat",
+        "identifier":  "josebernad_sat",
+        "IDCliente":  "000000785"
+    },
+    {
+        "id":  312,
+        "name":  "KLM_sat",
+        "identifier":  "klm_sat",
+        "IDCliente":  "000000743"
+    },
+    {
+        "id":  367,
+        "name":  "LIALPA_sat",
+        "identifier":  "lialpa_sat",
+        "IDCliente":  "000000804"
+    },
+    {
+        "id":  365,
+        "name":  "MACOOL_sat",
+        "identifier":  "macool_sat",
+        "IDCliente":  "000000794"
+    },
+    {
+        "id":  256,
+        "name":  "MADERASCARRANZA_sat",
+        "identifier":  "maderascarranza_sat",
+        "IDCliente":  "000000191"
+    },
+    {
+        "id":  271,
+        "name":  "MAFRIMUR_sat",
+        "identifier":  "mafrimur_sat",
+        "IDCliente":  "000000678"
+    },
+    {
+        "id":  274,
+        "name":  "MANTEFER_sat",
+        "identifier":  "mantefer_sat",
+        "IDCliente":  "000000691"
+    },
+    {
+        "id":  137,
+        "name":  "MANTENOR_sat",
+        "identifier":  "mantenor_sat",
+        "IDCliente":  "000000414"
+    },
+    {
+        "id":  266,
+        "name":  "MANTERMANTENIMIENTOS_sat",
+        "identifier":  "mantermantenimientos_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  362,
+        "name":  "MANTER_sat",
+        "identifier":  "manter_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  417,
+        "name":  "MESAT_sat",
+        "identifier":  "mesat_sat",
+        "IDCliente":  "000000889"
+    },
+    {
+        "id":  302,
+        "name":  "MMC_sat",
+        "identifier":  "mmc_sat",
+        "IDCliente":  "000000723"
+    },
+    {
+        "id":  323,
+        "name":  "MONTAJESOSVALOS_sat",
+        "identifier":  "montajesosvalos_sat",
+        "IDCliente":  "000000756"
+    },
+    {
+        "id":  285,
+        "name":  "MONTENER_SAT",
+        "identifier":  "montener_sat",
+        "IDCliente":  "000000710"
+    },
+    {
+        "id":  199,
+        "name":  "NAVAS_sat",
+        "identifier":  "navas_sat",
+        "IDCliente":  "000000566"
+    },
+    {
+        "id":  261,
+        "name":  "NOVOFRIO_sat",
+        "identifier":  "novofrio_sat",
+        "IDCliente":  "000000664"
+    },
+    {
+        "id":  310,
+        "name":  "ODEFRI_sat",
+        "identifier":  "odefri_sat",
+        "IDCliente":  "000000746"
+    },
+    {
+        "id":  419,
+        "name":  "OFIBERIA_sat",
+        "identifier":  "ofiberia_sat",
+        "IDCliente":  "000000876"
+    },
+    {
+        "id":  235,
+        "name":  "OPTICLIM_sat",
+        "identifier":  "opticlim_sat",
+        "IDCliente":  "000000633"
+    },
+    {
+        "id":  383,
+        "name":  "PEGISDAN_sat",
+        "identifier":  "pegisdan_sat",
+        "IDCliente":  "000000832"
+    },
+    {
+        "id":  397,
+        "name":  "PLANIFICACION_JORGE",
+        "identifier":  "incidencias_jorge",
+        "IDCliente":  "00"
+    },
+    {
+        "id":  172,
+        "name":  "PLASTYAGRO_sat",
+        "identifier":  "sat-plastyagro",
+        "IDCliente":  "000000593"
+    },
+    {
+        "id":  303,
+        "name":  "PLENAINSTALACIONES_sat",
+        "identifier":  "plenainstalaciones_sat",
+        "IDCliente":  "000000734"
+    },
+    {
+        "id":  360,
+        "name":  "POLARIT_sat",
+        "identifier":  "polarit_sat",
+        "IDCliente":  "000000793"
+    },
+    {
+        "id":  298,
+        "name":  "PROCLIMA_sat",
+        "identifier":  "proclima_sat",
+        "IDCliente":  "000000725"
+    },
+    {
+        "id":  300,
+        "name":  "PROIMA_sat",
+        "identifier":  "proima_sat",
+        "IDCliente":  "000000727"
+    },
+    {
+        "id":  313,
+        "name":  "REFRICOL_sat",
+        "identifier":  "refricol_sat",
+        "IDCliente":  ""
+    },
+    {
+        "id":  245,
+        "name":  "RGV_sat",
+        "identifier":  "rgv_sat",
+        "IDCliente":  "000000642"
+    },
+    {
+        "id":  385,
+        "name":  "SALAMANTENIMIENTOS_sat",
+        "identifier":  "salamantenimientos_sat",
+        "IDCliente":  "000000835"
+    },
+    {
+        "id":  238,
+        "name":  "SANEAMIENTOSMUNGIA_sat",
+        "identifier":  "saneamientosmungia_sat",
+        "IDCliente":  "000000641"
+    },
+    {
+        "id":  386,
+        "name":  "SERCOMS_sat",
+        "identifier":  "sercoms_sat",
+        "IDCliente":  "000000831"
+    },
+    {
+        "id":  230,
+        "name":  "SERVICLIMA_LEON_SALAMANCA_sat",
+        "identifier":  "serviclima_leon_salamanca",
+        "IDCliente":  "000000628"
+    },
+    {
+        "id":  272,
+        "name":  "SETI_sat",
+        "identifier":  "seti_sat",
+        "IDCliente":  "000000680"
+    },
+    {
+        "id":  297,
+        "name":  "SIR-TGN_sat",
+        "identifier":  "sir-tgn_sat",
+        "IDCliente":  "000000830"
+    },
+    {
+        "id":  387,
+        "name":  "TECNICLIMAPAMIES_sat",
+        "identifier":  "tecniclimapamies_sat",
+        "IDCliente":  "000000838"
+    },
+    {
+        "id":  284,
+        "name":  "TECNOSALAMANCA_SAT",
+        "identifier":  "tecnosalamanca_sat",
+        "IDCliente":  "000000711"
+    },
+    {
+        "id":  231,
+        "name":  "TECNOVALLADOLID_sat",
+        "identifier":  "tecnovalladolid",
+        "IDCliente":  "000000619"
+    },
+    {
+        "id":  262,
+        "name":  "TEFCAN_sat",
+        "identifier":  "tefcan_sat",
+        "IDCliente":  "000000667"
+    },
+    {
+        "id":  375,
+        "name":  "TEFRIDI_sat",
+        "identifier":  "tefridi_sat",
+        "IDCliente":  "000000822"
+    },
+    {
+        "id":  307,
+        "name":  "TEINA_sat",
+        "identifier":  "teina_sat",
+        "IDCliente":  "000000741"
+    },
+    {
+        "id":  273,
+        "name":  "TELMO_sat",
+        "identifier":  "telmo_sat",
+        "IDCliente":  "000000690"
+    },
+    {
+        "id":  350,
+        "name":  "TERFRI_sat",
+        "identifier":  "terfri_sat",
+        "IDCliente":  "000000779"
+    },
+    {
+        "id":  270,
+        "name":  "TFV_sat",
+        "identifier":  "tfv_sat",
+        "IDCliente":  "000000675"
+    },
+    {
+        "id":  220,
+        "name":  "TOLDOSARRANZ_sat",
+        "identifier":  "toldosarranz_sat",
+        "IDCliente":  "000000379"
+    },
+    {
+        "id":  381,
+        "name":  "TOLFRISA_sat",
+        "identifier":  "tolfrisa_sat",
+        "IDCliente":  "000000829"
+    },
+    {
+        "id":  314,
+        "name":  "TOTALCLIMA_sat",
+        "identifier":  "totalclima_sat",
+        "IDCliente":  "000000747"
+    },
+    {
+        "id":  415,
+        "name":  "UMEN",
+        "identifier":  "umen",
+        "IDCliente":  "000000874"
+    },
+    {
+        "id":  418,
+        "name":  "UMEN_sat",
+        "identifier":  "umen_sat",
+        "IDCliente":  "000000874"
+    },
+    {
+        "id":  340,
+        "name":  "VALFRIMA_sat",
+        "identifier":  "valfrima_sat",
+        "IDCliente":  "000000767"
+    },
+    {
+        "id":  373,
+        "name":  "VALPE_sat",
+        "identifier":  "valpe_sat",
+        "IDCliente":  "000000813"
+    },
+    {
+        "id":  276,
+        "name":  "VENTICLIMA_sat",
+        "identifier":  "venticlima_sat",
+        "IDCliente":  "000000697"
+    },
+    {
+        "id":  244,
+        "name":  "VIVEROSESKALMENDI_sat",
+        "identifier":  "viveroseskalmendi_sat",
+        "IDCliente":  "000000765"
+    },
+    {
+        "id":  411,
+        "name":  "VOLTTESLA_sat",
+        "identifier":  "volttesla_sat",
+        "IDCliente":  "000000870"
+    },
+    {
+        "id":  259,
+        "name":  "VTPOWER_sat",
+        "identifier":  "vtpower_sat",
+        "IDCliente":  "000000514"
+    },
+    {
+        "id":  423,
+        "name":  "WINDSERVICEHUB_sat",
+        "identifier":  "windservicehub_sat",
+        "IDCliente":  "000000888"
+    },
+    {
+        "id":  292,
+        "name":  "YGRA_sat",
+        "identifier":  "ygra_sat",
+        "IDCliente":  "000000718"
+    },
+    {
+        "id":  344,
+        "name":  "ZELSIA_sat",
+        "identifier":  "zelsia_sat",
+        "IDCliente":  "000000770"
+    }
+]

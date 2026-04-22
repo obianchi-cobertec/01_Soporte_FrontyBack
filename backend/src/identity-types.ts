@@ -97,7 +97,7 @@ export interface TokenResponse {
 export interface LoginResponse extends TokenResponse {}
 
 export const SelectCompanyRequestSchema = z.object({
-  company_id: z.string().uuid('company_id no válido'),
+  company_id: z.string().min(1, 'company_id requerido'),
 });
 export type SelectCompanyRequest = z.infer<typeof SelectCompanyRequestSchema>;
 

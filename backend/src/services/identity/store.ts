@@ -108,13 +108,13 @@ export class IdentityStore {
       CREATE INDEX IF NOT EXISTS idx_rt_user ON refresh_tokens(user_id);
     `);
 
-    // Migración no destructiva: añadir columna is_superadmin si no existe
-    // (para bases de datos ya existentes)
+    // Migraciones no destructivas
     try {
       this.db.exec(`ALTER TABLE users ADD COLUMN is_superadmin INTEGER NOT NULL DEFAULT 0`);
-    } catch {
-      // Columna ya existe — ignorar
-    }
+    } catch { /* ya existe */ }
+    try {
+      this.db.exec(`ALTER TABLE users ADD COLUMN redmine_login TEXT`);
+    } catch { /* ya existe */ }
   }
 
   // ─── Contact ────────────────────────────────────────────
@@ -192,6 +192,11 @@ export class IdentityStore {
       JOIN contacts c ON u.contact_id = c.id
       WHERE c.email = ? COLLATE NOCASE
     `).get(email) as (User & { contact_name: string; contact_email: string }) | null;
+  }
+
+  getRedmineLogin(userId: string): string | null {
+    const row = this.db.prepare(`SELECT redmine_login FROM users WHERE id = ?`).get(userId) as { redmine_login: string | null } | undefined;
+    return row?.redmine_login ?? null;
   }
 
   updateLastLogin(userId: string): void {

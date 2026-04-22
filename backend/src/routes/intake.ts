@@ -258,6 +258,14 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
       logEvent('confirmation_accepted', sessionId, {});
 
       const redmine = getRedmineClient();
+	  
+		console.log('[DEBUG] suggested_assignee:', session.classification.suggested_assignee);
+		console.log('[DEBUG] domain:', session.classification.classification.domain);
+		console.log('[DEBUG] block:', session.classification.redmine_mapping.block);
+		console.log('[DEBUG] module:', session.classification.redmine_mapping.module);
+		console.log('[DEBUG] need:', session.classification.redmine_mapping.need);
+	  
+	  
       const ticketResult = await redmine.createTicket(
         session.intake,
         session.classification
@@ -282,6 +290,7 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error interno';
+      console.error('[Redmine ERROR]', error);  
       logEvent('flow_error', sessionId, {
         error_code: 'redmine_failed',
         step: 'confirm',

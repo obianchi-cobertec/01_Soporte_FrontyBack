@@ -58,12 +58,17 @@ Frontend (React :5173)
     │                                        └─► ClassifiedResponse (summary + preguntas)
     │
     ├─ POST /api/intake/confirm  ─────► [Auth Plugin] → RedmineClient
-    │   action='confirm'                     │ Sube adjuntos secuencialmente → tokens
-    │   (requiere company en token)          │ Compone ticket (asunto + descripción + custom fields)
+    │   action='confirm'                     │ Sube adjuntos en paralelo (Promise.all) → tokens
+    │   (requiere company en token)          │ Resuelve asignado: role_to_user_id lookup
+    │                                        │ Compone ticket (asunto + descripción + custom fields)
+    │                                        │ Impersona usuario Redmine si tiene redmine_login
     │                                        └─► ticket_id + ticket_url
     │
     ├─ POST /api/intake/confirm  ─────► [Auth Plugin] → ClassifierService (re-classify)
     │   action='edit'
+    │
+    ├─ GET /api/config/redmine-users ──► Llama Redmine API, filtra @cobertec.com
+    │   (requiere admin o superadmin)        └─► Lista de usuarios internos con id, login, name
     │
     ├─ GET/PUT /api/config/:file ─────► ConfigRoutes
     │   (requiere admin o superadmin)        └─► Lee/escribe taxonomy, redmine-mapping, assignment-rules
@@ -96,8 +101,8 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 ### `backend/src/types.ts`
 **Los contratos de datos del sistema de intake.** Define todos los tipos TypeScript:
 - `Nature` — 10 valores posibles del tipo de problema
-- `Domain` — 19 valores del área de negocio afectada
-- `Solution` — 10 productos de Cobertec posibles
+- `Domain` — 21 valores del área de negocio afectada (incluyendo `academia_cobertec` y `ecommerce_web` recientes)
+- `Solution` — 12 productos de Cobertec posibles (incluyendo Academia Cobertec y Ecommerce/Web)
 - `ExpertisModule` — 12 módulos del ERP
 - `Classification`, `ClassificationResponse` — salida del LLM
 - `IntakePayload`, `ConfirmationPayload` — entradas del usuario
@@ -115,6 +120,7 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 - `LoginResponse`, `SelectCompanyResponse`, `RefreshResponse` — respuestas de auth
 - `AccessTokenPayload`, `RefreshTokenPayload` — contenido del JWT
 - `AuthErrorCode`, `AuthError` — errores tipados
+- `LoginRequestSchema` — **@deprecated**, usar `TokenRequestSchema` con `grant_type: 'password'`
 
 **Regla importante:** `frontend/src/auth-types.ts` es espejo de este archivo. Cambios aquí → actualizar también en frontend.
 
@@ -141,14 +147,25 @@ Notas de seguridad:
 ### `backend/src/services/identity/store.ts`
 `IdentityStore` — clase SQLite (better-sqlite3) con 5 tablas:
 - `contacts`: name, email (UNIQUE COLLATE NOCASE), phone, whatsapp
-- `users`: contact_id (FK), password_hash, active (int 0/1), last_login
+- `users`: contact_id (FK), password_hash, active (int 0/1), is_superadmin (int 0/1), last_login, **redmine_login** (TEXT, nullable — para impersonation)
 - `companies`: name, redmine_project_id, active
 - `user_companies`: (user_id, company_id) PK, role ('user'|'admin')
 - `refresh_tokens`: token_hash PK, user_id FK, expires_at
 
-Métodos principales: `getUserByEmail()`, `getCompaniesForUser()`, `isUserInCompany()`, `storeRefreshToken()`, `getRefreshToken()`, `deleteRefreshToken()`, `pruneExpiredTokens()` (se invoca en `index.ts` al arrancar el servidor).
+Métodos principales:
+- `getUserByEmail()`, `getUserById()`, `createUser()`, `updateUserActive()`, `updateUserPassword()`
+- `getCompaniesForUser()` — para superadmin devuelve TODAS las empresas activas
+- `isUserInCompany()` — superadmin siempre retorna true
+- `getUserCompanyRole()` — superadmin siempre retorna 'admin'
+- `isAdmin()` — true si es superadmin O tiene rol 'admin' en cualquier empresa
+- `isSuperAdmin()` — comprueba flag is_superadmin en users
+- `getRedmineLogin(userId)` — devuelve el login de Redmine del usuario (para impersonación vía `X-Redmine-Switch-User`). **El campo existe en BD pero nunca se escribe actualmente.**
+- `listUsers()`, `listCompanies()` — queries de admin con JOINs
+- `storeRefreshToken()`, `getRefreshToken()`, `deleteRefreshToken()`, `deleteRefreshTokensForUser()`, `pruneExpiredTokens()`
 
 Singleton: `getIdentityStore()` devuelve instancia cacheada. El path de la DB viene de `process.env.IDENTITY_DB_PATH` (se setea en `index.ts` a `data/identity.db`).
+
+Las columnas `is_superadmin` y `redmine_login` se añaden mediante migración no destructiva (`ALTER TABLE ... ADD COLUMN`) en el constructor, por lo que son seguras de aplicar sobre BDs existentes.
 
 ### `backend/src/routes/auth.ts`
 Tres endpoints bajo `/api/auth` (estilo OAuth 2.0):
@@ -180,9 +197,12 @@ El guard `requireAdmin()` verifica `IdentityStore.isAdmin(auth.sub)`. Los supera
 ### `backend/src/routes/config.ts`
 Gestión de la configuración externalizada bajo `/api/config`. Solo accesible a admins (o superadmin):
 - `GET /config/:file` — lee y devuelve el JSON del disco (taxonomy, redmine-mapping, assignment-rules)
-- `PUT /config/:file` — valida estructura mínima, hace backup del fichero anterior, sobreescribe
+- `PUT /config/:file` — valida estructura mínima, hace backup automático (`.bak`), sobreescribe
+- `GET /config/redmine-users` — **nuevo**: llama a la API de Redmine (`/users.json`), filtra solo los usuarios con email `@cobertec.com`, devuelve `{ id, login, name }[]` para uso en el ConfigPanel. Requiere `REDMINE_URL` y `REDMINE_API_KEY` configurados; si no están, devuelve 503.
 
 Validación superficial de estructura (solo verifica claves de primer nivel). El archivo editado entra en efecto en la próxima llamada a `reloadConfig()`.
+
+**Nota:** hay `console.log('[config GET] Reading:', filePath)` tanto en el GET como en el PUT — son debug logs a eliminar antes de producción.
 
 ### `backend/src/routes/intake.ts`
 Dos rutas principales:
@@ -191,15 +211,29 @@ Dos rutas principales:
 
 Ambas rutas llaman `request.requireCompany()` — el intake requiere un token JWT con empresa seleccionada. El `user_id`, `company_id` y `company_name` del payload se sobreescriben siempre con los valores del token (nunca se confía en el body del cliente).
 
-### `backend/scripts/seed-identity.ts`
-Script de desarrollo para poblar `identity.db` con datos de prueba. Crea 2 empresas y 3 usuarios (contraseña: `test1234`). Ejecutar desde el directorio `backend/`:
+**Nota:** hay debug `console.log` en las líneas 262-266 y 293 que imprimen datos de clasificación y errores Redmine. Eliminar antes de producción.
+
+### `backend/scripts/` — Scripts de utilidad
+
+| Script | Descripción |
+|--------|-------------|
+| `seed-identity.ts` | Crea 2 empresas y 3 usuarios de prueba (contraseña: `test1234`). Solo para desarrollo. |
+| `add-test-user.ts` | Añade un usuario de prueba concreto a la BD. Utility de dev. |
+| `check-db.ts` | Diagnóstico rápido: lista tablas y conteos de la identity.db. |
+| `check-schema.ts` | Verifica que el esquema de la BD tiene todas las columnas esperadas. |
+| `import-redmine-clients.ts` | **Script de producción**: importa proyectos de Redmine como empresas en identity.db, con mapeo `redmine_project_id`. Usa los JSON en `scripts/redmine_*.json` como fuente. |
+| `import-new-projects.ts` | **Script de producción**: importa nuevos proyectos/clientes de Redmine que aún no existen en la BD. |
+
+Los archivos `redmine_*.json` en `backend/scripts/` son volcados de la API de Redmine usados durante la importación. **No deben commitearse** (añadir a `.gitignore`).
+
+Ejecutar cualquier script desde el directorio `backend/`:
 ```bash
-cd backend && npx tsx scripts/seed-identity.ts
+cd backend && npx tsx scripts/<nombre>.ts
 ```
 
 ### `backend/src/services/classifier/prompt-builder.ts`
 Construye dos prompts:
-1. **System prompt** — vuelca taxonomy completa + need_resolution + assignment roles
+1. **System prompt** — vuelca taxonomy completa (nature + domain con keywords, ejemplos, reglas) + need_resolution + assignment roles
 2. **User prompt** — descripción del usuario + company_name + lista de adjuntos
 
 ### `backend/src/services/classifier/response-validator.ts`
@@ -209,9 +243,30 @@ Valida la respuesta JSON del LLM con Zod. También aplica **coherencia**:
 - Si el JSON falla parsing → genera una clasificación fallback (ambiguo, low confidence, human_required)
 
 ### `backend/src/services/redmine/index.ts`
-Dos implementaciones de la misma interfaz:
-- `RedmineClient` — real, usa `REDMINE_URL` + `REDMINE_API_KEY`
-- `SimulatedRedmineClient` — devuelve tickets ficticios (se activa si no hay env vars de Redmine)
+Dos implementaciones del cliente Redmine:
+
+**`RedmineClient`** (real, con `REDMINE_URL` + `REDMINE_API_KEY`):
+- `createTicket(intake, classification)`: orquesta el flujo completo de creación
+  1. `uploadAttachments()` — sube todos los adjuntos **en paralelo** (`Promise.all`); los que fallan se omiten
+  2. Resuelve el `projectId` via `mapping.company_to_project[intake.company_id]` → fallback `_default` → fallback hardcoded `'cobertec-intake-test'`
+  3. `buildIssuePayload()` — construye el payload completo:
+     - Normaliza `solution_associated` con tabla `SOLUTION_NORMALIZE` (ej: 'Expertis / Movilsat ERP' → 'expertis')
+     - Normaliza `expertis_module` con tabla `MODULE_NORMALIZE`
+     - Resuelve assignee: `role_to_user_id[classification.suggested_assignee]` → fallback `default_assignee_id`; si ambos null, el ticket se crea sin asignar
+     - Construye array de `custom_fields` usando los IDs del config (`mapping.custom_fields.*.id`)
+  4. `postIssue()` — POST a `/issues.json`; si el usuario tiene `redmine_login`, añade header `X-Redmine-Switch-User` para impersonación
+
+**`SimulatedRedmineClient`**: devuelve tickets ficticios con IDs incrementales a partir de 1000. Se activa automáticamente si no están configuradas `REDMINE_URL`/`REDMINE_API_KEY`.
+
+**`resetRedmineClient()`**: utility para tests, resetea la instancia singleton.
+
+### `backend/src/services/redmine/ticket-composer.ts`
+Formatea asunto y descripción del ticket:
+- `composeSubject(classification)`: genera asunto limpio:
+  - `stripSubject()` elimina prefijos en tercera persona que el LLM puede añadir ("El cliente no puede…" → "…")
+  - Añade prefijo `[REVISIÓN]` si `confidence: 'low'` o `review_status` es `'out_of_map'` / `'human_required'`
+  - Trunca a 80 chars (72 si lleva prefijo)
+- `composeDescription(intake, classification)`: estructura markdown con sección "Descripción original" + "Resumen operativo (IA)" + conteo de adjuntos
 
 ### `backend/src/services/events/index.ts`
 Event store SQLite con 10 tipos de evento. Cada evento tiene:
@@ -258,7 +313,9 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/components/AdminPanel.tsx` | Completo | CRUD usuarios y empresas para admins |
 | `frontend/src/components/StepIndicator.tsx` | Completo | Indicador visual de progreso (breadcrumb) |
 | `frontend/src/components/Loading.tsx` | Completo | Spinner con mensaje |
-| `frontend/src/pages/ConfigPanel.tsx` | Completo | Editor JSON de los tres ficheros de config (solo admin/superadmin) |
+| `frontend/src/pages/ConfigPanel.tsx` | Completo* | Panel de 5 pestañas: Taxonomía / Soluciones / Necesidades / Asignación / Redmine. Ver nota. |
+
+**Nota sobre ConfigPanel:** Es un editor visual estructurado completo (no raw JSON). Las 5 pestañas mapean a los tres JSON de config. La pestaña "Redmine" carga usuarios reales de Redmine via `GET /config/redmine-users` para asignar `role_to_user_id` con selector dropdown. Tiene dos bugs menores de TypeScript (ver sección "Bugs conocidos activos").
 
 ---
 
@@ -369,7 +426,7 @@ interface ClassificationResponse {
    → Actualiza description → Re-clasifica → Devuelve ClassifiedResponse
 
 4b. POST /api/intake/confirm { action: 'confirm' }:
-   → Sube adjuntos a Redmine → ticket-composer → POST /issues.json
+   → Sube adjuntos en paralelo a Redmine → ticket-composer → POST /issues.json
    → Loguea event: ticket_created → Borra sesión
    → Devuelve CreatedResponse { ticket_id, ticket_url }
 
@@ -390,7 +447,7 @@ interface ClassificationResponse {
 
 5. **SimulatedRedmineClient** — Si no hay env vars de Redmine, el cliente simulado actúa. Permite desarrollar sin acceso a Redmine.
 
-6. **Session store en memoria** — Intencionadamente simple (Map). Dura solo mientras el usuario completa el flujo.
+6. **Session store en memoria** — Intencionadamente simple (Map). Dura solo mientras el usuario completa el flujo. **Pendiente de migrar a SQLite antes de producción.**
 
 7. **Event store SQLite** — Solo para métricas del piloto. No es la fuente de verdad (Redmine lo es).
 
@@ -402,82 +459,83 @@ interface ClassificationResponse {
 
 ---
 
+## Estado de la integración Redmine
+
+La integración con Redmine está **sustancialmente completada** en config pero aún requiere validación en producción.
+
+### Mapeados y resueltos
+
+- **Custom fields IDs** — IDs 21-28 configurados en `redmine-mapping.json` → `custom_fields`
+- **Priority mapping** — `normal→4`, `high→5`, `urgent→5`
+- **Tracker y estado inicial** — `tracker_id: 3`, `status_id_initial: 1`
+- **Asignados** — `role_to_user_id` con ~40 roles mapeados a IDs numéricos de Redmine
+- **Company → Project** — ~120 empresas cliente mapeadas a sus proyectos Redmine reales
+
+### Aún pendientes
+
+| Ítem | Estado | Impacto |
+|------|--------|---------|
+| `redmine_defaults.default_assignee_id` | `null` en config | Si `role_to_user_id` no resuelve el assignee, el ticket se crea **sin asignar** |
+| `company_to_project._default` | apunta a `"cobertec-intake-test"` | Las empresas sin mapeo explícito van al proyecto de prueba |
+| `users.redmine_login` | columna existe pero nunca se escribe | La impersonación vía `X-Redmine-Switch-User` nunca se activa |
+| Validación E2E en Redmine real | No realizada | Los IDs de custom fields (21-28) deben verificarse contra la instancia real |
+
+---
+
+## Bugs conocidos activos
+
+### En `frontend/src/pages/ConfigPanel.tsx`
+
+1. **TypeScript: props extra en `<RedmineTab>`** (línea 802): se pasan `assignmentRoles` y `redmineUsers` pero la interfaz del componente no los declara. No causa error en runtime (React los ignora) pero sí error de compilación TypeScript.
+
+2. **`redmineUsers` state nunca usada correctamente** (línea 697): el estado `redmineUsers` del componente principal se carga en `load()` pero el cast del resultado es incorrecto (la API devuelve un array, no `{ users: [] }`). El componente `RedmineTab` carga sus propios usuarios de forma independiente via su propio `useEffect`, por lo que el feature funciona, pero hay código muerto.
+
+3. **Null access en `assignmentRules.rol_funcional`** (línea 802): `assignmentRules` puede ser `null` en el primer render, pero no se comprueba antes de acceder a `.rol_funcional`. Podría lanzar TypeError si la carga de configs falla parcialmente.
+
+### En `backend/src/routes/intake.ts`
+
+4. **Debug logs en producción** (líneas 262-266, 293): `console.log` que imprimen datos de clasificación internos y el error completo de Redmine. Eliminar antes de despliegue.
+
+### En `backend/src/routes/config.ts`
+
+5. **Debug log en producción** (líneas 41 y 128): `console.log('[config GET] Reading:', filePath)` aparece tanto en el handler GET como en el PUT.
+
+### En `backend/src/services/redmine/index.ts`
+
+6. **`any` cast** (línea 92): `(mapping as any).role_to_user_id` — el tipo de retorno de `getRedmineMapping()` debería incluir `role_to_user_id`. Funciona pero viola `strict: true`.
+
+---
+
 ## Bugs resueltos (referencia histórica)
 
-Estos problemas ya han sido corregidos:
-
-1. ~~`frontend/src/main.tsx` — Falta `<AuthProvider>`~~ — **Resuelto**: `<AuthProvider>` envuelve `<App />`.
-2. ~~`frontend/src/App.tsx` — Usa `PLACEHOLDER_USER`~~ — **Resuelto**: usa `useAuth()` con flujo de 3 estados.
-3. ~~`backend/src/routes/intake.ts` — Sin `requireCompany()`~~ — **Resuelto**: ambas rutas llaman `requireCompany()`.
-4. ~~No existe `LoginPage.tsx`~~ — **Resuelto**: componente creado en `frontend/src/components/`.
-5. ~~No existe `CompanySelector.tsx`~~ — **Resuelto**: componente creado en `frontend/src/components/`.
-6. ~~`pruneExpiredTokens()` nunca se llama~~ — **Resuelto**: se invoca en `backend/src/index.ts` al arrancar.
-
----
-
-## Pendientes críticos (`__PENDIENTE__`)
-
-Estos valores en `config/redmine-mapping.json` bloquean la integración real con Redmine:
-
-```json
-{
-  "custom_fields": {
-    "nature": "__PENDIENTE__",
-    "solution_associated": "__PENDIENTE__",
-    "expertis_module": "__PENDIENTE__",
-    "block": "__PENDIENTE__",
-    "module": "__PENDIENTE__",
-    "need": "__PENDIENTE__",
-    "confidence": "__PENDIENTE__",
-    "review_status": "__PENDIENTE__"
-  },
-  "priority_mapping": {
-    "normal": "__PENDIENTE__",
-    "high": "__PENDIENTE__",
-    "urgent": "__PENDIENTE__"
-  },
-  "tracker_id": "__PENDIENTE__",
-  "status_id_initial": "__PENDIENTE__",
-  "company_to_project": {
-    "_default": "__PENDIENTE__"
-  }
-}
-```
-
-Para completarlos: pedir a Cobertec acceso a su instancia de Redmine y extraer los IDs con la API.
-
-También falta en `redmine_defaults`:
-- **`default_assignee_id`** — referenciado en `redmine/index.ts` como fallback del assignee pero no está definido en el JSON. Mientras no exista, los tickets se crearán sin asignar cuando `suggested_assignee` sea null.
+1. ~~`frontend/src/main.tsx` — Falta `<AuthProvider>`~~ — **Resuelto**
+2. ~~`frontend/src/App.tsx` — Usa `PLACEHOLDER_USER`~~ — **Resuelto**
+3. ~~`backend/src/routes/intake.ts` — Sin `requireCompany()`~~ — **Resuelto**
+4. ~~No existe `LoginPage.tsx`~~ — **Resuelto**
+5. ~~No existe `CompanySelector.tsx`~~ — **Resuelto**
+6. ~~`pruneExpiredTokens()` nunca se llama~~ — **Resuelto**
+7. ~~Subida de adjuntos secuencial~~ — **Resuelto**: `Promise.all` en `uploadAttachments()`
+8. ~~Custom fields `__PENDIENTE__`~~ — **Resuelto**: IDs 21-28 configurados
+9. ~~`role_to_user_id` no existe en config~~ — **Resuelto**: tabla completa con ~40 roles
 
 ---
 
-## Errores y mejoras detectadas en la revisión
-
-### Errores de documentación corregidos en este archivo
-
-1. ~~Endpoints de auth documentados como `/login` y `/refresh` separados~~ — **Corregido**: el endpoint real es `POST /auth/token` con `grant_type` para ambos casos.
-2. ~~`MeResponse` sin campo `is_superadmin`~~ — **Corregido**: añadido en el modelo de datos.
-3. ~~`ClassificationResponse` con `nature`/`domain` en el nivel raíz~~ — **Corregido**: están dentro del sub-objeto `classification: { nature, domain, object, action }`.
-4. ~~"Estado actual del frontend" incompleto~~ — **Corregido**: tabla ampliada con todos los componentes.
-5. ~~Admin y config routes no documentadas~~ — **Corregido**: añadidas secciones para `admin.ts` y `config.ts`.
-
-### Mejoras pendientes antes de producción
+## Mejoras pendientes antes de producción
 
 | Prioridad | Área | Descripción |
 |-----------|------|-------------|
-| **Alta** | Config | Completar todos los `__PENDIENTE__` con IDs reales de Redmine |
-| **Alta** | Config | Definir `redmine_defaults.default_assignee_id` en redmine-mapping.json |
-| **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite o Redis antes de producción para sobrevivir reinicios |
-| **Media** | Backend | Subida de adjuntos secuencial en `RedmineClient.uploadAttachments()` → paralelizar con `Promise.all()` |
-| **Media** | Backend | `config.ts` mezcla tabs y espacios en la indentación (líneas 24-33, 49-58) — formatear con Prettier |
+| **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite/Redis para sobrevivir reinicios |
+| **Alta** | Config | Definir `redmine_defaults.default_assignee_id` con ID numérico real de Redmine |
+| **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a un proyecto de producción real |
+| **Alta** | Backend | Eliminar todos los `console.log` de debug en intake.ts, config.ts, redmine/index.ts |
+| **Alta** | Backend | Poblar el campo `redmine_login` en usuarios para activar la impersonación en Redmine |
+| **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen realmente en la instancia Redmine de Cobertec |
+| **Media** | Frontend | Bugs de TypeScript en ConfigPanel.tsx (props extra, null access, cast incorrecto) |
 | **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` |
-| **Baja** | Auth | El guard de admin en `admin.ts` usa `isAdmin()` pero la función real comprueba sólo el rol en `user_companies`; los superadmin necesitan el guard `isSuperAdmin()` también (ya gestionado en la función) |
-
----
-
-## Estrategia de integración Redmine
-
-**El backend y frontend se finalizan primero**, sin tocar Redmine en producción. La integración real con Redmine es Fase 2. Durante el desarrollo, `SimulatedRedmineClient` cubre el flujo completo.
+| **Media** | Backend | Añadir tipo explícito para `role_to_user_id` en el tipo de retorno de `getRedmineMapping()` |
+| **Media** | Auth | No hay rate limiting en `POST /api/auth/token` — riesgo de fuerza bruta |
+| **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` |
+| **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` con instrucciones de ejecución |
 
 ---
 
@@ -521,15 +579,18 @@ npm run dev
 
 | Necesidad | Dónde |
 |---|---|
-| Nueva naturaleza o dominio | `config/taxonomy.json` |
+| Nueva naturaleza o dominio | `config/taxonomy.json` + actualizar listas en `backend/src/types.ts` y `frontend/src/types.ts` |
 | Nueva regla de need | `config/redmine-mapping.json` → `need_resolution` |
+| Nueva solución Redmine | `config/redmine-mapping.json` → `solution_resolution` + tabla `SOLUTION_NORMALIZE` en `redmine/index.ts` |
 | Nueva regla de asignación | `config/assignment-rules.json` |
+| Nuevo rol funcional → usuario Redmine | `config/redmine-mapping.json` → `role_to_user_id` (editable desde ConfigPanel pestaña Redmine) |
+| Nueva empresa → proyecto Redmine | `config/redmine-mapping.json` → `company_to_project` |
 | Nuevo proveedor LLM | `backend/src/services/classifier/provider-*.ts` + factory en `index.ts` |
-| Nuevo campo custom en ticket | `redmine-mapping.json` → `custom_fields` + `ticket-composer.ts` |
+| Nuevo campo custom en ticket | `redmine-mapping.json` → `custom_fields` + `redmine/index.ts` → `buildIssuePayload()` |
 | Nuevo componente UI | `frontend/src/components/` |
 | Nuevo endpoint | `backend/src/routes/` + registro en `index.ts` |
 | Nuevo usuario/empresa | `backend/scripts/seed-identity.ts` o vía AdminPanel → `POST /api/admin/users` |
-| Gestionar usuarios en producción | `frontend/src/pages/ConfigPanel.tsx` (admin/superadmin) o `GET/POST /api/admin/*` |
+| Poblar redmine_login de usuario | Query directa a identity.db: `UPDATE users SET redmine_login='login.redmine' WHERE id='...'` |
 
 ---
 
@@ -548,6 +609,6 @@ npm run dev
 | `rendimiento_bloqueo` | Lentitud, cuelgues, rendimiento |
 | `ambiguo` | No clasificable |
 
-## Dominios principales (19 total)
+## Dominios (21 total)
 
-`funcionamiento_general`, `compras`, `ventas_facturacion`, `almacen_stocks`, `gmao`, `movilsat`, `portal_ot`, `presupuestos_proyectos`, `financiero`, `crm`, `ofertas_comerciales`, `planificador_inteligente`, `app_fichajes`, `servidor_sistemas`, `tarifas_catalogos`, `usuarios_accesos`, `informes_documentos`, `sesiones_conectividad`, `solucionesia`, `dominio_no_claro`
+`funcionamiento_general`, `compras`, `ventas_facturacion`, `almacen_stocks`, `gmao`, `movilsat`, `portal_ot`, `presupuestos_proyectos`, `financiero`, `crm`, `ofertas_comerciales`, `planificador_inteligente`, `app_fichajes`, `servidor_sistemas`, `tarifas_catalogos`, `usuarios_accesos`, `informes_documentos`, `sesiones_conectividad`, `solucionesia`, `dominio_no_claro`, `academia_cobertec`, `ecommerce_web`

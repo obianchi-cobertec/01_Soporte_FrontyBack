@@ -191,14 +191,6 @@
       "priority": 2,
       "block": "financiero",
       "module": "*",
-      "need": "error",
-      "solution": "Expertis / Movilsat ERP",
-      "assignee": "soporte_errores_expertis"
-    },
-    {
-      "priority": 2,
-      "block": "financiero",
-      "module": "*",
       "need": "*",
       "solution": "Expertis / Movilsat ERP",
       "assignee": "financiero_formacion"
@@ -258,22 +250,6 @@
       "need": "*",
       "solution": "Resto",
       "assignee": "otras_operativa"
-    },
-    {
-      "priority": 2,
-      "block": "academia",
-      "module": "*",
-      "need": "*",
-      "solution": "Academia Cobertec",
-      "assignee": "academia_operativa"
-    },
-    {
-      "priority": 2,
-      "block": "ecommerce",
-      "module": "*",
-      "need": "*",
-      "solution": "Ecommerce / Web",
-      "assignee": "ecommerce_operativa"
     },
     {
       "_comment": "── PRIORIDAD 3: Genéricas por need — solo aplican cuando ningún bloque específico matcheó ──"
@@ -378,9 +354,7 @@
     "soporte_sesiones_generales": "Soporte sesiones generales",
     "solucionesia_operativa": "Soluciones IA operativa",
     "tarifas_operativa": "Tarifas operativa",
-    "otras_operativa": "Otras operativa",
-    "academia_operativa": "Academia Cobertec",
-    "ecommerce_operativa": "Ecommerce / Web"
+    "otras_operativa": "Otras operativa"
   },
   "default_assignee": "soporte_errores_expertis",
   "review_status_overrides": {

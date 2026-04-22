@@ -558,7 +558,7 @@
       {
         "id": "usuarios_accesos",
         "label": "Usuarios y accesos",
-        "description": "Accesos, permisos y usuarios del ERP Expertis/Movilsat o de la plataforma de incidencias Cobertec. NO aplica para otras aplicaciones (app fichajes, planificador, academia, BI, portal OT, movilsat app).",
+        "description": "Usuarios, login, permisos, visibilidad, roles, accesos y seguridad operativa.",
         "keywords_positive": [
           "usuario",
           "login",
@@ -572,27 +572,11 @@
           "sesión"
         ],
         "keywords_negative": [
-          "bi",
-          "curso online",
-          "business intelligence",
-          "pedido",
-          "portal órdenes",
-          "movilsat",
-          "presupuesto",
-          "app móvil",
-          "app fichajes",
-          "formación online",
-          "gmao",
-          "planificador",
-          "movilsat app",
-          "academia",
-          "fichaje",
-          "portal ot",
           "factura",
-          "fichar",
-          "app de fichajes",
-          "planificador inteligente",
-          "power bi"
+          "pedido",
+          "presupuesto",
+          "gmao",
+          "movilsat"
         ],
         "confusion_with": [
           "servidor_sistemas",
@@ -607,10 +591,6 @@
           "no puedo entrar con mi usuario",
           "hay que cambiar permisos",
           "no me aparece la opción"
-        ],
-        "decision_rules": [
-          "SOLO para accesos/usuarios de Expertis ERP o de la plataforma de incidencias Cobertec",
-          "Si el acceso es para CUALQUIER otra aplicación (app fichajes, planificador, academia, BI, portal OT, movilsat app) → usar el dominio de ESA aplicación, no usuarios_accesos"
         ]
       },
       {
@@ -631,12 +611,9 @@
           "filtro"
         ],
         "keywords_negative": [
+          "usuario",
           "login",
-          "capítulos presupuesto",
-          "resumen capítulos",
-          "impresión presupuesto",
-          "vpn",
-          "usuario"
+          "vpn"
         ],
         "confusion_with": [
           "ventas_facturacion",
@@ -651,9 +628,6 @@
           "el informe sale mal",
           "hay que añadir una columna al listado",
           "no genera el PDF"
-        ],
-        "decision_rules": [
-          "NO usar si el informe o impresión es de un presupuesto con capítulos → usar presupuestos_proyectos"
         ]
       },
       {
@@ -767,59 +741,38 @@
       {
         "id": "ventas_facturacion",
         "label": "Ventas y facturación",
-        "description": "Módulo Logística → Ventas del ERP. Ciclo: pedido de venta → expedición → albarán de venta → facturación → factura de venta → impresión. También compras: pedido de compra → albarán de compra → factura de compra. El eje es el DOCUMENTO logístico, no el proceso financiero posterior. Una vez emitida la factura y llega a tesorería/contabilidad → financiero.",
+        "description": "Ventas, facturas, cobros, albaranes, presupuestos comerciales y procesos asociados.",
         "keywords_positive": [
-          "factura de venta",
+          "factura",
+          "venta",
           "albarán",
-          "pedido de venta",
+          "presupuesto",
+          "cobro",
+          "cliente",
           "abono",
-          "serie factura",
-          "facturar",
-          "expedición",
-          "tarifa de venta",
-          "precio de venta",
-          "portes",
-          "factura proforma"
+          "pedido de venta",
+          "iva",
+          "serie"
         ],
         "keywords_negative": [
           "compra",
           "proveedor",
-          "vpn",
-          "tbai",
-          "sii",
-          "remesa",
-          "asiento",
-          "contabilidad",
-          "balance"
+          "vpn"
         ],
         "confusion_with": [
           "financiero",
           "informes_documentos",
           "ofertas_comerciales"
         ],
-        "decision_rules": [
-          "Usar cuando el eje es crear, imprimir o gestionar el documento de venta (pedido, albarán, factura como documento)",
-          "Si el contexto es cobrar, contabilizar, declarar impuestos o hacer asientos → financiero",
-          "Ante la duda entre ventas_facturacion y financiero → financiero",
-          "Tarifas de venta, precios, portes en albarán → ventas_facturacion",
-          "SII, TBAI, remesas → NUNCA ventas_facturacion, siempre financiero"
-        ],
         "examples_positive": [
-          "no genera la factura de venta",
-          "el albarán sale mal",
-          "problema con el pedido de venta",
-          "cómo borrar varios albaranes a la vez",
-          "tarifa de portes incorrecta en albarán"
-        ],
-        "examples_negative": [
-          "error al enviar TBAI",
-          "no puedo crear la remesa",
-          "descuadre en el balance"
+          "no genera la factura",
+          "el abono sale mal",
+          "descuadre en el IVA"
         ],
         "examples": [
           "no genera la factura",
-          "el albarán sale mal",
-          "problema con tarifa de portes"
+          "el abono sale mal",
+          "descuadre en el IVA"
         ]
       },
       {
@@ -855,44 +808,33 @@
       {
         "id": "gmao",
         "label": "GMAO",
-        "description": "Módulo central del ERP para empresas instaladoras y mantenedoras. Gestiona Órdenes de Trabajo (OTs) originadas por: mantenimiento correctivo (avería de cliente), mantenimiento preventivo (contrato periódico) u oferta comercial. Organiza el trabajo de los técnicos de campo.",
+        "description": "Gestión de órdenes de trabajo (OTs), partes de trabajo, mantenimiento preventivo y correctivo, reglamentos, revisiones y activos. Es el módulo donde se crean, envían y gestionan las OTs de los técnicos.",
         "keywords_positive": [
+          "gmao",
+          "ot",
           "ots",
-          "mantenimiento",
-          "caldera",
-          "correctivo",
-          "avería",
-          "parte de trabajo",
-          "parte",
-          "reglamento",
-          "técnico",
-          "revisiones",
-          "planificador",
-          "órdenes de trabajo",
-          "activos",
-          "aire acondicionado",
-          "revisiones programadas",
-          "equipo",
-          "preventivo",
           "orden de trabajo",
-          "técnicos",
-          "técnicos no ven",
+          "órdenes de trabajo",
+          "parte",
+          "parte de trabajo",
+          "partes de trabajo",
+          "reglamento",
+          "reglamentos",
+          "mantenimiento",
+          "mantenimiento preventivo",
+          "mantenimiento correctivo",
+          "revisión",
+          "revisiones",
+          "activo",
+          "activos",
           "enviar ot",
           "enviar ots",
-          "detalle de ot",
-          "gestores",
-          "contrato de mantenimiento",
+          "técnicos no ven",
           "listado ot",
-          "gmao",
-          "mantenimiento correctivo",
+          "detalle de ot",
           "gestor",
-          "reglamentos",
-          "ot",
-          "revisión",
-          "partes de trabajo",
-          "instalación",
-          "activo",
-          "mantenimiento preventivo"
+          "gestores",
+          "contrato de mantenimiento"
         ],
         "keywords_negative": [
           "factura",
@@ -906,13 +848,9 @@
           "movilsat"
         ],
         "decision_rules": [
-          "Usar para todo lo relacionado con la gestión de Órdenes de Trabajo en oficina",
-          "Mantenimiento correctivo (avería de cliente) → gmao",
-          "Mantenimiento preventivo (contrato periódico de revisiones) → gmao",
-          "Gestión de activos, reglamentos, revisiones programadas → gmao",
-          "Organización y planificación del trabajo de técnicos de campo → gmao",
-          "OTs de mantenimiento correctivo o preventivo → gmao. OTs de oferta comercial → ofertas_comerciales",
-          "NO confundir con movilsat, que es la app móvil que usan los técnicos en campo"
+          "Cualquier mención a OTs, partes de trabajo, técnicos que reciben OTs, o mantenimiento → GMAO.",
+          "Solo usar portal_ot si el cliente menciona explícitamente 'portal' o 'portal OT'.",
+          "En caso de duda entre GMAO y Portal OT, elegir GMAO."
         ],
         "examples_positive": [
           "no sale la OT",
@@ -936,30 +874,18 @@
       {
         "id": "movilsat",
         "label": "Movilsat",
-        "description": "Aplicación móvil para técnicos de campo, integrada con el módulo GMAO de Expertis. Los técnicos la usan en tablets/móviles para registrar mano de obra, materiales y tiempos, y elaborar el Parte de Trabajo que firma el cliente. Se sincroniza en tiempo real con la oficina.",
+        "description": "Operativa relacionada con la app móvil Movilsat. Cuando se menciona Movilsat sin complemento, se refiere a la aplicación móvil y no al ERP.",
         "keywords_positive": [
-          "app móvil",
-          "movil",
-          "sincronizar",
-          "parte de trabajo",
-          "sincroniza",
-          "app técnico",
-          "parte movilsat",
-          "dispositivo técnico",
-          "firma cliente",
-          "sincronización movilsat",
-          "sincronización",
           "movilsat",
-          "no sincroniza",
-          "móvil",
           "app movilsat",
-          "smartphone",
+          "parte movilsat",
+          "sincronización movilsat",
+          "app móvil",
           "app movil",
-          "informe técnico",
-          "materiales parte",
-          "técnico móvil",
+          "móvil",
+          "movil",
           "tablet",
-          "mano de obra"
+          "smartphone"
         ],
         "keywords_negative": [
           "gmao",
@@ -983,14 +909,6 @@
           "problema en parte de Movilsat",
           "problema en la app móvil de Movilsat",
           "no sincroniza la app de Movilsat"
-        ],
-        "decision_rules": [
-          "Usar cuando el problema es en la app móvil que usan los técnicos en campo",
-          "Sincronización de OTs entre tablet/móvil y servidor → movilsat",
-          "Técnico no puede enviar parte de trabajo → movilsat",
-          "Problemas con la app en el dispositivo del técnico → movilsat",
-          "Si el problema es en la gestión de OTs desde la OFICINA → gmao, no movilsat",
-          "Movilsat sin complemento = app móvil. \"Movilsat ERP\" = el ERP completo (Expertis)"
         ]
       },
       {
@@ -1020,10 +938,9 @@
           "movilsat"
         ],
         "decision_rules": [
-          "En caso de duda entre Portal OT y GMAO, elegir GMAO.",
           "Usar SOLO si el cliente menciona explícitamente la palabra 'portal'.",
           "Si habla de OTs, partes, técnicos o mantenimiento sin mencionar 'portal' → usar GMAO.",
-          "PRIORIDAD: cualquier solicitud de acceso o usuario del portal OT → portal_ot"
+          "En caso de duda entre Portal OT y GMAO, elegir GMAO."
         ],
         "examples_positive": [
           "no accede al portal OT",
@@ -1043,37 +960,14 @@
       {
         "id": "presupuestos_proyectos",
         "label": "Presupuestos y proyectos",
-        "description": "Módulo de gestión de grandes obras y proyectos. Un presupuesto aceptado se convierte en proyecto/obra desde donde se gestionan compras, certificaciones, mediciones, etc. Ejemplos: instalación eléctrica de edificio, fontanería, climatización completa.",
+        "description": "Obras, proyectos, presupuestos de obra, costes y partidas.",
         "keywords_positive": [
           "obra",
-          "hito",
-          "margen proyecto",
-          "coste",
-          "mediciones",
-          "certificaciones",
-          "obras",
-          "bc3",
-          "hitos",
-          "presto",
-          "resumen capítulos",
-          "incremento capítulo",
-          "certificación",
-          "bibliotecas",
-          "capítulo",
-          "proyectos",
           "proyecto",
-          "presupuesto de obra",
           "partida",
-          "capítulos",
-          "compra de obra",
-          "biblioteca",
-          "medición",
-          "facturación obra",
-          "importar presupuesto",
-          "exportar presupuesto",
-          "importar desde excel",
-          "pasar presupuesto desde excel",
-          "presupuesto excel"
+          "coste",
+          "presupuesto de obra",
+          "medición"
         ],
         "keywords_negative": [
           "oferta comercial",
@@ -1085,32 +979,17 @@
         ],
         "examples_positive": [
           "no calcula el coste de la obra",
-          "problema con partida",
-          "importar presupuesto desde Excel",
-          "pasar un presupuesto desde BC3",
-          "certificaciones del proyecto",
-          "facturar desde proyectos"
+          "problema con partida"
         ],
         "examples": [
           "no calcula el coste de la obra",
-          "problema con partida",
-          "importar presupuesto desde Excel"
-        ],
-        "decision_rules": [
-          "Usar cuando se habla de obras, proyectos grandes, certificaciones, mediciones, BC3, biblioteca o hitos",
-          "Un presupuesto aceptado que se convierte en proyecto/obra → presupuestos_proyectos",
-          "Instalaciones grandes (edificio, nave, etc.) → presupuestos_proyectos",
-          "Importar/exportar presupuesto desde Excel o BC3/Presto → presupuestos_proyectos (el cliente a veces confunde importar/exportar)",
-          "Certificaciones de un proyecto → presupuestos_proyectos",
-          "Facturar desde proyectos, hitos de facturación → presupuestos_proyectos",
-          "NO confundir con ofertas_comerciales que son presupuestos pequeños de venta directa",
-          "PRIORIDAD ABSOLUTA: si la descripción menciona \"capítulos\" en el contexto de presupuestos → presupuestos_proyectos SIEMPRE, aunque también mencione \"informe\", \"impresión\" o \"resumen\". Los capítulos son una estructura exclusiva de este módulo."
+          "problema con partida"
         ]
       },
       {
         "id": "financiero",
         "label": "Financiero",
-        "description": "Módulo financiero del ERP. Empieza donde termina la logística (ventas/compras). Cubre: TESORERÍA (cobros, pagos, contabilización de facturas de venta y compra, remesas bancarias, SEPA), IMPUESTOS (IVA, modelos de declaración, SII, Verifactu), CONTABILIDAD (ejercicio contable, diario, asientos, balances, cuentas contables), TBAI/Batuz (impuestos regionales País Vasco). IMPORTANTE: facturas de venta y compra pueden aparecer también en ventas_facturacion/compras, pero ante la duda usar financiero. TBAI, SII y remesas van SIEMPRE aquí aunque el error parezca técnico.",
+        "description": "Contabilidad, balances, asientos, tesorería, impuestos y pagos.",
         "keywords_positive": [
           "contabilidad",
           "balance",
@@ -1118,87 +997,41 @@
           "pago",
           "tesorería",
           "asiento",
-          "cuenta contable",
+          "cuenta",
           "iva",
           "modelo fiscal",
           "cobro",
-          "remesa",
-          "sii",
-          "tbai",
-          "ticket bai",
-          "batuz",
-          "verifactu",
-          "sepa",
-          "mandato",
-          "descuadre",
-          "contabilizar",
-          "ejercicio contable",
-          "diario contable",
-          "cierre contable",
-          "declaración iva",
-          "modelo 303",
-          "modelo 347",
-          "cuenta de amortización",
-          "amortización",
-          "programas de venta",
-          "traspaso de saldos"
+          "remesa"
         ],
         "keywords_negative": [
           "pedido",
           "ot",
-          "vpn",
-          "albarán",
-          "presupuesto de obra"
+          "vpn"
         ],
         "confusion_with": [
           "ventas_facturacion",
           "informes_documentos"
         ],
-        "decision_rules": [
-          "TBAI, TicketBai, Batuz → SIEMPRE financiero, aunque el error parezca técnico (SSL, certificado, conexión)",
-          "SII, Verifactu → SIEMPRE financiero",
-          "Remesas bancarias, cobros, pagos, SEPA → financiero",
-          "Descuadre en balances, asientos contables, cierres → financiero",
-          "Facturas de venta/compra: si el contexto es contabilización, cobro, pago o impuestos → financiero. Si el contexto es crear/imprimir/enviar el documento logístico → ventas_facturacion o compras",
-          "Ante la duda entre financiero y ventas_facturacion → financiero",
-          "Programas de venta (renovación de contratos con incremento IPC, etc.) → financiero"
-        ],
         "examples_positive": [
           "problema con asiento",
-          "descuadre en balance",
-          "error al enviar TBAI",
-          "error certificado TicketBai",
-          "no puedo crear la remesa",
-          "error al contabilizar factura",
-          "traspaso de saldos contables",
-          "cierre del IVA trimestral"
-        ],
-        "examples_negative": [
-          "crear pedido de venta",
-          "albarán de venta bloqueado",
-          "problema con OT"
+          "descuadre en balance"
         ],
         "examples": [
           "problema con asiento",
-          "descuadre en balance",
-          "error al enviar TBAI",
-          "no puedo crear la remesa"
+          "descuadre en balance"
         ]
       },
       {
         "id": "crm",
         "label": "CRM",
-        "description": "Módulo de seguimiento comercial de clientes potenciales. Muy poco usado. Las consultas suelen mencionar explícitamente \"CRM\".",
+        "description": "Gestión comercial, oportunidades, seguimiento y clientes potenciales.",
         "keywords_positive": [
-          "seguimiento",
-          "embudo de ventas",
           "crm",
-          "contacto",
-          "comercial",
-          "cliente potencial",
-          "seguimiento comercial",
           "oportunidad",
-          "pipeline"
+          "comercial",
+          "seguimiento",
+          "cliente potencial",
+          "contacto"
         ],
         "keywords_negative": [
           "factura",
@@ -1214,37 +1047,21 @@
         "examples": [
           "no guarda la oportunidad",
           "problema con contacto"
-        ],
-        "decision_rules": [
-          "Solo usar si el cliente menciona explícitamente CRM o seguimiento comercial de oportunidades",
-          "NO confundir con ofertas_comerciales — son módulos distintos y no integrados"
         ]
       },
       {
         "id": "ofertas_comerciales",
         "label": "Ofertas comerciales",
-        "description": "Módulo de ofertas comerciales para presupuestos pequeños de venta directa. Ejemplos: oferta para instalar un aire acondicionado, venta de un producto, reparación de una caldera. No incluye grandes obras ni proyectos.",
+        "description": "Ofertas y propuestas comerciales.",
         "keywords_positive": [
-          "ot desde oferta",
-          "convertir oferta",
-          "propuesta comercial",
-          "orden de trabajo",
           "oferta",
-          "presupuesto comercial",
-          "oferta a ot"
+          "propuesta comercial",
+          "presupuesto comercial"
         ],
         "keywords_negative": [
           "obra",
-          "biblioteca",
-          "certificación",
-          "hito",
           "partida",
-          "factura",
-          "capítulo",
-          "bc3",
-          "proyecto grande",
-          "presto",
-          "medición"
+          "factura"
         ],
         "confusion_with": [
           "presupuestos_proyectos",
@@ -1257,12 +1074,6 @@
         "examples": [
           "no genera la oferta",
           "queremos modificar la propuesta comercial"
-        ],
-        "decision_rules": [
-          "Solo para presupuestos pequeños de venta directa o servicios puntuales",
-          "NO usar si se habla de obras grandes, proyectos, certificaciones o capítulos → usar presupuestos_proyectos",
-          "Ejemplos correctos: oferta para instalar un split, reparación de caldera, venta de producto",
-          "Una oferta comercial puede convertirse en Orden de Trabajo (OT de venta). Si el cliente habla de OT originada desde una oferta o presupuesto pequeño → ofertas_comerciales. NO confundir con OTs de mantenimiento preventivo/correctivo que van en gmao."
         ]
       },
       {
@@ -1284,9 +1095,6 @@
         "examples": [
           "problema en planificador",
           "no calcula planificación"
-        ],
-        "decision_rules": [
-          "PRIORIDAD: cualquier solicitud de acceso, usuario o licencia del planificador inteligente → planificador_inteligente"
         ]
       },
       {
@@ -1294,26 +1102,13 @@
         "label": "App fichajes",
         "description": "Control horario, fichajes y registro de jornada.",
         "keywords_positive": [
-          "fichar",
-          "usuario fichajes",
-          "crear usuario app",
           "fichaje",
-          "usuario app",
-          "app fichajes",
-          "alta app",
-          "app móvil fichajes",
-          "nuevo usuario app",
-          "registro jornada",
-          "fichajes",
-          "alta usuario fichajes",
+          "fichar",
           "control horario",
-          "app de fichajes"
+          "registro jornada",
+          "app fichajes"
         ],
-        "keywords_negative": [
-          "expertis",
-          "movilsat",
-          "gmao"
-        ],
+        "keywords_negative": [],
         "confusion_with": [],
         "examples_positive": [
           "no deja fichar",
@@ -1322,10 +1117,6 @@
         "examples": [
           "no deja fichar",
           "error en registro de jornada"
-        ],
-        "decision_rules": [
-          "PRIORIDAD ABSOLUTA: si menciona \"app de fichajes\", \"fichar\", \"fichaje\" o \"app fichajes\" → app_fichajes SIEMPRE, aunque también mencione usuario o acceso",
-          "Esta regla prevalece sobre usuarios_accesos cuando el contexto es la app de fichajes"
         ]
       },
       {
@@ -1342,15 +1133,7 @@
           "conexión",
           "base de datos",
           "servicio",
-          "certificado",
-          "vpn",
-          "openvpn",
-          "open vpn",
-          "vpn",
-          "openvpn",
-          "open vpn",
-          "vpn error",
-          "aviso vpn"
+          "certificado"
         ],
         "keywords_negative": [
           "factura",
@@ -1363,17 +1146,11 @@
         ],
         "examples_positive": [
           "problema con servidor",
-          "copia de seguridad falla",
-          "error en openvpn",
-          "aviso de vpn",
-          "problema con la vpn"
+          "copia de seguridad falla"
         ],
         "examples": [
           "problema con servidor",
           "copia de seguridad falla"
-        ],
-        "decision_rules": [
-          "Si menciona VPN o OpenVPN → servidor_sistemas con need=vpn2"
         ]
       },
       {
@@ -1442,9 +1219,6 @@
           "agente de IA",
           "flujo n8n",
           "integración con OpenAI"
-        ],
-        "decision_rules": [
-          "PRIORIDAD: cualquier solicitud de acceso o usuario de soluciones IA → solucionesia"
         ]
       },
       {

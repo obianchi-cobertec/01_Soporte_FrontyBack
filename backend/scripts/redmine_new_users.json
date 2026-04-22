@@ -1,0 +1,79 @@
+﻿[
+    {
+        "id":  61,
+        "login":  "atlantica",
+        "firstname":  "atlantica",
+        "lastname":  "atlantica",
+        "mail":  "albertogracia@gmail.com"
+    },
+    {
+        "id":  45,
+        "login":  "biciclick",
+        "firstname":  "biciclick",
+        "lastname":  "biciclick",
+        "mail":  "fmartin@alberamedioambiente.com"
+    },
+    {
+        "id":  70,
+        "login":  "burgosalson",
+        "firstname":  "burgosalson",
+        "lastname":  "burgosalson",
+        "mail":  "ciudaddeladanza@me.com"
+    },
+    {
+        "id":  247,
+        "login":  "david_campomar",
+        "firstname":  "David",
+        "lastname":  "Campomar",
+        "mail":  "avellana.campomar@gmail.com"
+    },
+    {
+        "id":  248,
+        "login":  "ana_campomar",
+        "firstname":  "Ana",
+        "lastname":  "Campomar",
+        "mail":  "facturacion@campomar.com.es"
+    },
+    {
+        "id":  76,
+        "login":  "gaudi",
+        "firstname":  "gaudi",
+        "lastname":  "gaudi",
+        "mail":  "gaudi@libreriagaudi.com"
+    },
+    {
+        "id":  48,
+        "login":  "parentesis",
+        "firstname":  "parentesis",
+        "lastname":  "parentesis",
+        "mail":  "libreriaparentesis2@gmail.com"
+    },
+    {
+        "id":  165,
+        "login":  "sergio_urquiza",
+        "firstname":  "Sergio",
+        "lastname":  "Urquiza",
+        "mail":  "marketing@suministrosurquiza.com"
+    },
+    {
+        "id":  63,
+        "login":  "docutel",
+        "firstname":  "docutel",
+        "lastname":  "docutel",
+        "mail":  "comercial@docutel.es"
+    },
+    {
+        "id":  116,
+        "login":  "mguzman",
+        "firstname":  "María Cruz",
+        "lastname":  "Guzmán",
+        "mail":  "mcguzmanv@hotmail.com"
+    },
+    {
+        "id":  110,
+        "login":  "Lomar",
+        "firstname":  "Transportes",
+        "lastname":  "Lomar",
+        "mail":  "transporteslomar@hotmail.com"
+    }
+]

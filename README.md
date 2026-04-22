@@ -18,13 +18,14 @@ Frontend React (Vite, :5173)
   │  GET  /api/identity/me       → [Datos del usuario actual]
   │  POST /api/intake/submit     → [Clasificación IA]  ← requiere auth+empresa
   │  POST /api/intake/confirm    → [Crear ticket]       ← requiere auth+empresa
+  │  GET  /api/config/redmine-users → [Usuarios Redmine @cobertec.com] ← requiere admin
   │  GET/PUT /api/config/:file   → [Configuración JSON] ← requiere admin
   │  GET/POST/PATCH/DELETE /api/admin/*  → [CRUD usuarios/empresas] ← requiere admin
   │  GET  /api/metrics           → [Métricas piloto]
   ▼
 Backend Fastify (:3001)
   ├── Auth Plugin (JWT verification)
-  ├── Identity Store (SQLite: usuarios, empresas, tokens)
+  ├── Identity Store (SQLite: usuarios, empresas, tokens, redmine_login)
   ├── Motor IA (Claude / GPT-4o)  ←→  Anthropic / OpenAI API
   ├── Cliente Redmine              ←→  Redmine API
   └── Event Store (SQLite: métricas)
@@ -34,9 +35,9 @@ Backend Fastify (:3001)
 
 Las tres decisiones clave se leen de JSON en `/config/` (sin recompilación):
 
-- **`taxonomy.json`** — Taxonomía de naturaleza y dominio del problema
-- **`redmine-mapping.json`** — Mapeo taxonomía → campos Redmine
-- **`assignment-rules.json`** — Reglas de enrutamiento a equipo/rol
+- **`taxonomy.json`** — Taxonomía de naturaleza (10) y dominio (21) del problema; keywords, ejemplos y reglas de decisión
+- **`redmine-mapping.json`** — Mapeo taxonomía → campos Redmine; IDs custom fields, prioridades, asignados, proyectos por empresa
+- **`assignment-rules.json`** — Reglas de enrutamiento a equipo/rol (deterministas, post-LLM)
 
 ---
 
@@ -46,15 +47,21 @@ Las tres decisiones clave se leen de JSON en `/config/` (sin recompilación):
 cobertec-intake/
 │
 ├── config/                          # Configuración externalizada (leída en runtime)
-│   ├── taxonomy.json                # 10 naturalezas × 19 dominios; keywords, ejemplos, reglas
-│   ├── redmine-mapping.json         # need_resolution, block/module por dominio, campos custom, prioridades
+│   ├── taxonomy.json                # 10 naturalezas × 21 dominios; keywords, ejemplos, reglas de decisión
+│   ├── redmine-mapping.json         # need_resolution, block/module por dominio, custom fields (IDs 21-28),
+│   │                                # role_to_user_id (~40 roles), company_to_project (~120 clientes)
 │   └── assignment-rules.json        # Reglas maestras: (need+block+module+solution) → rol/asignado
 │
 ├── backend/
-│   ├── .env                         # Variables de entorno (API keys, Redmine URL, puerto)
+│   ├── .env                         # Variables de entorno (API keys, Redmine URL, puerto) — NO commitear
 │   ├── package.json
 │   ├── scripts/
-│   │   └── seed-identity.ts         # Crea usuarios/empresas de prueba; usar desde backend/
+│   │   ├── seed-identity.ts         # Crea usuarios/empresas de prueba (contraseña: test1234)
+│   │   ├── add-test-user.ts         # Añade un usuario de prueba concreto
+│   │   ├── check-db.ts              # Diagnóstico: lista tablas y conteos de identity.db
+│   │   ├── check-schema.ts          # Verifica columnas esperadas en el esquema
+│   │   ├── import-redmine-clients.ts # Importa proyectos Redmine como empresas en identity.db
+│   │   └── import-new-projects.ts   # Importa nuevos proyectos/clientes desde Redmine
 │   └── src/
 │       ├── index.ts                 # Arranque Fastify: CORS, cookie, auth plugin, rutas, shutdown
 │       ├── types.ts                 # Contratos de datos de intake (Nature, Domain, Classification…)
@@ -70,7 +77,7 @@ cobertec-intake/
 │       │   ├── identity.ts          # GET /identity/me (incluye is_superadmin)
 │       │   ├── intake.ts            # POST /submit y /confirm; session store en memoria; orquestación
 │       │   ├── admin.ts             # CRUD /admin/users y /admin/companies; requiere rol admin
-│       │   ├── config.ts            # GET+PUT /config/:file (taxonomy|redmine-mapping|assignment-rules); requiere admin
+│       │   ├── config.ts            # GET+PUT /config/:file; GET /config/redmine-users; requiere admin
 │       │   └── metrics.ts           # GET /metrics, /metrics/recent, /metrics/session/:id
 │       └── services/
 │           ├── auth/
@@ -79,6 +86,7 @@ cobertec-intake/
 │           ├── identity/
 │           │   ├── index.ts         # Re-exports del store
 │           │   └── store.ts         # IdentityStore: SQLite (contacts, users, companies, refresh_tokens)
+│           │                        #   users incluye: is_superadmin, redmine_login (para impersonación)
 │           ├── classifier/
 │           │   ├── index.ts              # ClassifierService orquestador; factory por proveedor; singleton
 │           │   ├── llm-provider.ts       # Interfaz abstracta: name, call(systemPrompt, userPrompt)
@@ -89,8 +97,12 @@ cobertec-intake/
 │           │   ├── provider-openai.ts    # Cliente openai (gpt-4o)
 │           │   └── dynamic-questions.ts  # Genera 0-2 preguntas de aclaración según nivel de confianza
 │           ├── redmine/
-│           │   ├── index.ts         # RedmineClient (real) y SimulatedRedmineClient (dev/test)
-│           │   └── ticket-composer.ts    # Formatea asunto y descripción del ticket desde la clasificación
+│           │   ├── index.ts         # RedmineClient (real) + SimulatedRedmineClient (dev/test)
+│           │   │                    #   buildIssuePayload(): normaliza solution/module, resuelve assignee
+│           │   │                    #   uploadAttachments(): parallel (Promise.all)
+│           │   │                    #   impersonación X-Redmine-Switch-User si user tiene redmine_login
+│           │   └── ticket-composer.ts    # Formatea asunto (stripSubject, truncate, prefijo [REVISIÓN])
+│           │                            #   y descripción del ticket
 │           └── events/
 │               └── index.ts         # Event store SQLite; 10 tipos de evento; consultas por sesión/métrica
 │
@@ -112,6 +124,7 @@ cobertec-intake/
         │   ├── TicketResult.tsx      # Pantalla de éxito: ticket_id + ticket_url
         │   ├── ErrorDisplay.tsx      # Mensaje de error + botones Reintentar / Nueva incidencia
         │   ├── Dashboard.tsx         # Métricas piloto: totales, tasa completado, distribución confianza
+        │   ├── AdminPanel.tsx        # CRUD usuarios y empresas para admins
         │   ├── StepIndicator.tsx     # Indicador visual de progreso (breadcrumb)
         │   └── Loading.tsx           # Spinner con mensaje
         ├── services/
@@ -120,7 +133,8 @@ cobertec-intake/
         │   ├── admin-api.ts         # CRUD usuarios/empresas para AdminPanel
         │   └── metrics.ts           # GET /metrics, /metrics/recent
         ├── pages/
-        │   └── ConfigPanel.tsx      # Editor JSON de los tres ficheros de config (solo admin/superadmin)
+        │   └── ConfigPanel.tsx      # Panel de configuración visual de 5 pestañas (solo admin/superadmin):
+        │                            #   Taxonomía · Soluciones · Necesidades · Asignación · Redmine
         └── utils/
             └── session.ts           # Genera UUID v4 por sesión de página
 ```
@@ -173,7 +187,7 @@ Gestión de cuentas: solo Cobertec puede crear usuarios (no hay registro libre).
 4. Si confidence < high → frontend muestra preguntas de aclaración (0-2)
 5. Se muestra resumen al usuario para confirmación
 6. Usuario puede confirmar o editar (re-clasifica)
-7. Al confirmar: sube adjuntos a Redmine → crea ticket con custom fields
+7. Al confirmar: sube adjuntos en paralelo → crea ticket Redmine con custom fields
 8. Se muestra pantalla de éxito con ticket ID y URL
 ```
 
@@ -208,6 +222,17 @@ npx tsx scripts/seed-identity.ts
 # - maria@distribuciones-garcia.es (admin García, user López)
 # - pedro@talleres-lopez.es (admin López)
 # - ana@distribuciones-garcia.es (user García)
+```
+
+### Importar empresas y proyectos desde Redmine (producción)
+
+```bash
+cd backend
+# Importar clientes ya en Redmine como empresas en identity.db:
+npx tsx scripts/import-redmine-clients.ts
+
+# Importar proyectos nuevos que aún no están en la BD:
+npx tsx scripts/import-new-projects.ts
 ```
 
 ### Frontend
@@ -254,8 +279,9 @@ En producción, `JWT_SECRET` **debe** estar configurado o el servidor no arranca
 | `GET` | `/api/identity/me` | Bearer | Datos del usuario autenticado + empresa actual + is_superadmin |
 | `POST` | `/api/intake/submit` | Bearer+company | Envía descripción → clasificación + preguntas dinámicas |
 | `POST` | `/api/intake/confirm` | Bearer+company | Confirma (crea ticket) o edita (re-clasifica) |
+| `GET` | `/api/config/redmine-users` | Bearer+admin | Lista usuarios Redmine internos (@cobertec.com) con id, login, nombre |
 | `GET` | `/api/config/:file` | Bearer+admin | Lee JSON de configuración (taxonomy\|redmine-mapping\|assignment-rules) |
-| `PUT` | `/api/config/:file` | Bearer+admin | Escribe JSON de configuración (con backup automático) |
+| `PUT` | `/api/config/:file` | Bearer+admin | Escribe JSON de configuración (con backup automático `.bak`) |
 | `GET` | `/api/admin/users` | Bearer+admin | Lista todos los usuarios |
 | `POST` | `/api/admin/users` | Bearer+admin | Crea usuario + contacto |
 | `PATCH` | `/api/admin/users/:id` | Bearer+admin | Edita usuario/contacto |
@@ -281,15 +307,18 @@ Define las categorías que el LLM puede asignar. Cada naturaleza/dominio incluye
 - `decision_rules` — lógica de desambiguación
 - `confusion_with` — categorías similares a no confundir
 
-**No requiere tocar el código** para ajustar la taxonomía.
+**No requiere tocar el código** para ajustar la taxonomía. Editable desde el ConfigPanel (pestaña "Taxonomía").
 
-### redmine-mapping.json
-- `need_resolution` — 39 reglas (naturaleza + contexto) → ID de "need"
+### redmine-mapping.json (v3.2.0)
+- `need_resolution` — 39+ reglas (naturaleza + contexto) → ID de "need"
 - `domain_to_block` / `domain_to_module` — mapeo dominio → campos Redmine
 - `special_module_rules` — sobreescrituras contextuales
-- `custom_fields` — IDs de campos custom en Redmine (**`__PENDIENTE__`**)
-- `priority_mapping` — prioridades sugeridas → IDs Redmine (**`__PENDIENTE__`**)
-- `company_to_project` — company_id → project_id Redmine (**`__PENDIENTE__`**)
+- `custom_fields` — IDs de campos custom en Redmine (IDs **21-28** configurados con nombres reales)
+- `priority_mapping` — `normal→4`, `high→5`, `urgent→5`
+- `role_to_user_id` — ~40 roles funcionales mapeados a IDs numéricos de usuario Redmine
+- `company_to_project` — ~120 empresas cliente mapeadas a sus proyectos Redmine; `_default: "cobertec-intake-test"`
+- `solution_resolution` / `expertis_module_resolution` — reglas de resolución con keywords y pesos
+- `normalization_aliases` — aliases de normalización para domain, nature, solution y expertis_module
 
 ### assignment-rules.json
 Reglas ordenadas por prioridad (número menor = más específica). Cada regla especifica:
@@ -300,39 +329,69 @@ El módulo `assignee-resolver.ts` aplica estas reglas **después** de que el LLM
 
 ---
 
-## Vacíos pendientes (pendiente de datos Cobertec)
+## Panel de configuración (ConfigPanel)
 
-Los siguientes valores aparecen como `__PENDIENTE__` en `config/redmine-mapping.json` y bloquean la integración real con Redmine:
+Accesible desde el frontend para roles admin y superadmin. Editor visual estructurado con 5 pestañas:
 
-- IDs de custom fields (nature, solution, module, block, need, confidence, review_status)
-- Mapeo `company_id → project_id` de Redmine
-- IDs de tracker, estados iniciales y prioridades
-- IDs de usuarios Redmine por rol de asignación
+| Pestaña | Archivo editado | Contenido |
+|---------|----------------|-----------|
+| **Taxonomía** | `taxonomy.json` | Naturalezas y dominios: id, label, keywords, ejemplos, reglas |
+| **Soluciones** | `redmine-mapping.json` | Reglas de solución + módulos Expertis con keywords y pesos |
+| **Necesidades** | `redmine-mapping.json` | Catálogo de needs + reglas de resolución need |
+| **Asignación** | `assignment-rules.json` | Reglas maestras (bloque+módulo+need→assignee) + roles funcionales |
+| **Redmine** | `redmine-mapping.json` | IDs custom fields, defaults, domain→block, role→usuario Redmine |
 
-Para obtenerlos: solicitar acceso a la instancia Redmine de Cobertec y extraer los IDs vía API.
+La pestaña "Redmine" carga automáticamente la lista de usuarios `@cobertec.com` de Redmine via `GET /config/redmine-users` para facilitar la asignación de roles con un selector dropdown.
+
+---
+
+## Estado de la integración Redmine
+
+### Completado
+- Custom fields IDs 21-28 (`IA_Naturaleza`, `IA_Solucion`, `IA_Modulo_Expertis`, `IA_Bloque`, `IA_Modulo`, `IA_Necesidad`, `IA_Confianza`, `IA_Estado_Revision`)
+- Priority mapping: `normal→4`, `high→5`, `urgent→5`
+- Tracker ID: `3`, Status inicial: `1`
+- `role_to_user_id`: ~40 roles mapeados a usuarios Redmine reales
+- `company_to_project`: ~120 empresas cliente con sus proyectos Redmine
+
+### Pendiente antes de ir a producción
+- `redmine_defaults.default_assignee_id`: actualmente `null` — los tickets sin assignee resuelto se crearán sin asignar
+- `company_to_project._default`: apunta a `"cobertec-intake-test"` — cambiar a proyecto de producción o gestionar las empresas sin mapeo explícito
+- Campo `redmine_login` en usuarios: la columna existe en la BD pero no se popula — la impersonación via `X-Redmine-Switch-User` no se activa
+- Validación E2E: confirmar que los IDs 21-28 existen en la instancia Redmine de producción
 
 ---
 
 ## Estado del proyecto
 
-- [x] Contratos de datos y taxonomía v3
+- [x] Contratos de datos y taxonomía v3.2
 - [x] Motor IA con abstracción multi-proveedor (Claude / GPT-4o)
 - [x] Backend: rutas de intake, métricas, event store SQLite
 - [x] Frontend: flujo completo de intake (form → confirmación → resultado)
 - [x] Configuración 100% externalizada (sin lógica de negocio hardcodeada)
 - [x] Cliente Redmine real + simulado para desarrollo
 - [x] Assignee determinista post-LLM (`assignee-resolver.ts`)
-- [x] Batería de tests end-to-end validada (8 casos, GPT-4o, 3–4.5 s/caso)
+- [x] Subida de adjuntos en paralelo (`Promise.all`)
+- [x] Batería de tests end-to-end validada (8 casos, GPT-4o)
 - [x] Sistema de autenticación backend completo (JWT + refresh token + bcrypt + SQLite)
-- [x] Identity store: Contact, User, Company, UserCompany, refresh_tokens, is_superadmin
+- [x] Identity store: Contact, User, Company, UserCompany, refresh_tokens, is_superadmin, redmine_login
 - [x] AuthContext y auth-api cliente en el frontend (token en memoria, no localStorage)
 - [x] LoginPage + CompanySelector conectados; `main.tsx` envuelto en `AuthProvider`
 - [x] `App.tsx` usa `useAuth()` — flujo de 3 estados + soporte superadmin
 - [x] Rutas de intake protegidas con `requireCompany()` (JWT con empresa obligatorio)
 - [x] `pruneExpiredTokens()` llamado al arrancar el servidor
 - [x] Panel de administración (AdminPanel + rutas `/api/admin/*`) — CRUD usuarios y empresas
-- [x] Panel de configuración (ConfigPanel + rutas `/api/config/*`) — editar JSONs desde la UI
-- [ ] Completar `__PENDIENTE__` con datos reales de Redmine de Cobertec (IDs custom fields, prioridades, tracker, project)
-- [ ] Definir `redmine_defaults.default_assignee_id` en redmine-mapping.json
+- [x] Panel de configuración visual completo (5 pestañas, editor estructurado)
+- [x] Custom fields IDs configurados en redmine-mapping.json
+- [x] `role_to_user_id` con ~40 roles mapeados
+- [x] `company_to_project` con ~120 empresas cliente
+- [x] Endpoint `/api/config/redmine-users` para selección dinámica de asignados
+- [x] Scripts de importación de clientes y proyectos Redmine
+- [ ] Poblar `redmine_login` en usuarios para activar impersonación
+- [ ] Definir `redmine_defaults.default_assignee_id` (ID numérico real)
+- [ ] Cambiar `company_to_project._default` a proyecto de producción real
+- [ ] Validar IDs de custom fields en instancia Redmine de producción
+- [ ] Migrar session store de memoria a SQLite/Redis (para resiliencia ante reinicios)
+- [ ] Eliminar debug `console.log` de intake.ts, config.ts y redmine/index.ts
 - [ ] Integración real con Redmine validada end-to-end
 - [ ] Piloto controlado con usuarios reales

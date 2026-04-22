@@ -52,6 +52,7 @@ interface RedmineMapping {
   custom_fields: Record<string, { id: string; name: string }>;
   redmine_defaults: { tracker_id: string; status_id_initial: string; default_assignee: string };
   priority_mapping: Record<string, string>;
+  role_to_user_id: Record<string, number>;
   [key: string]: unknown;
 }
 
@@ -576,6 +577,17 @@ function AssignmentTab({ rules, onChange }: { rules: AssignmentRules; onChange: 
 }
 
 function RedmineTab({ mapping, onChange }: { mapping: RedmineMapping; onChange: (m: RedmineMapping) => void }) {
+  const [redmineUsers, setRedmineUsers] = useState<{ id: number; login: string; name: string }[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  useEffect(() => {
+    setUsersLoading(true);
+    authenticatedFetch<{ id: number; login: string; name: string }[]>('/config/redmine-users')
+      .then(data => setRedmineUsers(Array.isArray(data) ? data : []))
+      .catch(() => setRedmineUsers([]))
+      .finally(() => setUsersLoading(false));
+  }, []);
+
   const customFields = mapping.custom_fields;
   const domainToBlock = mapping.domain_to_block;
   const defaults = mapping.redmine_defaults;
@@ -607,8 +619,8 @@ function RedmineTab({ mapping, onChange }: { mapping: RedmineMapping; onChange: 
           <div key={key} className="need-row">
             <code className="id-badge">{key}</code>
             <input value={cf.name} onChange={e => updateCF(key, 'name', e.target.value)} className="text-input flex-1" />
-            <input value={cf.id} onChange={e => updateCF(key, 'id', e.target.value)}
-              className={`text-input ${cf.id.startsWith('__') ? 'pending' : ''}`}
+            <input value={String(cf.id)} onChange={e => updateCF(key, 'id', e.target.value)}
+              className={`text-input ${String(cf.id).startsWith('__') ? 'pending' : ''}`}
               style={{ width: 180 }} placeholder="ID numérico" />
           </div>
         ))}
@@ -619,7 +631,7 @@ function RedmineTab({ mapping, onChange }: { mapping: RedmineMapping; onChange: 
         {Object.entries(defaults).map(([key, val]) => (
           <div key={key} className="need-row">
             <code className="id-badge">{key}</code>
-            <input value={val}
+            <input value={String(val)}
               onChange={e => onChange({ ...mapping, redmine_defaults: { ...defaults, [key]: e.target.value } })}
               className={`text-input flex-1 ${String(val).startsWith('__') ? 'pending' : ''}`} />
           </div>
@@ -636,9 +648,44 @@ function RedmineTab({ mapping, onChange }: { mapping: RedmineMapping; onChange: 
           </div>
         ))}
       </div>
+
+      <h3 className="section-title mt-lg">Rol funcional → Usuario Redmine</h3>
+      <p className="section-desc">
+        Asigna cada rol funcional a una persona de Redmine. El sistema usará esta tabla para asignar tickets automáticamente.
+      </p>
+      <div className="need-catalogue">
+        <div className="need-row header-row">
+          <span style={{ flex: 1 }}>Rol funcional</span>
+          <span style={{ width: 240 }}>Identificador Redmine</span>
+          <span style={{ width: 40, fontSize: 11, color: '#4a6080' }}>ID</span>
+        </div>
+        {usersLoading && (
+          <div style={{ color: '#4a6080', fontSize: 12, padding: '8px 0' }}>Cargando usuarios de Redmine…</div>
+        )}
+        {Object.entries(mapping.role_to_user_id ?? {}).map(([roleId, userId]) => (
+          <div key={roleId} className="need-row">
+            <code className="id-badge" style={{ flex: 1 }}>{roleId}</code>
+            <select
+              value={userId}
+              onChange={e => onChange({
+                ...mapping,
+                role_to_user_id: { ...mapping.role_to_user_id, [roleId]: parseInt(e.target.value) || 0 },
+              })}
+              className="text-input"
+              style={{ width: 240 }}
+            >
+              {redmineUsers.map(u => (
+                <option key={u.id} value={u.id}>{u.login} — {u.name}</option>
+              ))}
+            </select>
+            <span style={{ width: 40, fontSize: 11, color: '#4a6080', textAlign: 'right' }}>#{userId}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -647,6 +694,7 @@ export default function ConfigPanel() {
   const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
   const [redmineMapping, setRedmineMapping] = useState<RedmineMapping | null>(null);
   const [assignmentRules, setAssignmentRules] = useState<AssignmentRules | null>(null);
+  const [redmineUsers, setRedmineUsers] = useState<{ id: number; login: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -656,14 +704,16 @@ export default function ConfigPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [tx, rm, ar] = await Promise.all([
+      const [tx, rm, ar, ru] = await Promise.all([
         loadConfig('taxonomy'),
         loadConfig('redmine-mapping'),
         loadConfig('assignment-rules'),
+        authenticatedFetch<{ users: { id: number; login: string; name: string }[] }>('/config/redmine-users').catch(() => ({ users: [] })),
       ]);
       setTaxonomy(tx as Taxonomy);
       setRedmineMapping(rm as RedmineMapping);
       setAssignmentRules(ar as AssignmentRules);
+      setRedmineUsers((ru as { users: { id: number; login: string; name: string }[] }).users ?? []);
     } catch (e) {
       setError('Error al cargar la configuración: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -749,7 +799,7 @@ export default function ConfigPanel() {
           <AssignmentTab rules={assignmentRules} onChange={setAssignmentRules} />
         )}
         {activeTab === 'redmine' && redmineMapping && (
-          <RedmineTab mapping={redmineMapping} onChange={setRedmineMapping} />
+          <RedmineTab mapping={redmineMapping} onChange={setRedmineMapping} assignmentRoles={assignmentRules.rol_funcional} redmineUsers={redmineUsers} />
         )}
       </div>
     </div>

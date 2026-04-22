@@ -1,5 +1,6 @@
 import { getRedmineMapping } from '../../config/loader.js';
 import { composeSubject, composeDescription } from './ticket-composer.js';
+import { getIdentityStore } from '../identity/store.js';
 import type {
   ClassificationResponse,
   IntakePayload,
@@ -33,10 +34,20 @@ export class RedmineClient {
     const subject = composeSubject(classification);
     const description = composeDescription(intake, classification);
     const mapping = getRedmineMapping();
+
+    // Resolver login de Redmine del usuario para impersonation
+    const store = getIdentityStore();
+    const redmineLogin = store.getRedmineLogin(intake.user_id) ?? null;
+
+    // Resolver proyecto Redmine real del cliente
+    const projectId = mapping.company_to_project[intake.company_id]
+      ?? mapping.company_to_project['_default']
+      ?? 'cobertec-intake-test';
+
     const payload = this.buildIssuePayload(
-      intake, classification, subject, description, uploadTokens, mapping
+      intake, classification, subject, description, uploadTokens, mapping, projectId
     );
-    return this.postIssue(payload);
+    return this.postIssue(payload, redmineLogin);
   }
 
   private async uploadAttachments(
@@ -70,53 +81,63 @@ export class RedmineClient {
     subject: string,
     description: string,
     uploadTokens: Array<{ token: string; filename: string; content_type: string }>,
-    mapping: ReturnType<typeof getRedmineMapping>
+    mapping: ReturnType<typeof getRedmineMapping>,
+    projectId: string
   ): Record<string, unknown> {
-    const projectId = mapping.company_to_project[intake.company_id]
-      ?? mapping.company_to_project['_default']
-      ?? '__PENDIENTE__';
-
     const priorityId = mapping.priority_mapping[classification.suggested_priority]
       ?? mapping.priority_mapping['normal']
-      ?? '__PENDIENTE__';
+      ?? 4;
 
-    const assigneeId = classification.suggested_assignee
-      ?? mapping.redmine_defaults.default_assignee_id
-      ?? null;
+    // Resolver ID numérico de usuario a partir del rol funcional
+    const roleMap: Record<string, number> = (mapping as any).role_to_user_id ?? {};
+    const assigneeRole = classification.suggested_assignee ?? mapping.redmine_defaults.default_assignee;
+    const assigneeId = roleMap[assigneeRole]
+      ?? (typeof mapping.redmine_defaults.default_assignee_id === 'number'
+          ? mapping.redmine_defaults.default_assignee_id
+          : null);
+
+    // Normalizar solution_associated al valor corto del campo lista de Redmine
+    const SOLUTION_NORMALIZE: Record<string, string> = {
+      'Expertis / Movilsat ERP': 'expertis',
+      'Movilsat': 'movilsat',
+      'Portal OT': 'portal_ot',
+      'Soluciones IA': 'solucionesia',
+      'Planificador Inteligente': 'planificador',
+      'App Fichajes / Gastos / Vacaciones': 'app_fichajes',
+      'Sistemas': 'servidor',
+      'Business Intelligence': 'otro',
+      'Comercial': 'otro',
+      'Resto': 'otro',
+    };
+    const solutionValue = SOLUTION_NORMALIZE[classification.solution_associated]
+      ?? classification.solution_associated.toLowerCase().replace(/\s+/g, '_').slice(0, 30)
+      ?? 'no_determinado';
+
+    // Normalizar expertis_module al valor corto del campo lista de Redmine
+    const MODULE_NORMALIZE: Record<string, string> = {
+      'general': 'configuracion_general',
+      'logistica': 'almacen',
+      'comercial': 'ventas',
+      'proyectos': 'presupuestos',
+      'fabricacion': 'almacen',
+      'calidad': 'configuracion_general',
+      'rrhh': 'usuarios',
+    };
+    const rawModule = classification.expertis_module ?? 'no_aplica';
+    const moduleValue = MODULE_NORMALIZE[rawModule] ?? rawModule;
 
     const customFields = [
-      {
-        id: mapping.custom_fields.nature?.id ?? '__CF_NATURE__',
-        value: classification.classification.nature,
-      },
-      {
-        id: mapping.custom_fields.solution_associated?.id ?? '__CF_SOLUTION__',
-        value: classification.solution_associated,
-      },
-      {
-        id: mapping.custom_fields.expertis_module?.id ?? '__CF_EXPERTIS_MODULE__',
-        value: classification.expertis_module ?? '',
-      },
-      {
-        id: mapping.custom_fields.block?.id ?? '__CF_BLOCK__',
-        value: classification.redmine_mapping.block,
-      },
-      {
-        id: mapping.custom_fields.module?.id ?? '__CF_MODULE__',
-        value: classification.redmine_mapping.module,
-      },
-      {
-        id: mapping.custom_fields.need?.id ?? '__CF_NEED__',
-        value: classification.redmine_mapping.need,
-      },
-      {
-        id: mapping.custom_fields.confidence?.id ?? '__CF_CONFIDENCE__',
-        value: classification.confidence,
-      },
-      {
-        id: mapping.custom_fields.review_status?.id ?? '__CF_REVIEW_STATUS__',
-        value: classification.review_status,
-      },
+      { id: 6,  value: '[0. Petición]' },
+      { id: 16, value: '0' },
+      { id: 17, value: '0' },
+      { id: mapping.custom_fields.nature?.id ?? 21,              value: classification.classification.nature },
+      { id: mapping.custom_fields.solution_associated?.id ?? 22, value: solutionValue },
+      { id: mapping.custom_fields.expertis_module?.id ?? 23,     value: moduleValue },
+      { id: mapping.custom_fields.block?.id ?? 24,               value: classification.redmine_mapping.block },
+      { id: mapping.custom_fields.module?.id ?? 25,              value: classification.redmine_mapping.module },
+      { id: mapping.custom_fields.need?.id ?? 26,                value: classification.redmine_mapping.need },
+      { id: mapping.custom_fields.confidence?.id ?? 27,          value: classification.confidence },
+      { id: mapping.custom_fields.review_status?.id ?? 28,       value: classification.review_status },
     ];
 
     return {
@@ -138,15 +159,26 @@ export class RedmineClient {
     };
   }
 
-  private async postIssue(payload: Record<string, unknown>): Promise<RedmineTicketResult> {
+  private async postIssue(
+    payload: Record<string, unknown>,
+    redmineLogin: string | null
+  ): Promise<RedmineTicketResult> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Redmine-API-Key': this.apiKey,
+    };
+
+    if (redmineLogin) {
+      headers['X-Redmine-Switch-User'] = redmineLogin;
+      console.log(`[Redmine] Impersonando usuario: ${redmineLogin}`);
+    }
+
     const response = await fetch(`${this.baseUrl}/issues.json`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Redmine-API-Key': this.apiKey,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
+
     if (!response.ok) {
       const errorBody = await response.text();
       throw new Error(`Redmine API error ${response.status}: ${errorBody}`);
@@ -168,23 +200,10 @@ export class SimulatedRedmineClient {
   ): Promise<RedmineTicketResult> {
     const subject = composeSubject(classification);
     const description = composeDescription(intake, classification);
-
     simulatedTicketCounter++;
     const ticketId = String(simulatedTicketCounter);
-
-    console.log(`[Redmine SIMULADO] Ticket #${ticketId} creado:`);
-    console.log(`  Asunto: ${subject}`);
-    console.log(`  Naturaleza: ${classification.classification.nature}`);
-    console.log(`  Solución: ${classification.solution_associated}`);
-    console.log(`  Módulo Expertis: ${classification.expertis_module ?? 'N/A'}`);
-    console.log(`  Confianza: ${classification.confidence}`);
-    console.log(`  Prioridad: ${classification.suggested_priority}`);
-    console.log(`  Responsable: ${classification.suggested_assignee}`);
-    console.log(`  Adjuntos: ${intake.attachments.length}`);
-    console.log(`  Descripción enriquecida: ${description.length} chars`);
-
+    console.log(`[Redmine SIMULADO] Ticket #${ticketId} creado: ${subject}`);
     await new Promise(resolve => setTimeout(resolve, 300));
-
     return {
       ticket_id: ticketId,
       ticket_url: `https://redmine.cobertec.com/issues/${ticketId}`,
