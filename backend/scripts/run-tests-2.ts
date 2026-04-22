@@ -526,64 +526,7 @@ const TEST_CASES: TestCase[] = [
     expectedNeed: 'error',
     expectedAssignee: '*',
   },
-];
-
-// ─── Auth helpers ─────────────────────────────────────────
-
-async function getToken(): Promise<{ accessToken: string; companyId: string }> {
-  const res = await fetch(`${BASE_URL}/auth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grant_type: 'password', email: EMAIL, password: PASSWORD }),
-  });
-  if (!res.ok) throw new Error(`Login failed: ${res.status}`);
-  const data = await res.json() as any;
-  const companyId = data.companies[0]?.id;
-  if (!companyId) throw new Error('No company found');
-
-  const res2 = await fetch(`${BASE_URL}/auth/select`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.access_token}` },
-    body: JSON.stringify({ company_id: companyId }),
-  });
-  if (!res2.ok) throw new Error(`Select company failed: ${res2.status}`);
-  const data2 = await res2.json() as any;
-  return { accessToken: data2.access_token, companyId };
-}
-
-async function submitIntake(token: string, description: string): Promise<any> {
-  const sessionId = crypto.randomUUID();
-  const res = await fetch(`${BASE_URL}/intake/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-    body: JSON.stringify({
-      session_id: sessionId,
-      user_id: 'test',
-      company_id: 'test',
-      company_name: 'test',
-      description,
-      attachments: [],
-      timestamp: new Date().toISOString(),
-    }),
-  });
-  if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
-  const data = await res.json() as any;
-  return { sessionId, classification: data };
-}
-
-// ─── Main ─────────────────────────────────────────────────
-
-async function main() {
-  console.log('═'.repeat(60));
-  console.log('  BATERÍA DE TESTS — Cobertec Intake IA');
-  console.log('═'.repeat(60));
-
-  const { accessToken } = await getToken();
-  console.log('✓ Autenticado como Usuario Prueba (HERGOPAS_sat)\n');
-
-  let passed = 0;
-  let failed = 0;
-  const failures: string[] = [  {
+  {
     id: 'T15',
     description: 'necesitamos que nos expliquen como vemos que porcentaje o importe hemos ganado/perdido en los proyectos. Si hay un listado de proyectos donde se vea a simple vista si ha habido ben',
     expectedBlock: 'presupuestos_proyectos',
@@ -802,13 +745,69 @@ async function main() {
   },
 ];
 
+// ─── Auth helpers ─────────────────────────────────────────
+
+async function getToken(): Promise<{ accessToken: string; companyId: string }> {
+  const res = await fetch(`${BASE_URL}/auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grant_type: 'password', email: EMAIL, password: PASSWORD }),
+  });
+  if (!res.ok) throw new Error(`Login failed: ${res.status}`);
+  const data = await res.json() as any;
+  const companyId = data.companies[0]?.id;
+  if (!companyId) throw new Error('No company found');
+
+  const res2 = await fetch(`${BASE_URL}/auth/select`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.access_token}` },
+    body: JSON.stringify({ company_id: companyId }),
+  });
+  if (!res2.ok) throw new Error(`Select company failed: ${res2.status}`);
+  const data2 = await res2.json() as any;
+  return { accessToken: data2.access_token, companyId };
+}
+
+async function submitIntake(token: string, description: string): Promise<any> {
+  const sessionId = crypto.randomUUID();
+  const res = await fetch(`${BASE_URL}/intake/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({
+      session_id: sessionId,
+      user_id: 'test',
+      company_id: 'test',
+      company_name: 'test',
+      description,
+      attachments: [],
+      timestamp: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error(`Submit failed: ${res.status}`);
+  const data = await res.json() as any;
+  return { sessionId, classification: data };
+}
+
+// ─── Main ─────────────────────────────────────────────────
+
+async function main() {
+  console.log('═'.repeat(60));
+  console.log('  BATERÍA DE TESTS — Cobertec Intake IA');
+  console.log('═'.repeat(60));
+
+  const { accessToken } = await getToken();
+  console.log('✓ Autenticado como Usuario Prueba (HERGOPAS_sat)\n');
+
+  let passed = 0;
+  let failed = 0;
+  const failures: string[] = [];
+
   for (const test of TEST_CASES) {
     process.stdout.write(`[${test.id}] Clasificando... `);
     try {
       const { classification } = await submitIntake(accessToken, test.description);
       const block    = classification.display?.estimated_area ?? '?';
       const need     = classification.display?.need ?? '?';
-      // need to get assignee from a confirm — skip for now, check block+need only
       const blockOk  = test.expectedBlock === '*' || block === test.expectedBlock || block.includes(test.expectedBlock);
       const needOk   = need === test.expectedNeed || need === 'otra' || test.expectedNeed === '*';
 
@@ -821,7 +820,6 @@ async function main() {
         failures.push(`${test.id}: bloque=${block}≠${test.expectedBlock} need=${need}≠${test.expectedNeed}`);
       }
 
-      // Small delay to avoid rate limiting
       await new Promise(r => setTimeout(r, 1500));
     } catch (e) {
       console.log(`✗ ERROR: ${e instanceof Error ? e.message : String(e)}`);

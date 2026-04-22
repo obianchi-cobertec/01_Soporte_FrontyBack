@@ -60,17 +60,12 @@ export async function configRoutes(app: FastifyInstance) {
     }
 
     try {
-      const pages = await Promise.all(
-        [0, 200, 400, 600].map(offset =>
-          fetch(`${baseUrl}/users.json?limit=200&offset=${offset}`, {
-            headers: { 'X-Redmine-API-Key': apiKey },
-          }).then(r => r.json() as Promise<{ users?: Array<{ id: number; login: string; firstname: string; lastname: string; mail: string }> }>)
-        )
-      );
+      // Obtener usuarios del grupo Cobertec (group_id=275)
+      const groupRes = await fetch(`${baseUrl}/users.json?group_id=275&limit=100`, {
+        headers: { 'X-Redmine-API-Key': apiKey },
+      }).then(r => r.json() as Promise<{ users?: Array<{ id: number; login: string; firstname: string; lastname: string; mail: string }> }>);
 
-      const all = pages.flatMap(p => p.users ?? []);
-      const internal = all
-        .filter(u => u.mail?.endsWith('@cobertec.com'))
+      const internal = (groupRes.users ?? [])
         .map(u => ({ id: u.id, login: u.login, name: `${u.firstname} ${u.lastname}`.trim() }))
         .sort((a, b) => a.name.localeCompare(b.name));
 

@@ -659,9 +659,14 @@
       {
         "id": "sesiones_conectividad",
         "label": "Sesiones y conectividad",
-        "description": "Sesiones colgadas, desconexiones, conectividad, sincronización y acceso remoto.",
+        "description": "Sesiones colgadas del ERP, desconexiones, conectividad, sincronización y acceso remoto. Cuando el cliente no puede entrar porque hay una sesión bloqueada o las licencias están ocupadas → este dominio, need=sesion, bloque=servidor_sistemas.",
         "keywords_positive": [
           "sesión",
+          "sesion",
+          "sesión colgada",
+          "licencias ocupadas",
+          "sesiones superadas",
+          "no deja acceder por sesiones",
           "conexión",
           "desconecta",
           "vpn",
@@ -680,15 +685,21 @@
           "usuarios_accesos",
           "rendimiento_bloqueo"
         ],
+        "decision_rules": [
+          "Sesión colgada, licencias ocupadas, sesiones superadas → sesiones_conectividad, need=sesion",
+          "No confundir con usuarios_accesos que es problema de permisos o contraseña"
+        ],
         "examples_positive": [
           "se corta la conexión",
           "la sesión se queda colgada",
-          "problema con la sincronización"
+          "no deja acceder porque están todas las licencias ocupadas",
+          "problema con la sincronización",
+          "sesiones superadas, no podemos entrar"
         ],
         "examples": [
           "se corta la conexión",
           "la sesión se queda colgada",
-          "problema con la sincronización"
+          "sesiones superadas"
         ]
       },
       {
@@ -779,7 +790,16 @@
           "tarifa de venta",
           "precio de venta",
           "portes",
-          "factura proforma"
+          "factura proforma",
+          "programas de venta",
+          "facturación automática",
+          "cuotas facturación",
+          "incremento ipc",
+          "ipc precios",
+          "renovar precios",
+          "actualizar precios venta",
+          "factura electrónica",
+          "facturas electrónicas"
         ],
         "keywords_negative": [
           "compra",
@@ -825,7 +845,7 @@
       {
         "id": "almacen_stocks",
         "label": "Almacén y stocks",
-        "description": "Stocks, lotes, series, movimientos de almacén y logística interna.",
+        "description": "Stocks, lotes, series, movimientos de almacén y logística interna. Solo cuando el eje es el almacén en sí, no el stock dentro de una OT.",
         "keywords_positive": [
           "stock",
           "almacén",
@@ -833,23 +853,40 @@
           "serie",
           "inventario",
           "movimiento",
-          "ubicación"
+          "ubicación",
+          "inventario físico",
+          "regularizar stock"
         ],
         "keywords_negative": [
           "factura",
-          "usuario"
+          "usuario",
+          "ot",
+          "orden de trabajo",
+          "activo"
         ],
         "confusion_with": [
           "compras",
-          "ventas_facturacion"
+          "ventas_facturacion",
+          "gmao"
+        ],
+        "decision_rules": [
+          "Usar cuando el eje es el stock o almacén independientemente de OTs",
+          "Si el stock o materiales se mencionan en el contexto de una OT → gmao, no almacen_stocks"
         ],
         "examples_positive": [
           "no actualiza el stock",
-          "problema con lotes"
+          "problema con lotes",
+          "error al hacer inventario",
+          "movimientos de almacén incorrectos"
+        ],
+        "examples_negative": [
+          "las piezas de la OT no actualizan el stock",
+          "materiales en previstos de la OT"
         ],
         "examples": [
           "no actualiza el stock",
-          "problema con lotes"
+          "problema con lotes",
+          "error al hacer inventario"
         ]
       },
       {
@@ -892,7 +929,18 @@
           "partes de trabajo",
           "instalación",
           "activo",
-          "mantenimiento preventivo"
+          "mantenimiento preventivo",
+          "creación automática de ots",
+          "generación automática de ots",
+          "proceso automático ots",
+          "ots automáticas",
+          "prioridad ot",
+          "materiales ot",
+          "piezas ot",
+          "stock ot",
+          "previstos ot",
+          "control ot",
+          "facturación ots"
         ],
         "keywords_negative": [
           "factura",
@@ -903,7 +951,8 @@
         ],
         "confusion_with": [
           "portal_ot",
-          "movilsat"
+          "movilsat",
+          "almacen_stocks"
         ],
         "decision_rules": [
           "Usar para todo lo relacionado con la gestión de Órdenes de Trabajo en oficina",
@@ -912,6 +961,8 @@
           "Gestión de activos, reglamentos, revisiones programadas → gmao",
           "Organización y planificación del trabajo de técnicos de campo → gmao",
           "OTs de mantenimiento correctivo o preventivo → gmao. OTs de oferta comercial → ofertas_comerciales",
+          "PRIORIDAD sobre almacen_stocks: si el contexto menciona OT, orden de trabajo o activo junto con stock/materiales/piezas → gmao, no almacen_stocks",
+          "Creación o modificación automática de OTs desde procesos externos (correo, integración) → gmao",
           "NO confundir con movilsat, que es la app móvil que usan los técnicos en campo"
         ],
         "examples_positive": [
@@ -920,7 +971,9 @@
           "cuando envío OTs a los técnicos no las ven",
           "las OTs llegan con errores a los técnicos",
           "problema con partes de trabajo",
-          "el mantenimiento preventivo no se genera"
+          "el mantenimiento preventivo no se genera",
+          "las piezas no actualizan el stock en la OT",
+          "quiero que las OTs se creen automáticamente desde el correo"
         ],
         "examples_negative": [
           "no puedo acceder al portal OT",
@@ -930,7 +983,8 @@
           "no sale la OT",
           "problema con reglamentos",
           "cuando envío OTs a los técnicos no las ven",
-          "problema con partes de trabajo"
+          "problema con partes de trabajo",
+          "piezas no actualizan stock en OT"
         ]
       },
       {
@@ -996,7 +1050,7 @@
       {
         "id": "portal_ot",
         "label": "Portal OT",
-        "description": "Portal web de órdenes de trabajo. Usar SOLO cuando el cliente menciona explícitamente 'portal' o 'portal OT'. Si habla de OTs sin mencionar portal, usar GMAO.",
+        "description": "Portal web de órdenes de trabajo para clientes externos o técnicos. Gestión de operarios visibles en el portal, asignaciones desde portal, acceso de clientes a sus OTs.",
         "keywords_positive": [
           "portal ot",
           "portal de ot",
@@ -1004,7 +1058,13 @@
           "acceso portal",
           "acceso al portal",
           "el portal no carga",
-          "el portal no funciona"
+          "el portal no funciona",
+          "operarios en el portal",
+          "listado operarios portal",
+          "retirar operario del portal",
+          "ocultar operarios portal",
+          "asignaciones portal",
+          "visualizar ots portal"
         ],
         "keywords_negative": [
           "movilsat",
@@ -1021,14 +1081,16 @@
         ],
         "decision_rules": [
           "En caso de duda entre Portal OT y GMAO, elegir GMAO.",
-          "Usar SOLO si el cliente menciona explícitamente la palabra 'portal'.",
+          "Usar si el cliente menciona explícitamente 'portal' o gestión de operarios/usuarios visible desde el portal.",
           "Si habla de OTs, partes, técnicos o mantenimiento sin mencionar 'portal' → usar GMAO.",
-          "PRIORIDAD: cualquier solicitud de acceso o usuario del portal OT → portal_ot"
+          "PRIORIDAD: cualquier solicitud de acceso, usuario o visibilidad en el portal OT → portal_ot"
         ],
         "examples_positive": [
           "no accede al portal OT",
           "problema con el portal de órdenes",
-          "el portal no carga"
+          "el portal no carga",
+          "retirar operarios del listado del portal",
+          "los operarios dados de baja siguen apareciendo en el portal"
         ],
         "examples_negative": [
           "cuando envío OTs a los técnicos no las ven",
@@ -1037,7 +1099,8 @@
         ],
         "examples": [
           "no accede al portal OT",
-          "problema con el portal de órdenes"
+          "problema con el portal de órdenes",
+          "retirar operarios del portal"
         ]
       },
       {
@@ -1292,40 +1355,65 @@
       {
         "id": "app_fichajes",
         "label": "App fichajes",
-        "description": "Control horario, fichajes y registro de jornada.",
+        "description": "Aplicación de control horario, fichajes, registro de jornada, vacaciones y gastos para empleados de la empresa. Incluye tres apps: fichajes (principal), vacaciones y gastos. Totalmente distinta de Movilsat — fichajes es para empleados de oficina/empresa, Movilsat es para técnicos de campo.",
         "keywords_positive": [
           "fichar",
-          "usuario fichajes",
-          "crear usuario app",
           "fichaje",
-          "usuario app",
-          "app fichajes",
-          "alta app",
-          "app móvil fichajes",
-          "nuevo usuario app",
-          "registro jornada",
           "fichajes",
-          "alta usuario fichajes",
+          "app fichajes",
+          "app de fichajes",
           "control horario",
-          "app de fichajes"
+          "registro jornada",
+          "horas trabajadas",
+          "entrada salida",
+          "jornada laboral",
+          "alta app fichajes",
+          "usuario fichajes",
+          "alta usuario fichajes",
+          "trabajador no puede fichar",
+          "no puede fichar",
+          "salida fichaje",
+          "vacaciones app",
+          "app vacaciones",
+          "gastos app",
+          "app gastos",
+          "plataforma fichajes",
+          "appfichar"
         ],
         "keywords_negative": [
           "expertis",
           "movilsat",
-          "gmao"
+          "gmao",
+          "parte de trabajo",
+          "ot",
+          "tablet técnico"
         ],
-        "confusion_with": [],
+        "confusion_with": [
+          "movilsat",
+          "usuarios_accesos"
+        ],
+        "decision_rules": [
+          "PRIORIDAD ABSOLUTA sobre movilsat y usuarios_accesos: si menciona fichar, fichaje, horas trabajadas, jornada, vacaciones app o gastos app → app_fichajes SIEMPRE",
+          "Trabajador que no puede entrar a la app sin contexto de campo/tablet → app_fichajes",
+          "Técnico en campo con tablet registrando partes de trabajo → movilsat",
+          "La app de fichajes tiene dos partes: plataforma web (app_fichajes_plataforma) y app móvil (app_fichajes_aplicacion)"
+        ],
         "examples_positive": [
           "no deja fichar",
-          "error en registro de jornada"
+          "error en registro de jornada",
+          "trabajador no puede hacer la salida",
+          "horas desorbitadas en fichajes",
+          "dar de alta usuario en app fichajes",
+          "contraseña app fichajes"
+        ],
+        "examples_negative": [
+          "técnico no puede enviar parte desde tablet",
+          "OT no sincroniza en Movilsat"
         ],
         "examples": [
           "no deja fichar",
-          "error en registro de jornada"
-        ],
-        "decision_rules": [
-          "PRIORIDAD ABSOLUTA: si menciona \"app de fichajes\", \"fichar\", \"fichaje\" o \"app fichajes\" → app_fichajes SIEMPRE, aunque también mencione usuario o acceso",
-          "Esta regla prevalece sobre usuarios_accesos cuando el contexto es la app de fichajes"
+          "trabajador no puede hacer la salida",
+          "dar de alta en app fichajes"
         ]
       },
       {
