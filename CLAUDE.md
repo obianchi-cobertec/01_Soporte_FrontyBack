@@ -612,3 +612,71 @@ npm run dev
 ## Dominios (21 total)
 
 `funcionamiento_general`, `compras`, `ventas_facturacion`, `almacen_stocks`, `gmao`, `movilsat`, `portal_ot`, `presupuestos_proyectos`, `financiero`, `crm`, `ofertas_comerciales`, `planificador_inteligente`, `app_fichajes`, `servidor_sistemas`, `tarifas_catalogos`, `usuarios_accesos`, `informes_documentos`, `sesiones_conectividad`, `solucionesia`, `dominio_no_claro`, `academia_cobertec`, `ecommerce_web`
+
+---
+
+## Gestión de contraseñas — implementado (sesión 2025-04)
+
+### Qué se construyó
+
+1. **Migración DB** (`backend/scripts/migrate-redmine-ids.ts`):
+   - Añade columna `redmine_user_id INTEGER` a tabla `users`
+   - Añade columna `must_change_password INTEGER DEFAULT 0` a tabla `users`
+   - Puebla `redmine_user_id` con 602/611 usuarios via `GET /users.json?name=<login>` a Redmine (solo lectura, sin modificar Redmine)
+   - Marca `must_change_password = 1` en los 611 usuarios importados
+   - Ejecutar: `cd backend && npx tsx scripts/migrate-redmine-ids.ts`
+
+2. **Cambio de contraseña obligatorio en primer login**:
+   - Al login, si `must_change_password = true` en DB → se incluye el flag en el JWT y en `TokenResponse`
+   - El frontend intercepta `must_change_password: true` → `authState.status = 'must_change_password'`
+   - `App.tsx` muestra `<ChangePasswordPage />` antes de continuar
+   - En cambio obligatorio **no se pide contraseña actual** — el backend omite la verificación si `must_change_password = true`
+   - Al cambiar: se actualiza el hash en identity.db + se pone `must_change_password = false`
+
+3. **Cambio de contraseña voluntario**:
+   - Disponible en cualquier momento desde `<ChangePasswordPage voluntary={true} />`
+   - Requiere contraseña actual (verificada con bcrypt)
+   - Endpoint: `PUT /api/auth/password` — requiere `requireAuth()` (no necesita empresa seleccionada)
+
+4. **Sincronización con Redmine** — **NO activa todavía**:
+   - `redmine_user_id` ya está poblado y disponible en DB
+   - Cuando Cobertec salga del piloto, añadir en `changePassword()` del service:
+     ```typescript
+     await redmineClient.put(`/users/${user.redmine_user_id}.json`, {
+       user: { password: newPassword }
+     }, { noImpersonation: true }); // sin X-Redmine-Switch-User
+     ```
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `backend/src/identity-types.ts` | `must_change_password` en `User`, `AccessTokenPayload`, `TokenResponse`; nuevo `ChangePasswordRequestSchema` y `ChangePasswordResponse`; nuevo error code `WRONG_CURRENT_PASSWORD` |
+| `backend/src/services/identity/store.ts` | Migraciones para `redmine_user_id` y `must_change_password`; métodos `getMustChangePassword()`, `setMustChangePassword()`; `createUser()` acepta `must_change_password` |
+| `backend/src/services/auth/service.ts` | `login()` incluye `must_change_password` en JWT; `selectCompany()` propaga el flag; `refresh()` re-lee el flag de DB; nueva función `changePassword()` |
+| `backend/src/routes/auth.ts` | Nuevo endpoint `PUT /password` |
+| `frontend/src/auth-types.ts` | `must_change_password` en `LoginResponse`; nuevo estado `'must_change_password'` en `AuthState`; tipos `ChangePasswordRequest/Response` |
+| `frontend/src/services/auth-api.ts` | Nueva función `changePasswordApi()` |
+| `frontend/src/contexts/AuthContext.tsx` | Detecta `must_change_password` en login y refresh silencioso; nueva acción `changePassword()` que tras cambiar hace refresh y auto-selecciona empresa |
+| `frontend/src/App.tsx` | Nuevo estado `must_change_password` → renderiza `<ChangePasswordPage />` |
+| `frontend/src/components/ChangePasswordPage.tsx` | **Nuevo componente**. Props: `voluntary?: boolean`, `onCancel?: () => void`. Sin campo contraseña actual en modo obligatorio. |
+
+### Nuevo script de utilidad
+
+`backend/scripts/reset-must-change.ts` — resetea `must_change_password = 1` para un usuario concreto (útil para pruebas):
+```typescript
+import { getIdentityStore } from '../src/services/identity/store.js';
+const store = getIdentityStore();
+const user = store.getUserByEmail('email@ejemplo.com');
+if (user) store.setMustChangePassword(user.id, true);
+store.close();
+```
+
+### Pendientes de gestión de usuarios (fase siguiente)
+
+| Ítem | Dependencia |
+|------|-------------|
+| Recuperación de contraseña olvidada (`POST /forgot-password`, `POST /reset-password`) | Requiere SMTP — pendiente definir proveedor con Cobertec |
+| Solicitud de alta de nuevo usuario (formulario público) | Pendiente decisión: ¿mismo frontend bajo `/registro`? |
+| Panel admin para aprobar/rechazar altas | Pendiente SMTP para email de bienvenida |
+| Sincronización contraseña con Redmine al cambiar | Activar cuando salga del piloto — `redmine_user_id` ya está disponible |
