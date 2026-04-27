@@ -109,12 +109,20 @@ export class IdentityStore {
     `);
 
     // Migraciones no destructivas
-    try {
+    const existingCols = (this.db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map(c => c.name);
+
+    if (!existingCols.includes('is_superadmin')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN is_superadmin INTEGER NOT NULL DEFAULT 0`);
-    } catch { /* ya existe */ }
-    try {
+    }
+    if (!existingCols.includes('redmine_login')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN redmine_login TEXT`);
-    } catch { /* ya existe */ }
+    }
+    if (!existingCols.includes('redmine_user_id')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN redmine_user_id INTEGER`);
+    }
+    if (!existingCols.includes('must_change_password')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`);
+    }
   }
 
   // ─── Contact ────────────────────────────────────────────
@@ -167,13 +175,22 @@ export class IdentityStore {
     contact_id: string;
     password_hash: string;
     is_superadmin?: boolean;
+    must_change_password?: boolean;
   }): User {
     const id = randomUUID();
     const now = new Date().toISOString();
     this.db.prepare(`
-      INSERT INTO users (id, contact_id, password_hash, active, is_superadmin, created_at, updated_at)
-      VALUES (?, ?, ?, 1, ?, ?, ?)
-    `).run(id, data.contact_id, data.password_hash, data.is_superadmin ? 1 : 0, now, now);
+      INSERT INTO users (id, contact_id, password_hash, active, is_superadmin, must_change_password, created_at, updated_at)
+      VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+    `).run(
+      id,
+      data.contact_id,
+      data.password_hash,
+      data.is_superadmin ? 1 : 0,
+      data.must_change_password ? 1 : 0,
+      now,
+      now,
+    );
     return this.getUserById(id)!;
   }
 
@@ -218,6 +235,18 @@ export class IdentityStore {
       UPDATE users SET password_hash = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(passwordHash, userId);
+  }
+
+  getMustChangePassword(userId: string): boolean {
+    const row = this.db.prepare(`SELECT must_change_password FROM users WHERE id = ?`).get(userId) as { must_change_password: number } | undefined;
+    return row?.must_change_password === 1;
+  }
+
+  setMustChangePassword(userId: string, value: boolean): void {
+    this.db.prepare(`
+      UPDATE users SET must_change_password = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(value ? 1 : 0, userId);
   }
 
   isSuperAdmin(userId: string): boolean {
@@ -281,7 +310,6 @@ export class IdentityStore {
   }
 
   getCompaniesForUser(userId: string): CompanyDTO[] {
-    // El superadmin ve todas las empresas activas
     if (this.isSuperAdmin(userId)) {
       return this.db.prepare(`
         SELECT id, name FROM companies WHERE active = 1 ORDER BY name

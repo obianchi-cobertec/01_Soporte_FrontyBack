@@ -1,15 +1,5 @@
 /**
  * Auth Service — OAuth 2.0 compatible (password + refresh_token grants)
- *
- * Flujo:
- * 1. POST /auth/token { grant_type: "password", email, password }
- *    → access_token + refresh cookie + companies[]
- * 2. POST /auth/select { company_id }
- *    → access_token con company embebida
- * 3. POST /auth/token { grant_type: "refresh_token" }
- *    → nuevo access_token desde refresh cookie
- * 4. POST /auth/logout
- *    → borra refresh token
  */
 
 import { createHash, randomUUID } from 'node:crypto';
@@ -30,14 +20,13 @@ import { getIdentityStore } from '../identity/store.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'cobertec-intake-dev-secret-change-me';
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL ?? '15m';
-const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 días
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = 12;
 
-/** TTL en segundos para el campo expires_in de OAuth 2.0 */
 function getAccessTokenTTLSeconds(): number {
   const raw = ACCESS_TOKEN_TTL;
   const match = raw.match(/^(\d+)(m|h|s)$/);
-  if (!match) return 900; // fallback 15 min
+  if (!match) return 900;
   const value = parseInt(match[1], 10);
   const unit = match[2];
   if (unit === 's') return value;
@@ -151,6 +140,7 @@ export async function login(
     throw new AuthServiceError('INVALID_CREDENTIALS', 'Credenciales no válidas');
   }
 
+  const mustChangePassword = store.getMustChangePassword(userRow.id);
   const companies = store.getCompaniesForUser(userRow.id);
 
   const accessToken = signAccessToken({
@@ -158,11 +148,11 @@ export async function login(
     contact_id: userRow.contact_id,
     company_id: null,
     company_name: null,
+    must_change_password: mustChangePassword,
   });
 
   const refresh = signRefreshToken(userRow.id);
   store.storeRefreshToken(refresh.hash, userRow.id, refresh.expiresAt);
-
   store.updateLastLogin(userRow.id);
 
   return {
@@ -171,6 +161,7 @@ export async function login(
       token_type: 'Bearer',
       expires_in: ACCESS_TOKEN_TTL_SECONDS,
       companies,
+      must_change_password: mustChangePassword,
     },
     refreshToken: refresh.token,
   };
@@ -196,6 +187,7 @@ export function selectCompany(
     contact_id: currentToken.contact_id,
     company_id: company.id,
     company_name: company.name,
+    must_change_password: currentToken.must_change_password,
   });
 
   return {
@@ -227,11 +219,14 @@ export function refresh(
     throw new AuthServiceError('USER_INACTIVE', 'Usuario desactivado');
   }
 
+  const mustChangePassword = store.getMustChangePassword(user.id);
+
   const accessToken = signAccessToken({
     sub: user.id,
     contact_id: user.contact_id,
     company_id: null,
     company_name: null,
+    must_change_password: mustChangePassword,
   });
 
   const newRefresh = signRefreshToken(user.id);
@@ -252,4 +247,33 @@ export function logout(refreshTokenRaw: string | undefined): void {
   const store = getIdentityStore();
   const hash = createHash('sha256').update(refreshTokenRaw).digest('hex');
   store.deleteRefreshToken(hash);
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const store = getIdentityStore();
+
+  const user = store.getUserById(userId);
+  if (!user) {
+    throw new AuthServiceError('INVALID_CREDENTIALS', 'Usuario no encontrado');
+  }
+
+  // Si must_change_password=true, no verificamos la contraseña actual
+  const mustChange = store.getMustChangePassword(userId);
+  if (!mustChange) {
+    if (!currentPassword) {
+      throw new AuthServiceError('WRONG_CURRENT_PASSWORD', 'La contraseña actual es requerida', 400);
+    }
+    const valid = await verifyPassword(currentPassword, user.password_hash);
+    if (!valid) {
+      throw new AuthServiceError('WRONG_CURRENT_PASSWORD', 'La contraseña actual no es correcta', 400);
+    }
+  }
+
+  const newHash = await hashPassword(newPassword);
+  store.updateUserPassword(userId, newHash);
+  store.setMustChangePassword(userId, false);
 }

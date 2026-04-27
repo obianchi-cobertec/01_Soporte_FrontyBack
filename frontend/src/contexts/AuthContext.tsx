@@ -4,6 +4,7 @@
  * Al montar, intenta refresh silencioso para restaurar sesión.
  * Si el usuario solo tiene 1 empresa, auto-selecciona.
  * Si el usuario es superadmin, salta el selector de empresa.
+ * Si must_change_password, intercepta antes de continuar.
  */
 
 import {
@@ -29,6 +30,7 @@ import {
   fetchMe,
   setAccessToken,
   AuthApiError,
+  changePasswordApi,
 } from '../services/auth-api.js';
 
 // ─── Context shape ──────────────────────────────────────
@@ -40,6 +42,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   selectCompany: (companyId: string) => Promise<void>;
   logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,6 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = await fetchMe();
         if (cancelled) return;
 
+        // Detectar must_change_password desde el token
+        const mustChange = parseMustChangeFromToken(refreshed.access_token);
+
+        if (mustChange) {
+          setAuthState({
+            status: 'must_change_password',
+            accessToken: refreshed.access_token,
+            user: me,
+            selectedCompany: null,
+          });
+          return;
+        }
+
         setAuthState({
           status: me.company || me.is_superadmin ? 'company_selected' : 'authenticated',
           accessToken: refreshed.access_token,
@@ -98,6 +114,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await loginApi(email, password);
+
+      // Interceptar cambio de contraseña obligatorio
+      if (response.must_change_password) {
+        const me = await fetchMe();
+        setAuthState({
+          status: 'must_change_password',
+          accessToken: response.access_token,
+          user: me,
+          selectedCompany: null,
+        });
+        return;
+      }
+
       const me = await fetchMe();
 
       // Superadmin: salta el selector de empresa
@@ -173,6 +202,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // ─── Change Password ─────────────────────────────────
+
+  const changePassword = useCallback(async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await changePasswordApi({ current_password: currentPassword, new_password: newPassword, confirm_password: confirmPassword });
+
+      // Tras cambiar contraseña: hacer login silencioso con nueva contraseña
+      // El token actual sigue válido pero must_change_password = false en DB.
+      // Hacemos refresh para obtener token actualizado.
+      const refreshed = await refreshToken();
+      setAccessToken(refreshed.access_token);
+      const me = await fetchMe();
+
+      setAuthState(prev => ({
+        ...prev,
+        status: me.is_superadmin ? 'company_selected' : (me.companies.length === 1 ? 'authenticated' : 'authenticated'),
+        accessToken: refreshed.access_token,
+        user: me,
+        selectedCompany: null,
+      }));
+
+      // Auto-seleccionar empresa si solo hay una
+      if (!me.is_superadmin && me.companies.length === 1) {
+        const selected = await selectCompanyApi({ company_id: me.companies[0].id });
+        const meWithCompany = await fetchMe();
+        setAuthState({
+          status: 'company_selected',
+          accessToken: selected.access_token,
+          user: meWithCompany,
+          selectedCompany: selected.company,
+        });
+      } else if (me.is_superadmin) {
+        setAuthState(prev => ({ ...prev, status: 'company_selected' }));
+      }
+
+    } catch (err) {
+      const msg =
+        err instanceof AuthApiError
+          ? err.body.message
+          : 'Error al cambiar la contraseña';
+      setError(msg);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // ─── Logout ─────────────────────────────────────────
 
   const logout = useCallback(async () => {
@@ -188,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ authState, isLoading, error, login, selectCompany, logout }}
+      value={{ authState, isLoading, error, login, selectCompany, logout, changePassword }}
     >
       {children}
     </AuthContext.Provider>
@@ -203,4 +286,15 @@ export function useAuth(): AuthContextValue {
     throw new Error('useAuth must be used within <AuthProvider>');
   }
   return ctx;
+}
+
+// ─── Helpers ────────────────────────────────────────────
+
+function parseMustChangeFromToken(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.must_change_password === true;
+  } catch {
+    return false;
+  }
 }

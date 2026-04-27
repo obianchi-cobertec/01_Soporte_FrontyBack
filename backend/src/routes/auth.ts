@@ -2,22 +2,23 @@
  * Auth Routes — /api/auth/*
  *
  * POST /auth/token    — OAuth 2.0 token endpoint
- *   grant_type: "password"      → email + password → access_token + refresh cookie + companies[]
- *   grant_type: "refresh_token" → refresh cookie → nuevo access_token + nueva cookie
  * POST /auth/select   — company_id → access_token con company embebida
  * POST /auth/logout   — invalida refresh token
+ * PUT  /auth/password — cambia contraseña (requiere auth)
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import {
   TokenRequestSchema,
   SelectCompanyRequestSchema,
+  ChangePasswordRequestSchema,
 } from '../identity-types.js';
 import {
   login,
   selectCompany,
   refresh,
   logout,
+  changePassword,
   AuthServiceError,
 } from '../services/auth/service.js';
 
@@ -77,7 +78,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
   });
 
-  // ─── Select company (extensión propia) ──────────────────
+  // ─── Select company ──────────────────────────────────────
   fastify.post('/select', async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = request.requireAuth();
 
@@ -91,6 +92,27 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     const result = selectCompany(auth, parsed.data.company_id);
     return reply.status(200).send(result);
+  });
+
+  // ─── Change password ─────────────────────────────────────
+  fastify.put('/password', async (request: FastifyRequest, reply: FastifyReply) => {
+    const auth = request.requireAuth();
+
+    console.log('[password] body recibido:', JSON.stringify(request.body));
+    console.log('[password] user:', auth.sub, 'must_change_password:', auth.must_change_password);
+
+    const parsed = ChangePasswordRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      console.log('[password] VALIDATION ERROR:', parsed.error.issues);
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: parsed.error.issues.map((i) => i.message).join('; '),
+      });
+    }
+
+    console.log('[password] validación ok, llamando changePassword...');
+    await changePassword(auth.sub, parsed.data.current_password, parsed.data.new_password);
+    return reply.status(200).send({ ok: true });
   });
 
   // ─── Logout ─────────────────────────────────────────────

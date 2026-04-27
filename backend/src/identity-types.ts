@@ -26,6 +26,7 @@ export interface User {
   password_hash: string;
   active: boolean;
   is_superadmin: boolean;
+  must_change_password: boolean;
   last_login: string | null;
   created_at: string;
   updated_at: string;
@@ -92,6 +93,7 @@ export interface TokenResponse {
   token_type: 'Bearer';
   expires_in: number;
   companies: CompanyDTO[];
+  must_change_password: boolean;
 }
 
 export interface LoginResponse extends TokenResponse {}
@@ -123,12 +125,29 @@ export interface AccessTokenPayload {
   contact_id: string;
   company_id: string | null;
   company_name: string | null;
+  must_change_password: boolean;
   type: 'access';
 }
 
 export interface RefreshTokenPayload {
   sub: string;
   type: 'refresh';
+}
+
+// ─── Cambio de contraseña ────────────────────────────────────
+
+export const ChangePasswordRequestSchema = z.object({
+  current_password: z.string(),
+  new_password: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
+  confirm_password: z.string().min(1, 'Confirmación requerida'),
+}).refine(data => data.new_password === data.confirm_password, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirm_password'],
+});
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
+
+export interface ChangePasswordResponse {
+  ok: true;
 }
 
 // ─── Errores tipados ────────────────────────────────────────
@@ -142,7 +161,8 @@ export type AuthErrorCode =
   | 'TOKEN_INVALID'
   | 'NO_REFRESH_TOKEN'
   | 'COMPANY_NOT_SELECTED'
-  | 'UNSUPPORTED_GRANT_TYPE';
+  | 'UNSUPPORTED_GRANT_TYPE'
+  | 'WRONG_CURRENT_PASSWORD';
 
 export interface AuthError {
   error: AuthErrorCode;

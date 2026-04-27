@@ -12,6 +12,7 @@ import { ErrorDisplay } from './components/ErrorDisplay';
 import { Loading } from './components/Loading';
 import { StepIndicator } from './components/StepIndicator';
 import { Dashboard } from './components/Dashboard';
+import { ChangePasswordPage } from './components/ChangePasswordPage';
 import { submitIntake, confirmIntake } from './services/api';
 import { generateSessionId } from './utils/session';
 import { authenticatedFetch } from './services/auth-api';
@@ -191,6 +192,22 @@ export default function App() {
     );
   }
 
+  // ─── Cambio de contraseña obligatorio ────────────────
+
+  if (authState.status === 'must_change_password') {
+    return (
+      <div className="app-container">
+        <header className="app-header">
+          <h1><span>Cobertec</span> — Soporte</h1>
+        </header>
+        <main className="app-main">
+          <ChangePasswordPage />
+        </main>
+        <footer className="app-footer">Intake IA v1 — Piloto</footer>
+      </div>
+    );
+  }
+
   // ─── Selección de empresa ─────────────────────────────
 
   if (authState.status === 'authenticated') {
@@ -285,7 +302,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Formulario: superadmin solo lo ve tras seleccionar empresa */}
               {step === 'form' && (!isSuperAdmin || superadminCompany) && (
                 <>
                   {isSuperAdmin && superadminCompany && (

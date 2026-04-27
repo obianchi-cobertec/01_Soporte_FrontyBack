@@ -20,6 +20,7 @@ export interface LoginResponse {
   token_type: 'Bearer';
   expires_in: number;
   companies: CompanyDTO[];
+  must_change_password: boolean;
 }
 
 export interface SelectCompanyRequest {
@@ -57,8 +58,18 @@ export interface AuthError {
 }
 
 export interface AuthState {
-  status: 'unauthenticated' | 'authenticated' | 'company_selected';
+  status: 'unauthenticated' | 'authenticated' | 'company_selected' | 'must_change_password';
   accessToken: string | null;
   user: MeResponse | null;
   selectedCompany: CompanyDTO | null;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface ChangePasswordResponse {
+  ok: true;
 }

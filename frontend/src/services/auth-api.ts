@@ -15,6 +15,8 @@ import type {
   RefreshResponse,
   MeResponse,
   AuthError,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
 } from '../auth-types.js';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
@@ -132,6 +134,13 @@ export async function logoutApi(): Promise<void> {
 
 export async function fetchMe(): Promise<MeResponse> {
   return authenticatedFetch<MeResponse>('/identity/me');
+}
+
+export async function changePasswordApi(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+  return authFetch<ChangePasswordResponse>('/auth/password', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 }
 
 export { AuthApiError };
