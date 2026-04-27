@@ -680,3 +680,50 @@ store.close();
 | Solicitud de alta de nuevo usuario (formulario público) | Pendiente decisión: ¿mismo frontend bajo `/registro`? |
 | Panel admin para aprobar/rechazar altas | Pendiente SMTP para email de bienvenida |
 | Sincronización contraseña con Redmine al cambiar | Activar cuando salga del piloto — `redmine_user_id` ya está disponible |
+
+---
+
+## Decisiones de diseño — razonamiento (no obvio en el código)
+
+Estas decisiones se tomaron de forma explícita y no deben revertirse sin entender el porqué.
+
+### Contraseñas
+
+**¿Por qué `must_change_password` desde el inicio y no verificar contra Redmine?**
+Los 611 usuarios importados tienen `Cobertec2024!` en identity.db. Sus contraseñas reales de Redmine son distintas. No es posible extraer contraseñas de Redmine via API (no existe ese endpoint en ningún sistema). La única opción viable sin comunicación previa a los usuarios es marcar `must_change_password = 1` desde el inicio y forzar el cambio en el primer acceso.
+
+**¿Por qué no se pide contraseña actual en el cambio obligatorio?**
+En el primer acceso el usuario no conoce `Cobertec2024!` (es la contraseña provisional interna). Pedirsela sería confuso y generaría soporte. El estándar en sistemas enterprise es no pedir contraseña actual cuando el admin fuerza el cambio — el token válido ya es suficiente garantía de identidad.
+
+**¿Por qué la sincronización con Redmine está desactivada?**
+Redmine es el sistema operativo activo de Cobertec — cualquier cambio de contraseña en los 611 usuarios afectaría su acceso diario a Redmine. Durante el piloto solo trabajamos con HERGOPAS_sat. Activar la sincronización ahora rompería el trabajo diario de todos los usuarios. El `redmine_user_id` ya está poblado en DB (602/611 usuarios) y la sincronización se activa con 3 líneas de código cuando Cobertec decida salir del piloto.
+
+**Los 9 usuarios sin `redmine_user_id`** (no encontrados en Redmine):
+`aintzane_aidesegi`, `antonio_losada`, `gustavo_hergopas`, `noelia_hergopas`, `gloria_hergopas`, `indertec`, `daniel_Jacintoredondo`, `isabel_macool`, `agabea_novofrio`. Pueden haberse eliminado de Redmine o tener el login cambiado. No bloquean nada — simplemente no tendrán sincronización de contraseña cuando llegue el momento.
+
+### Autenticación
+
+**¿Por qué OAuth 2.0 con `grant_type` en lugar de endpoints separados `/login` y `/refresh`?**
+Decisión de diseño anterior a esta sesión. El endpoint unificado `POST /auth/token` con `grant_type: 'password' | 'refresh_token'` es el estándar OAuth 2.0 y facilita la integración futura con otros clientes (app móvil, etc.).
+
+**¿Por qué el `must_change_password` viaja en el JWT y no solo en la respuesta del login?**
+Porque el refresh silencioso al cargar la SPA también necesita detectar el flag. Si solo estuviera en la respuesta del login, un usuario que cierra el navegador antes de cambiar la contraseña podría saltarse la pantalla de cambio al reabrir. El JWT garantiza que el flag persiste entre sesiones hasta que se cambie la contraseña.
+
+### Redmine
+
+**¿Por qué impersonation via `X-Redmine-Switch-User` y no crear usuarios con su propia API key?**
+Cobertec gestiona una única API key admin (`cobertec_intake`, id: 847). Los clientes no tienen API keys propias. La impersonación permite que los tickets aparezcan en Redmine como creados por el usuario cliente, manteniendo la trazabilidad sin gestionar credenciales individuales.
+
+**¿Por qué `redmine_login` existe en DB pero no se usaba antes de esta sesión?**
+La columna se añadió en una migración anterior previendo la impersonación, pero el script de importación de usuarios no la poblaba. Ahora está poblada para los 611 usuarios (campo `redmine_login`) y además tenemos `redmine_user_id` para las operaciones que requieren ID numérico (cambio de contraseña).
+
+### SMTP y funcionalidades pendientes
+
+**¿Por qué no se implementó recuperación de contraseña ni alta de usuarios en esta sesión?**
+Ambas funcionalidades requieren envío de email. El proveedor SMTP (SendGrid, Gmail, servidor propio de Cobertec) está pendiente de definir con Cobertec. Implementar el flujo sin email funcional no tiene valor — se pospone hasta confirmar el proveedor.
+
+**Decisiones pendientes de confirmar con Cobertec antes de continuar:**
+1. Proveedor SMTP para emails transaccionales
+2. ¿El formulario de alta de nuevo usuario va en el mismo frontend bajo `/registro` o separado?
+3. ¿Quién es el admin de Cobertec que aprueba las altas? (configurar su cuenta como superadmin)
+4. ¿Los nuevos usuarios de Redmine deben crearse con algún rol adicional además de Cliente SAT (role_id: 6)?
