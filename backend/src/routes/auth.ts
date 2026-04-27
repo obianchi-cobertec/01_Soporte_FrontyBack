@@ -50,7 +50,14 @@ function getRefreshCookie(request: FastifyRequest): string | undefined {
 
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   // ─── OAuth 2.0 Token endpoint ───────────────────────────
-  fastify.post('/token', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/token', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '1 minute',
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     const parsed = TokenRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -98,19 +105,14 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.put('/password', async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = request.requireAuth();
 
-    console.log('[password] body recibido:', JSON.stringify(request.body));
-    console.log('[password] user:', auth.sub, 'must_change_password:', auth.must_change_password);
-
     const parsed = ChangePasswordRequestSchema.safeParse(request.body);
     if (!parsed.success) {
-      console.log('[password] VALIDATION ERROR:', parsed.error.issues);
       return reply.status(400).send({
         error: 'VALIDATION_ERROR',
         message: parsed.error.issues.map((i) => i.message).join('; '),
       });
     }
 
-    console.log('[password] validación ok, llamando changePassword...');
     await changePassword(auth.sub, parsed.data.current_password, parsed.data.new_password);
     return reply.status(200).send({ ok: true });
   });

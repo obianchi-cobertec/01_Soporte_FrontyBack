@@ -89,9 +89,9 @@ export class RedmineClient {
       ?? 4;
 
     // Resolver ID numérico de usuario a partir del rol funcional
-    const roleMap: Record<string, number> = (mapping as any).role_to_user_id ?? {};
-    const assigneeRole = classification.suggested_assignee ?? mapping.redmine_defaults.default_assignee;
-    const assigneeId = roleMap[assigneeRole]
+    const roleMap: Record<string, number> = mapping.role_to_user_id ?? {};
+    const assigneeRoleKey = classification.suggested_assignee ?? mapping.redmine_defaults.default_assignee;
+    const assigneeId = (assigneeRoleKey != null ? roleMap[assigneeRoleKey] : undefined)
       ?? (typeof mapping.redmine_defaults.default_assignee_id === 'number'
           ? mapping.redmine_defaults.default_assignee_id
           : null);
@@ -170,7 +170,6 @@ export class RedmineClient {
 
     if (redmineLogin) {
       headers['X-Redmine-Switch-User'] = redmineLogin;
-      console.log(`[Redmine] Impersonando usuario: ${redmineLogin}`);
     }
 
     const response = await fetch(`${this.baseUrl}/issues.json`, {
@@ -202,7 +201,6 @@ export class SimulatedRedmineClient {
     const description = composeDescription(intake, classification);
     simulatedTicketCounter++;
     const ticketId = String(simulatedTicketCounter);
-    console.log(`[Redmine SIMULADO] Ticket #${ticketId} creado: ${subject}`);
     await new Promise(resolve => setTimeout(resolve, 300));
     return {
       ticket_id: ticketId,
@@ -218,7 +216,6 @@ export function getRedmineClient(): RedmineClient | SimulatedRedmineClient {
     const baseUrl = process.env.REDMINE_URL;
     const apiKey = process.env.REDMINE_API_KEY;
     if (!baseUrl || !apiKey) {
-      console.log('[Redmine] REDMINE_URL no configurada → modo simulación activado');
       instance = new SimulatedRedmineClient();
     } else {
       instance = new RedmineClient({ baseUrl, apiKey });

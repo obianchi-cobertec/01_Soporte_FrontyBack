@@ -694,7 +694,6 @@ export default function ConfigPanel() {
   const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
   const [redmineMapping, setRedmineMapping] = useState<RedmineMapping | null>(null);
   const [assignmentRules, setAssignmentRules] = useState<AssignmentRules | null>(null);
-  const [redmineUsers, setRedmineUsers] = useState<{ id: number; login: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -704,16 +703,14 @@ export default function ConfigPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [tx, rm, ar, ru] = await Promise.all([
+      const [tx, rm, ar] = await Promise.all([
         loadConfig('taxonomy'),
         loadConfig('redmine-mapping'),
         loadConfig('assignment-rules'),
-        authenticatedFetch<{ users: { id: number; login: string; name: string }[] }>('/config/redmine-users').catch(() => ({ users: [] })),
       ]);
       setTaxonomy(tx as Taxonomy);
       setRedmineMapping(rm as RedmineMapping);
       setAssignmentRules(ar as AssignmentRules);
-      setRedmineUsers((ru as { users: { id: number; login: string; name: string }[] }).users ?? []);
     } catch (e) {
       setError('Error al cargar la configuración: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -799,7 +796,7 @@ export default function ConfigPanel() {
           <AssignmentTab rules={assignmentRules} onChange={setAssignmentRules} />
         )}
         {activeTab === 'redmine' && redmineMapping && (
-          <RedmineTab mapping={redmineMapping} onChange={setRedmineMapping} assignmentRoles={assignmentRules.rol_funcional} redmineUsers={redmineUsers} />
+          <RedmineTab mapping={redmineMapping} onChange={setRedmineMapping} />
         )}
       </div>
     </div>

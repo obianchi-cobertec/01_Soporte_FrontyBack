@@ -96,6 +96,19 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 
 ---
 
+## Workflow de desarrollo
+
+### Antes de tocar código
+- Confirmar el enfoque en Claude.ai si la feature afecta contratos de tipos o arquitectura
+- Si hay cambios en `types.ts` o `identity-types.ts`, actualizar SIEMPRE el espejo frontend
+
+### Comandos frecuentes
+- `cd backend && npm run dev` — arrancar backend
+- `cd frontend && npm run dev` — arrancar frontend  
+- `cd backend && npx tsx scripts/<script>.ts` — ejecutar scripts one-shot
+
+---
+
 ## Archivos clave — qué hacen exactamente
 
 ### `backend/src/types.ts`
@@ -484,25 +497,7 @@ La integración con Redmine está **sustancialmente completada** en config pero 
 
 ## Bugs conocidos activos
 
-### En `frontend/src/pages/ConfigPanel.tsx`
-
-1. **TypeScript: props extra en `<RedmineTab>`** (línea 802): se pasan `assignmentRoles` y `redmineUsers` pero la interfaz del componente no los declara. No causa error en runtime (React los ignora) pero sí error de compilación TypeScript.
-
-2. **`redmineUsers` state nunca usada correctamente** (línea 697): el estado `redmineUsers` del componente principal se carga en `load()` pero el cast del resultado es incorrecto (la API devuelve un array, no `{ users: [] }`). El componente `RedmineTab` carga sus propios usuarios de forma independiente via su propio `useEffect`, por lo que el feature funciona, pero hay código muerto.
-
-3. **Null access en `assignmentRules.rol_funcional`** (línea 802): `assignmentRules` puede ser `null` en el primer render, pero no se comprueba antes de acceder a `.rol_funcional`. Podría lanzar TypeError si la carga de configs falla parcialmente.
-
-### En `backend/src/routes/intake.ts`
-
-4. **Debug logs en producción** (líneas 262-266, 293): `console.log` que imprimen datos de clasificación internos y el error completo de Redmine. Eliminar antes de despliegue.
-
-### En `backend/src/routes/config.ts`
-
-5. **Debug log en producción** (líneas 41 y 128): `console.log('[config GET] Reading:', filePath)` aparece tanto en el handler GET como en el PUT.
-
-### En `backend/src/services/redmine/index.ts`
-
-6. **`any` cast** (línea 92): `(mapping as any).role_to_user_id` — el tipo de retorno de `getRedmineMapping()` debería incluir `role_to_user_id`. Funciona pero viola `strict: true`.
+No hay bugs activos rastreados en este momento.
 
 ---
 
@@ -517,25 +512,25 @@ La integración con Redmine está **sustancialmente completada** en config pero 
 7. ~~Subida de adjuntos secuencial~~ — **Resuelto**: `Promise.all` en `uploadAttachments()`
 8. ~~Custom fields `__PENDIENTE__`~~ — **Resuelto**: IDs 21-28 configurados
 9. ~~`role_to_user_id` no existe en config~~ — **Resuelto**: tabla completa con ~40 roles
+10. ~~Debug `console.log` en `intake.ts`, `config.ts`, `redmine/index.ts`, `auth.ts`~~ — **Resuelto**: eliminados todos
+11. ~~TypeScript: props extra en `<RedmineTab>`, `redmineUsers` state muerto, null access en `assignmentRules`~~ — **Resuelto**: `redmineUsers` eliminado del padre, props extra quitadas de la llamada
+12. ~~`any` cast en `redmine/index.ts` — `(mapping as any).role_to_user_id`~~ — **Resuelto**: `role_to_user_id` tipado en `RedmineMappingConfig`, guard `!= null` antes de indexar
+13. ~~Sin rate limiting en `POST /api/auth/token`~~ — **Resuelto**: `@fastify/rate-limit` registrado, límite 10 req/min por IP
 
 ---
 
 ## Mejoras pendientes antes de producción
 
-| Prioridad | Área | Descripción |
-|-----------|------|-------------|
-| **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite/Redis para sobrevivir reinicios |
-| **Alta** | Config | Definir `redmine_defaults.default_assignee_id` con ID numérico real de Redmine |
-| **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a un proyecto de producción real |
-| **Alta** | Backend | Eliminar todos los `console.log` de debug en intake.ts, config.ts, redmine/index.ts |
-| **Alta** | Backend | Poblar el campo `redmine_login` en usuarios para activar la impersonación en Redmine |
-| **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen realmente en la instancia Redmine de Cobertec |
-| **Media** | Frontend | Bugs de TypeScript en ConfigPanel.tsx (props extra, null access, cast incorrecto) |
-| **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` |
-| **Media** | Backend | Añadir tipo explícito para `role_to_user_id` en el tipo de retorno de `getRedmineMapping()` |
-| **Media** | Auth | No hay rate limiting en `POST /api/auth/token` — riesgo de fuerza bruta |
-| **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` |
-| **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` con instrucciones de ejecución |
+| Prioridad | Área | Descripción | Bloqueante |
+|-----------|------|-------------|------------|
+| **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite/Redis para sobrevivir reinicios | Decisión de arquitectura |
+| **Alta** | Config | Definir `redmine_defaults.default_assignee_id` con ID numérico real de Redmine | Cobertec debe dar el ID |
+| **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a proyecto de producción | Cobertec debe definirlo |
+| **Alta** | Backend | Poblar el campo `redmine_login` en usuarios para activar la impersonación en Redmine | Decisión operativa |
+| **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen en la instancia Redmine de Cobertec | Acceso a Redmine de prod |
+| **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` | — |
+| **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` | — |
+| **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` | — |
 
 ---
 

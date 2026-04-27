@@ -104,6 +104,7 @@ export interface RedmineMappingConfig {
   };
   custom_fields: Record<string, { id: string; name: string }>;
   company_to_project: Record<string, string>;
+  role_to_user_id?: Record<string, number>;
 }
 
 export interface AssignmentRule {

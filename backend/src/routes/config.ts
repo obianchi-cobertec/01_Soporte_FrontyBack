@@ -38,7 +38,6 @@ export async function configRoutes(app: FastifyInstance) {
     }
 
     const filePath = path.join(CONFIG_DIR, `${file}.json`);
-    console.log('[config GET] Reading:', filePath);
     const raw = await fs.readFile(filePath, 'utf-8');
     return reply.header('Content-Type', 'application/json').send(raw);
   });
@@ -120,7 +119,6 @@ export async function configRoutes(app: FastifyInstance) {
     }
 
     const filePath = path.join(CONFIG_DIR, `${file}.json`);
-    console.log('[config GET] Reading:', filePath);
     const backupPath = `${filePath}.bak`;
     try {
       await fs.copyFile(filePath, backupPath);

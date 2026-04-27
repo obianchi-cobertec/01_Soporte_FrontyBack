@@ -2,6 +2,7 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import rateLimit from '@fastify/rate-limit';
 import { mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -43,6 +44,10 @@ async function main() {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
+  });
+
+  await app.register(rateLimit, {
+    global: false, // opt-in por ruta
   });
 
   await app.register(cookie);
