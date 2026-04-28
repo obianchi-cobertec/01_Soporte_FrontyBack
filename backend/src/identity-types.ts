@@ -48,6 +48,41 @@ export interface UserCompany {
   created_at: string;
 }
 
+// ─── Solicitudes de alta ────────────────────────────────────
+
+export type UserRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface UserRequest {
+  id: string;           // UUID
+  first_name: string;
+  last_name: string;
+  email: string;
+  company_id: string;
+  phone: string | null;
+  status: UserRequestStatus;
+  rejection_reason: string | null;
+  redmine_user_id: number | null;  // poblado al aprobar
+  created_at: string;
+  updated_at: string;
+}
+
+export const UserRequestFormSchema = z.object({
+  first_name: z.string().min(1, 'Nombre requerido'),
+  last_name: z.string().min(1, 'Apellido requerido'),
+  email: z.string().email('Email no válido'),
+  company_id: z.string().min(1, 'Empresa requerida'),
+  phone: z.string().nullable().optional(),
+});
+export type UserRequestForm = z.infer<typeof UserRequestFormSchema>;
+
+export const ApproveRequestSchema = z.object({});
+export type ApproveRequest = z.infer<typeof ApproveRequestSchema>;
+
+export const RejectRequestSchema = z.object({
+  reason: z.string().min(1, 'Motivo requerido'),
+});
+export type RejectRequest = z.infer<typeof RejectRequestSchema>;
+
 // ─── DTOs de salida ─────────────────────────────────────────
 
 export interface CompanyDTO {
@@ -72,7 +107,7 @@ export interface MeResponse {
 export const TokenRequestSchema = z.discriminatedUnion('grant_type', [
   z.object({
     grant_type: z.literal('password'),
-    email: z.string().email('Email no válido'),
+    email: z.string().min(1, 'Email o usuario requerido'),
     password: z.string().min(1, 'Contraseña requerida'),
   }),
   z.object({
@@ -150,6 +185,31 @@ export interface ChangePasswordResponse {
   ok: true;
 }
 
+// ─── Recuperación de contraseña ──────────────────────────
+
+export const ForgotPasswordRequestSchema = z.object({
+  email: z.string().email('Email no válido'),
+});
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
+
+export interface ForgotPasswordResponse {
+  ok: true;
+}
+
+export const ResetPasswordRequestSchema = z.object({
+  token: z.string().min(1, 'Token requerido'),
+  new_password: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
+  confirm_password: z.string().min(1, 'Confirmación requerida'),
+}).refine(data => data.new_password === data.confirm_password, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirm_password'],
+});
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;
+
+export interface ResetPasswordResponse {
+  ok: true;
+}
+
 // ─── Errores tipados ────────────────────────────────────────
 
 export type AuthErrorCode =
@@ -162,7 +222,9 @@ export type AuthErrorCode =
   | 'NO_REFRESH_TOKEN'
   | 'COMPANY_NOT_SELECTED'
   | 'UNSUPPORTED_GRANT_TYPE'
-  | 'WRONG_CURRENT_PASSWORD';
+  | 'WRONG_CURRENT_PASSWORD'
+  | 'RESET_TOKEN_INVALID'
+  | 'RESET_TOKEN_EXPIRED';
 
 export interface AuthError {
   error: AuthErrorCode;

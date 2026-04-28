@@ -14,6 +14,8 @@ import type {
   Company,
   UserCompany,
   CompanyDTO,
+  UserRequest,
+  UserRequestStatus,
 } from '../../identity-types.js';
 
 const DB_PATH = process.env.IDENTITY_DB_PATH ?? 'data/identity.db';
@@ -106,6 +108,32 @@ export class IdentityStore {
       );
 
       CREATE INDEX IF NOT EXISTS idx_rt_user ON refresh_tokens(user_id);
+
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        token_hash  TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id),
+        expires_at  TEXT NOT NULL,
+        created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens(user_id);
+
+      CREATE TABLE IF NOT EXISTS user_requests (
+        id               TEXT PRIMARY KEY,
+        first_name       TEXT NOT NULL,
+        last_name        TEXT NOT NULL,
+        email            TEXT NOT NULL COLLATE NOCASE,
+        company_id       TEXT NOT NULL REFERENCES companies(id),
+        phone            TEXT,
+        status           TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+        rejection_reason TEXT,
+        redmine_user_id  INTEGER,
+        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ur_status ON user_requests(status);
+      CREATE INDEX IF NOT EXISTS idx_ur_email ON user_requests(email);
     `);
 
     // Migraciones no destructivas
@@ -176,18 +204,22 @@ export class IdentityStore {
     password_hash: string;
     is_superadmin?: boolean;
     must_change_password?: boolean;
+    redmine_login?: string | null;
+    redmine_user_id?: number | null;
   }): User {
     const id = randomUUID();
     const now = new Date().toISOString();
     this.db.prepare(`
-      INSERT INTO users (id, contact_id, password_hash, active, is_superadmin, must_change_password, created_at, updated_at)
-      VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+      INSERT INTO users (id, contact_id, password_hash, active, is_superadmin, must_change_password, redmine_login, redmine_user_id, created_at, updated_at)
+      VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       data.contact_id,
       data.password_hash,
       data.is_superadmin ? 1 : 0,
       data.must_change_password ? 1 : 0,
+      data.redmine_login ?? null,
+      data.redmine_user_id ?? null,
       now,
       now,
     );
@@ -209,6 +241,15 @@ export class IdentityStore {
       JOIN contacts c ON u.contact_id = c.id
       WHERE c.email = ? COLLATE NOCASE
     `).get(email) as (User & { contact_name: string; contact_email: string }) | null;
+  }
+
+  getUserByRedmineLogin(login: string): (User & { contact_name: string; contact_email: string }) | null {
+    return this.db.prepare(`
+      SELECT u.*, c.name as contact_name, c.email as contact_email
+      FROM users u
+      JOIN contacts c ON u.contact_id = c.id
+      WHERE u.redmine_login = ? COLLATE NOCASE
+    `).get(login) as (User & { contact_name: string; contact_email: string }) | null;
   }
 
   getRedmineLogin(userId: string): string | null {
@@ -249,6 +290,13 @@ export class IdentityStore {
     `).run(value ? 1 : 0, userId);
   }
 
+  setRedmineUserId(userId: string, redmineUserId: number): void {
+    this.db.prepare(`
+      UPDATE users SET redmine_user_id = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(redmineUserId, userId);
+  }
+
   isSuperAdmin(userId: string): boolean {
     const row = this.db.prepare(`
       SELECT is_superadmin FROM users WHERE id = ?
@@ -273,6 +321,12 @@ export class IdentityStore {
 
   getCompanyById(id: string): Company | null {
     return this.db.prepare('SELECT * FROM companies WHERE id = ?').get(id) as Company | null;
+  }
+
+  listActiveCompanies(): Pick<Company, 'id' | 'name'>[] {
+    return this.db.prepare(`
+      SELECT id, name FROM companies WHERE active = 1 ORDER BY name
+    `).all() as Pick<Company, 'id' | 'name'>[];
   }
 
   updateCompany(id: string, data: {
@@ -398,6 +452,129 @@ export class IdentityStore {
     `).all() as AdminCompanyRow[];
   }
 
+  // ─── User requests ────────────────────────────────────
+
+  createUserRequest(data: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    company_id: string;
+    phone?: string | null;
+  }): UserRequest {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    this.db.prepare(`
+      INSERT INTO user_requests (id, first_name, last_name, email, company_id, phone, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+    `).run(id, data.first_name, data.last_name, data.email, data.company_id, data.phone ?? null, now, now);
+    return this.getUserRequestById(id)!;
+  }
+
+  getUserRequestById(id: string): UserRequest | null {
+    return this.db.prepare('SELECT * FROM user_requests WHERE id = ?').get(id) as UserRequest | null;
+  }
+
+  updateUserRequest(id: string, data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    company_id?: string;
+    phone?: string | null;
+  }): void {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (data.first_name !== undefined) { fields.push('first_name = ?'); values.push(data.first_name); }
+    if (data.last_name !== undefined) { fields.push('last_name = ?'); values.push(data.last_name); }
+    if (data.email !== undefined) { fields.push('email = ?'); values.push(data.email); }
+    if (data.company_id !== undefined) { fields.push('company_id = ?'); values.push(data.company_id); }
+    if (data.phone !== undefined) { fields.push('phone = ?'); values.push(data.phone); }
+
+    if (fields.length === 0) return;
+    fields.push("updated_at = datetime('now')");
+    values.push(id);
+
+    this.db.prepare(
+      `UPDATE user_requests SET ${fields.join(', ')} WHERE id = ? AND status = 'pending'`
+    ).run(...values);
+  }
+
+  listUserRequests(status?: UserRequestStatus): (UserRequest & { company_name: string })[] {
+    if (status) {
+      return this.db.prepare(`
+        SELECT ur.*, co.name as company_name
+        FROM user_requests ur
+        JOIN companies co ON ur.company_id = co.id
+        WHERE ur.status = ?
+        ORDER BY ur.created_at DESC
+      `).all(status) as (UserRequest & { company_name: string })[];
+    }
+    return this.db.prepare(`
+      SELECT ur.*, co.name as company_name
+      FROM user_requests ur
+      JOIN companies co ON ur.company_id = co.id
+      ORDER BY ur.created_at DESC
+    `).all() as (UserRequest & { company_name: string })[];
+  }
+
+  approveUserRequest(id: string, redmineUserId: number): void {
+    this.db.prepare(`
+      UPDATE user_requests
+      SET status = 'approved', redmine_user_id = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(redmineUserId, id);
+  }
+
+  rejectUserRequest(id: string, reason: string): void {
+    this.db.prepare(`
+      UPDATE user_requests
+      SET status = 'rejected', rejection_reason = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(reason, id);
+  }
+
+  /**
+   * Genera un login único para Redmine siguiendo el patrón:
+   * nombre_empresa → nombrea_empresa → nombreap_empresa → nombre2_empresa → ...
+   *
+   * Busca colisiones en users.redmine_login (usuarios ya creados).
+   */
+  generateRedmineLogin(firstName: string, lastName: string, companySlug: string): string {
+    const normalize = (s: string) =>
+      s.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')  // elimina tildes
+        .replace(/[^a-z0-9]/g, '');       // solo alfanumérico
+
+    const fn = normalize(firstName);
+    const ln = normalize(lastName);
+    const co = normalize(companySlug).replace(/[^a-z0-9_]/g, '_');
+
+    const candidates = [
+      `${fn}_${co}`,
+      `${fn}${ln.charAt(0)}_${co}`,
+      `${fn}${ln.substring(0, 2)}_${co}`,
+    ];
+
+    for (const candidate of candidates) {
+      const existing = this.db.prepare(
+        `SELECT 1 FROM users WHERE redmine_login = ? COLLATE NOCASE`
+      ).get(candidate);
+      if (!existing) return candidate;
+    }
+
+    // Fallback numérico: nombre2_empresa, nombre3_empresa, ...
+    let n = 2;
+    while (true) {
+      const candidate = `${fn}${n}_${co}`;
+      const existing = this.db.prepare(
+        `SELECT 1 FROM users WHERE redmine_login = ? COLLATE NOCASE`
+      ).get(candidate);
+      if (!existing) return candidate;
+      n++;
+    }
+  }
+
   // ─── Refresh tokens ───────────────────────────────────
 
   storeRefreshToken(tokenHash: string, userId: string, expiresAt: string): void {
@@ -423,6 +600,27 @@ export class IdentityStore {
 
   pruneExpiredTokens(): void {
     this.db.prepare("DELETE FROM refresh_tokens WHERE expires_at < datetime('now')").run();
+    this.db.prepare("DELETE FROM password_reset_tokens WHERE expires_at < datetime('now')").run();
+  }
+
+  // ─── Password reset tokens ────────────────────────────
+
+  storePasswordResetToken(tokenHash: string, userId: string, expiresAt: string): void {
+    this.db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(userId);
+    this.db.prepare(`
+      INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+      VALUES (?, ?, ?)
+    `).run(tokenHash, userId, expiresAt);
+  }
+
+  getPasswordResetToken(tokenHash: string): { token_hash: string; user_id: string; expires_at: string } | null {
+    return this.db.prepare(
+      'SELECT * FROM password_reset_tokens WHERE token_hash = ?',
+    ).get(tokenHash) as { token_hash: string; user_id: string; expires_at: string } | null;
+  }
+
+  deletePasswordResetToken(tokenHash: string): void {
+    this.db.prepare('DELETE FROM password_reset_tokens WHERE token_hash = ?').run(tokenHash);
   }
 
   // ─── Lifecycle ────────────────────────────────────────

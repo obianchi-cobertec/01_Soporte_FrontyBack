@@ -12,6 +12,7 @@ import { authRoutes } from './routes/auth.js';
 import { identityRoutes } from './routes/identity.js';
 import { configRoutes } from './routes/config.js';
 import { adminRoutes } from './routes/admin.js';
+import { requestRoutes } from './routes/requests.js';
 import authPlugin from './plugins/auth.js';
 import { initEventStore, closeEventStore } from './services/events/index.js';
 import { getIdentityStore } from './services/identity/store.js';
@@ -57,6 +58,7 @@ async function main() {
   await app.register(identityRoutes, { prefix: '/api/identity' });
   await app.register(configRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
+  await app.register(requestRoutes, { prefix: '/api/requests' });
   await app.register(intakeRoutes);
   await app.register(metricsRoutes);
 
@@ -84,6 +86,8 @@ async function main() {
     console.log(`  POST /api/auth/token`);
     console.log(`  POST /api/auth/select`);
     console.log(`  POST /api/auth/logout`);
+    console.log(`  POST /api/auth/forgot-password`);
+    console.log(`  POST /api/auth/reset-password`);
     console.log(`  GET  /api/identity/me`);
     console.log(`  POST /api/intake/submit`);
     console.log(`  POST /api/intake/confirm`);

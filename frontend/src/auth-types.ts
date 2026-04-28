@@ -73,3 +73,41 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResponse {
   ok: true;
 }
+
+// ─── Recuperación de contraseña ──────────────────────────
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  ok: true;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface ResetPasswordResponse {
+  ok: true;
+}
+
+// ─── Solicitudes de alta ─────────────────────────────────
+
+export type UserRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface UserRequest {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company_id: string;
+  phone: string | null;
+  status: UserRequestStatus;
+  rejection_reason: string | null;
+  redmine_user_id: number | null;
+  created_at: string;
+  updated_at: string;
+}

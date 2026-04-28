@@ -2,7 +2,7 @@
  * Auth Service — OAuth 2.0 compatible (password + refresh_token grants)
  */
 
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import type {
@@ -14,6 +14,9 @@ import type {
   RefreshResponse,
   AuthErrorCode,
 } from '../../identity-types.js';
+import {
+  sendPasswordRecovery,
+} from '../email/service.js';
 import { getIdentityStore } from '../identity/store.js';
 
 // ─── Config ─────────────────────────────────────────────
@@ -125,7 +128,7 @@ export async function login(
   password: string,
 ): Promise<{ tokenResponse: TokenResponse; refreshToken: string }> {
   const store = getIdentityStore();
-  const userRow = store.getUserByEmail(email);
+  const userRow = store.getUserByEmail(email) ?? store.getUserByRedmineLogin(email);
 
   if (!userRow) {
     throw new AuthServiceError('INVALID_CREDENTIALS', 'Credenciales no válidas');
@@ -247,6 +250,54 @@ export function logout(refreshTokenRaw: string | undefined): void {
   const store = getIdentityStore();
   const hash = createHash('sha256').update(refreshTokenRaw).digest('hex');
   store.deleteRefreshToken(hash);
+}
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
+const FRONTEND_URL = process.env.FRONTEND_URL ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+
+export async function forgotPassword(email: string): Promise<void> {
+  const store = getIdentityStore();
+  const userRow = store.getUserByEmail(email);
+
+  // No revelamos si el email existe o no
+  if (!userRow || !userRow.active) return;
+
+  const rawToken = randomBytes(32).toString('hex');
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
+
+  store.storePasswordResetToken(tokenHash, userRow.id, expiresAt);
+
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${rawToken}`;
+  await sendPasswordRecovery(userRow.contact_email, userRow.contact_name, resetUrl);
+}
+
+export async function resetPassword(rawToken: string, newPassword: string): Promise<void> {
+  const store = getIdentityStore();
+  const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+
+  const stored = store.getPasswordResetToken(tokenHash);
+  if (!stored) {
+    throw new AuthServiceError('RESET_TOKEN_INVALID', 'El enlace de recuperación no es válido', 400);
+  }
+
+  if (new Date(stored.expires_at) < new Date()) {
+    store.deletePasswordResetToken(tokenHash);
+    throw new AuthServiceError('RESET_TOKEN_EXPIRED', 'El enlace de recuperación ha expirado. Solicita uno nuevo.', 400);
+  }
+
+  const user = store.getUserById(stored.user_id);
+  if (!user || !user.active) {
+    store.deletePasswordResetToken(tokenHash);
+    throw new AuthServiceError('RESET_TOKEN_INVALID', 'El enlace de recuperación no es válido', 400);
+  }
+
+  const newHash = await hashPassword(newPassword);
+  store.updateUserPassword(stored.user_id, newHash);
+  store.setMustChangePassword(stored.user_id, false);
+  store.deletePasswordResetToken(tokenHash);
+  // Invalida todas las sesiones activas del usuario por seguridad
+  store.deleteRefreshTokensForUser(stored.user_id);
 }
 
 export async function changePassword(

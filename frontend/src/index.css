@@ -1231,3 +1231,83 @@ body {
   font-family: inherit;
   text-decoration: underline;
 }
+
+/* ─── Recuperación de contraseña ─────────────────────── */
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transition);
+}
+
+.btn-link:hover:not(:disabled) {
+  color: var(--color-primary-hover);
+}
+
+.btn-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.forgot-password-row {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.82rem;
+}
+
+.forgot-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-hint);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+/* ─── Password visibility toggle ─────────────────────── */
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--color-text-hint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition);
+  line-height: 0;
+}
+
+.password-toggle:hover:not(:disabled) {
+  color: var(--color-text-secondary);
+}
+
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}

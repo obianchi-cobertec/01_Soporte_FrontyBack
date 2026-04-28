@@ -146,7 +146,7 @@ Plugin Fastify registrado globalmente (antes de las rutas). En cada request:
 
 ### `backend/src/services/auth/service.ts`
 Lógica de auth pura. Cuatro operaciones:
-- `login(email, password)` → verifica credenciales en IdentityStore, emite access_token (sin company) + refresh token
+- `login(email, password)` → busca primero por email (`getUserByEmail`), si no encuentra intenta por `redmine_login` (`getUserByRedmineLogin`); verifica bcrypt, emite access_token (sin company) + refresh token
 - `selectCompany(currentToken, companyId)` → verifica que el user pertenece a esa company, emite nuevo access_token (con company_id + company_name embebidos)
 - `refresh(refreshTokenRaw)` → verifica refresh token en BD, rota (borra viejo, emite nuevo), devuelve nuevo access_token
 - `logout(refreshTokenRaw)` → borra refresh token de BD
@@ -167,12 +167,13 @@ Notas de seguridad:
 
 Métodos principales:
 - `getUserByEmail()`, `getUserById()`, `createUser()`, `updateUserActive()`, `updateUserPassword()`
+- `getUserByRedmineLogin(login)` — mismo JOIN a contacts que `getUserByEmail()`, busca por `users.redmine_login` COLLATE NOCASE; usado en `login()` como fallback cuando el identificador no es un email
 - `getCompaniesForUser()` — para superadmin devuelve TODAS las empresas activas
 - `isUserInCompany()` — superadmin siempre retorna true
 - `getUserCompanyRole()` — superadmin siempre retorna 'admin'
 - `isAdmin()` — true si es superadmin O tiene rol 'admin' en cualquier empresa
 - `isSuperAdmin()` — comprueba flag is_superadmin en users
-- `getRedmineLogin(userId)` — devuelve el login de Redmine del usuario (para impersonación vía `X-Redmine-Switch-User`). **El campo existe en BD pero nunca se escribe actualmente.**
+- `getRedmineLogin(userId)` — devuelve el login de Redmine del usuario (para impersonación vía `X-Redmine-Switch-User`)
 - `listUsers()`, `listCompanies()` — queries de admin con JOINs
 - `storeRefreshToken()`, `getRefreshToken()`, `deleteRefreshToken()`, `deleteRefreshTokensForUser()`, `pruneExpiredTokens()`
 
@@ -236,6 +237,8 @@ Ambas rutas llaman `request.requireCompany()` — el intake requiere un token JW
 | `check-schema.ts` | Verifica que el esquema de la BD tiene todas las columnas esperadas. |
 | `import-redmine-clients.ts` | **Script de producción**: importa proyectos de Redmine como empresas en identity.db, con mapeo `redmine_project_id`. Usa los JSON en `scripts/redmine_*.json` como fuente. |
 | `import-new-projects.ts` | **Script de producción**: importa nuevos proyectos/clientes de Redmine que aún no existen en la BD. |
+| `import-cobertec-users.ts` | **Script de producción**: importa usuarios internos de Cobertec (`@cobertec.com`) desde Redmine a identity.db. Crea o actualiza contacto+usuario con `is_superadmin=1`, `must_change_password=1`, contraseña `Cobertec2024!` (bcrypt), `redmine_login` y `redmine_user_id`. Si el usuario ya existe por email, actualiza solo los campos Redmine sin tocar la contraseña. Pagina automáticamente la API de Redmine (100 por página). |
+| `migrate-redmine-ids.ts` | **Script de migración**: añade columnas `redmine_user_id` y `must_change_password` a la BD; puebla `redmine_user_id` consultando Redmine por login. Ejecutar una sola vez sobre BDs antiguas. |
 
 Los archivos `redmine_*.json` en `backend/scripts/` son volcados de la API de Redmine usados durante la importación. **No deben commitearse** (añadir a `.gitignore`).
 
@@ -315,7 +318,7 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/types.ts` | Completo | Tipos de intake espejo del backend |
 | `frontend/src/main.tsx` | Completo | `<AuthProvider>` envuelve `<App />` |
 | `frontend/src/App.tsx` | Completo | Máquina de estados: flujo auth + páginas (intake, dashboard, admin, config) |
-| `frontend/src/components/LoginPage.tsx` | Completo | Formulario email+contraseña, validación local y errores de servidor |
+| `frontend/src/components/LoginPage.tsx` | Completo | Formulario "Email o usuario" + contraseña; `type="text"` para aceptar logins Redmine; validación local y errores de servidor |
 | `frontend/src/components/CompanySelector.tsx` | Completo | Selector multi-empresa con opción de logout |
 | `frontend/src/components/IntakeForm.tsx` | Completo | Textarea + subida archivos; validación mín. 10 chars |
 | `frontend/src/components/DynamicQuestions.tsx` | Completo | Preguntas opcionales (opciones o texto libre); Skip disponible |
@@ -470,6 +473,8 @@ interface ClassificationResponse {
 
 10. **TypeScript strict** — Ambos proyectos usan `"strict": true`. No usar `any` sin justificación.
 
+11. **Ejecución autónoma** — Claude Code debe ejecutar todas las tareas hasta el final sin pausas ni preguntas de confirmación. Ante dudas, tomar la decisión más conservadora y documentarla al final.
+
 ---
 
 ## Estado de la integración Redmine
@@ -490,7 +495,7 @@ La integración con Redmine está **sustancialmente completada** en config pero 
 |------|--------|---------|
 | `redmine_defaults.default_assignee_id` | `null` en config | Si `role_to_user_id` no resuelve el assignee, el ticket se crea **sin asignar** |
 | `company_to_project._default` | apunta a `"cobertec-intake-test"` | Las empresas sin mapeo explícito van al proyecto de prueba |
-| `users.redmine_login` | columna existe pero nunca se escribe | La impersonación vía `X-Redmine-Switch-User` nunca se activa |
+| `users.redmine_login` | **poblado** por `import-cobertec-users.ts` para usuarios `@cobertec.com` | La impersonación vía `X-Redmine-Switch-User` está lista para activarse en producción |
 | Validación E2E en Redmine real | No realizada | Los IDs de custom fields (21-28) deben verificarse contra la instancia real |
 
 ---
@@ -526,7 +531,7 @@ No hay bugs activos rastreados en este momento.
 | **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite/Redis para sobrevivir reinicios | Decisión de arquitectura |
 | **Alta** | Config | Definir `redmine_defaults.default_assignee_id` con ID numérico real de Redmine | Cobertec debe dar el ID |
 | **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a proyecto de producción | Cobertec debe definirlo |
-| **Alta** | Backend | Poblar el campo `redmine_login` en usuarios para activar la impersonación en Redmine | Decisión operativa |
+| **Alta** | Backend | Activar impersonación Redmine (`X-Redmine-Switch-User`) en producción — `redmine_login` ya está poblado para usuarios `@cobertec.com` | Decisión operativa |
 | **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen en la instancia Redmine de Cobertec | Acceso a Redmine de prod |
 | **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` | — |
 | **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` | — |
@@ -585,7 +590,8 @@ npm run dev
 | Nuevo componente UI | `frontend/src/components/` |
 | Nuevo endpoint | `backend/src/routes/` + registro en `index.ts` |
 | Nuevo usuario/empresa | `backend/scripts/seed-identity.ts` o vía AdminPanel → `POST /api/admin/users` |
-| Poblar redmine_login de usuario | Query directa a identity.db: `UPDATE users SET redmine_login='login.redmine' WHERE id='...'` |
+| Poblar redmine_login de usuarios Cobertec | Ejecutar `import-cobertec-users.ts` — lo hace automáticamente para todos los `@cobertec.com` |
+| Poblar redmine_login de usuario concreto | Query directa: `UPDATE users SET redmine_login='login.redmine' WHERE id='...'` |
 
 ---
 
@@ -678,6 +684,28 @@ store.close();
 
 ---
 
+## Login con email o usuario Redmine — implementado (sesión 2026-04)
+
+El campo de login acepta tanto el email del contacto como el `redmine_login` del usuario.
+
+### Cambios realizados
+
+| Archivo | Cambio |
+|---------|--------|
+| `backend/src/services/identity/store.ts` | Nuevo método `getUserByRedmineLogin(login)` — mismo JOIN a contacts que `getUserByEmail()`, busca por `users.redmine_login COLLATE NOCASE` |
+| `backend/src/services/auth/service.ts` | `login()` hace `getUserByEmail(email) ?? getUserByRedmineLogin(email)` — si el primer lookup devuelve null, intenta el segundo sin cambio de interfaz ni mensajes de error adicionales |
+| `frontend/src/components/LoginPage.tsx` | Label "Email" → "Email o usuario"; `type="email"` → `type="text"` (el browser rechaza logins tipo `juan_perez` en campos email); `placeholder` y mensaje de validación actualizados; `autoComplete="username"` |
+
+### Comportamiento
+
+- Si el usuario teclea `usuario@empresa.com` → se resuelve por `contacts.email`
+- Si el usuario teclea `juan_perez` → se resuelve por `users.redmine_login`
+- El lookup es COLLATE NOCASE en ambos casos
+- Si ninguno encuentra el usuario → error `INVALID_CREDENTIALS` (igual que antes)
+- No hay cambio en el contrato de la API ni en los tipos
+
+---
+
 ## Decisiones de diseño — razonamiento (no obvio en el código)
 
 Estas decisiones se tomaron de forma explícita y no deben revertirse sin entender el porqué.
@@ -709,8 +737,8 @@ Porque el refresh silencioso al cargar la SPA también necesita detectar el flag
 **¿Por qué impersonation via `X-Redmine-Switch-User` y no crear usuarios con su propia API key?**
 Cobertec gestiona una única API key admin (`cobertec_intake`, id: 847). Los clientes no tienen API keys propias. La impersonación permite que los tickets aparezcan en Redmine como creados por el usuario cliente, manteniendo la trazabilidad sin gestionar credenciales individuales.
 
-**¿Por qué `redmine_login` existe en DB pero no se usaba antes de esta sesión?**
-La columna se añadió en una migración anterior previendo la impersonación, pero el script de importación de usuarios no la poblaba. Ahora está poblada para los 611 usuarios (campo `redmine_login`) y además tenemos `redmine_user_id` para las operaciones que requieren ID numérico (cambio de contraseña).
+**¿Por qué `redmine_login` sirve ahora también como identificador de login?**
+La columna se añadió inicialmente para impersonación (`X-Redmine-Switch-User`). Al importar usuarios con `import-cobertec-users.ts` se puebla sistemáticamente. Dado que los usuarios internos de Cobertec conocen su login de Redmine pero pueden no saber el email asociado en identity.db, se habilitó `getUserByRedmineLogin()` como fallback en `login()`. Esto no cambia la seguridad: el flujo de verificación bcrypt es idéntico.
 
 ### SMTP y funcionalidades pendientes
 

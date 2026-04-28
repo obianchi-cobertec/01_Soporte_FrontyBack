@@ -1,8 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { LoginPage } from './components/LoginPage';
+import { ForgotPasswordPage } from './components/ForgotPasswordPage';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { CompanySelector } from './components/CompanySelector';
 import { AdminPanel } from './components/AdminPanel';
+import { RequestsPanel } from './pages/RequestsPanel';
+import { RequestAccessPage } from './pages/RequestAccessPage';
 import ConfigPanel from './pages/ConfigPanel';
 import { IntakeForm } from './components/IntakeForm';
 import { ConfirmationView } from './components/ConfirmationView';
@@ -25,10 +29,26 @@ import type {
 } from './types';
 import type { CompanyDTO } from './auth-types';
 
-type Page = 'intake' | 'dashboard' | 'admin' | 'config';
+type Page = 'intake' | 'dashboard' | 'admin' | 'config' | 'requests';
+type PublicView = 'forgot-password' | 'reset-password' | 'request-access' | null;
 
 export default function App() {
   const { authState, isLoading: authLoading, logout, selectCompany } = useAuth();
+
+  // Vista pública: se inicializa desde la URL (para reset-password con ?token=)
+  const [publicView, setPublicView] = useState<PublicView>(() => {
+    if (window.location.pathname === '/solicitar-acceso') return 'request-access';
+    if (new URLSearchParams(window.location.search).has('token')) return 'reset-password';
+    return null;
+  });
+  const [resetToken] = useState<string>(() =>
+    new URLSearchParams(window.location.search).get('token') ?? '',
+  );
+
+  const handleResetDone = useCallback(() => {
+    window.history.replaceState({}, '', window.location.pathname);
+    setPublicView(null);
+  }, []);
 
   const [page, setPage] = useState<Page>('intake');
   const [step, setStep] = useState<FlowStep>('form');
@@ -164,6 +184,26 @@ export default function App() {
     }
   }, [lastDescription, resetFlow]);
 
+  // ─── Reset password — prioridad máxima (pública, cualquier estado de auth) ──
+
+  if (publicView === 'request-access') {
+    return <RequestAccessPage />;
+  }
+
+  if (publicView === 'reset-password') {
+    return (
+      <div className="app-container">
+        <header className="app-header">
+          <h1><span>Cobertec</span> — Soporte</h1>
+        </header>
+        <main className="app-main">
+          <ResetPasswordPage token={resetToken} onDone={handleResetDone} />
+        </main>
+        <footer className="app-footer">Intake IA v1 — Piloto</footer>
+      </div>
+    );
+  }
+
   // ─── Carga inicial ────────────────────────────────────
 
   if (authLoading && authState.status === 'unauthenticated') {
@@ -176,16 +216,30 @@ export default function App() {
     );
   }
 
-  // ─── Login ────────────────────────────────────────────
+  // ─── Login / Recuperación de contraseña ──────────────
 
   if (authState.status === 'unauthenticated') {
+    if (publicView === 'forgot-password') {
+      return (
+        <div className="app-container">
+          <header className="app-header">
+            <h1><span>Cobertec</span> — Soporte</h1>
+          </header>
+          <main className="app-main">
+            <ForgotPasswordPage onBack={() => setPublicView(null)} />
+          </main>
+          <footer className="app-footer">Intake IA v1 — Piloto</footer>
+        </div>
+      );
+    }
+
     return (
       <div className="app-container">
         <header className="app-header">
           <h1><span>Cobertec</span> — Soporte</h1>
         </header>
         <main className="app-main">
-          <LoginPage />
+          <LoginPage onForgotPassword={() => setPublicView('forgot-password')} />
         </main>
         <footer className="app-footer">Intake IA v1 — Piloto</footer>
       </div>
@@ -259,6 +313,14 @@ export default function App() {
             )}
             {isAdmin && (
               <button
+                className={`nav-link${page === 'requests' ? ' nav-link-active' : ''}`}
+                onClick={() => setPage('requests')}
+              >
+                Solicitudes de alta
+              </button>
+            )}
+            {isAdmin && (
+              <button
                 className={`nav-link${page === 'config' ? ' nav-link-active' : ''}`}
                 onClick={() => setPage('config')}
               >
@@ -273,9 +335,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className={`app-main${(page === 'admin' || page === 'config') ? ' app-main-wide' : ''}`}>
+      <main className={`app-main${(page === 'admin' || page === 'config' || page === 'requests') ? ' app-main-wide' : ''}`}>
         {page === 'admin' ? (
           <AdminPanel onBack={resetFlow} />
+        ) : page === 'requests' ? (
+          <RequestsPanel />
         ) : page === 'config' ? (
           <ConfigPanel />
         ) : page === 'dashboard' ? (

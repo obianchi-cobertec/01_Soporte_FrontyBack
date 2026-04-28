@@ -12,6 +12,8 @@ import {
   TokenRequestSchema,
   SelectCompanyRequestSchema,
   ChangePasswordRequestSchema,
+  ForgotPasswordRequestSchema,
+  ResetPasswordRequestSchema,
 } from '../identity-types.js';
 import {
   login,
@@ -19,6 +21,8 @@ import {
   refresh,
   logout,
   changePassword,
+  forgotPassword,
+  resetPassword,
   AuthServiceError,
 } from '../services/auth/service.js';
 
@@ -114,6 +118,47 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     await changePassword(auth.sub, parsed.data.current_password, parsed.data.new_password);
+    return reply.status(200).send({ ok: true });
+  });
+
+  // ─── Forgot password ─────────────────────────────────────
+  fastify.post('/forgot-password', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '10 minutes',
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = ForgotPasswordRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: parsed.error.issues.map((i) => i.message).join('; '),
+      });
+    }
+    // Siempre responde 200 — no revelamos si el email existe
+    await forgotPassword(parsed.data.email);
+    return reply.status(200).send({ ok: true });
+  });
+
+  // ─── Reset password ──────────────────────────────────────
+  fastify.post('/reset-password', {
+    config: {
+      rateLimit: {
+        max: 10,
+        timeWindow: '10 minutes',
+      },
+    },
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = ResetPasswordRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'VALIDATION_ERROR',
+        message: parsed.error.issues.map((i) => i.message).join('; '),
+      });
+    }
+    await resetPassword(parsed.data.token, parsed.data.new_password);
     return reply.status(200).send({ ok: true });
   });
 

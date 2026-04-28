@@ -17,6 +17,10 @@ import type {
   AuthError,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from '../auth-types.js';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
@@ -139,6 +143,20 @@ export async function fetchMe(): Promise<MeResponse> {
 export async function changePasswordApi(data: ChangePasswordRequest): Promise<ChangePasswordResponse> {
   return authFetch<ChangePasswordResponse>('/auth/password', {
     method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function forgotPasswordApi(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  return authFetch<ForgotPasswordResponse>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resetPasswordApi(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  return authFetch<ResetPasswordResponse>('/auth/reset-password', {
+    method: 'POST',
     body: JSON.stringify(data),
   });
 }
