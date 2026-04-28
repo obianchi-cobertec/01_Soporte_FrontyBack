@@ -76,6 +76,19 @@ Frontend (React :5173)
     ├─ GET/POST/PATCH/DELETE     ─────► AdminRoutes
     │   /api/admin/users|companies           └─► CRUD usuarios y empresas en IdentityStore
     │
+    ├─ GET  /api/requests/companies ──► IdentityStore.listActiveCompanies() (pública)
+    │
+    ├─ POST /api/requests ────────────► IdentityStore.createUserRequest() + mailer
+    │   (pública)                            └─► request_id + email notificación a admins
+    │
+    ├─ GET  /api/requests/admin ──────► IdentityStore.listUserRequests() (requiere admin)
+    ├─ PATCH /api/requests/admin/:id ─► IdentityStore.updateUserRequest() (requiere admin)
+    ├─ POST /api/requests/admin/:id/approve → Redmine API + identity.db + email bienvenida
+    ├─ POST /api/requests/admin/:id/reject  → rejectUserRequest() + email rechazo
+    │
+    ├─ POST /api/auth/forgot-password ► mailer.sendPasswordResetEmail() (pública)
+    ├─ POST /api/auth/reset-password ─► IdentityStore.updateUserPassword() (pública, token)
+    │
     └─ GET /api/metrics ──────────────► EventStore (SQLite)
                                              └─► métricas del piloto
 ```
@@ -128,12 +141,14 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 **Los contratos de datos del sistema de identidad y auth.** Define:
 - `Contact`, `User`, `Company`, `UserCompany` — entidades de la base de datos de identidad
 - `CompanyDTO`, `MeResponse` — DTOs de salida de la API
-- `TokenRequestSchema` — schema Zod discriminado (grant_type: 'password' | 'refresh_token')
+- `TokenRequestSchema` — schema Zod discriminado (grant_type: 'password' | 'refresh_token'); campo `email` usa `.min(1)` (no `.email()`) para aceptar logins Redmine
 - `SelectCompanyRequestSchema` — schema Zod para selección de empresa
 - `LoginResponse`, `SelectCompanyResponse`, `RefreshResponse` — respuestas de auth
 - `AccessTokenPayload`, `RefreshTokenPayload` — contenido del JWT
 - `AuthErrorCode`, `AuthError` — errores tipados
 - `LoginRequestSchema` — **@deprecated**, usar `TokenRequestSchema` con `grant_type: 'password'`
+- `UserRequestStatus`, `UserRequest` — entidad de solicitudes de alta (tabla `user_requests`)
+- `UserRequestFormSchema`, `RejectRequestSchema` — schemas Zod para el flujo de alta
 
 **Regla importante:** `frontend/src/auth-types.ts` es espejo de este archivo. Cambios aquí → actualizar también en frontend.
 
@@ -158,12 +173,13 @@ Notas de seguridad:
 - `JWT_SECRET` debe ser distinto del dev default en producción (el código lanza Error si no)
 
 ### `backend/src/services/identity/store.ts`
-`IdentityStore` — clase SQLite (better-sqlite3) con 5 tablas:
+`IdentityStore` — clase SQLite (better-sqlite3) con 6 tablas:
 - `contacts`: name, email (UNIQUE COLLATE NOCASE), phone, whatsapp
 - `users`: contact_id (FK), password_hash, active (int 0/1), is_superadmin (int 0/1), last_login, **redmine_login** (TEXT, nullable — para impersonation)
 - `companies`: name, redmine_project_id, active
 - `user_companies`: (user_id, company_id) PK, role ('user'|'admin')
 - `refresh_tokens`: token_hash PK, user_id FK, expires_at
+- `user_requests`: id (UUID), first_name, last_name, email, company_id (FK), phone, status ('pending'|'approved'|'rejected'), rejection_reason, redmine_user_id, created_at, updated_at
 
 Métodos principales:
 - `getUserByEmail()`, `getUserById()`, `createUser()`, `updateUserActive()`, `updateUserPassword()`
@@ -176,18 +192,24 @@ Métodos principales:
 - `getRedmineLogin(userId)` — devuelve el login de Redmine del usuario (para impersonación vía `X-Redmine-Switch-User`)
 - `listUsers()`, `listCompanies()` — queries de admin con JOINs
 - `storeRefreshToken()`, `getRefreshToken()`, `deleteRefreshToken()`, `deleteRefreshTokensForUser()`, `pruneExpiredTokens()`
+- `createUserRequest()`, `getUserRequestById()`, `listUserRequests()`, `updateUserRequest()`, `approveUserRequest()`, `rejectUserRequest()` — CRUD de solicitudes de alta
+- `getContactByEmail()` — verifica duplicados de email antes de crear solicitud
+- `generateRedmineLogin(firstName, lastName, companySlug)` — genera login único para Redmine con deduplicación automática
 
 Singleton: `getIdentityStore()` devuelve instancia cacheada. El path de la DB viene de `process.env.IDENTITY_DB_PATH` (se setea en `index.ts` a `data/identity.db`).
 
 Las columnas `is_superadmin` y `redmine_login` se añaden mediante migración no destructiva (`ALTER TABLE ... ADD COLUMN`) en el constructor, por lo que son seguras de aplicar sobre BDs existentes.
 
 ### `backend/src/routes/auth.ts`
-Tres endpoints bajo `/api/auth` (estilo OAuth 2.0):
+Cinco endpoints bajo `/api/auth` (estilo OAuth 2.0):
 - `POST /token` — endpoint unificado con discriminación por `grant_type`:
   - `grant_type: 'password'` → valida email+password con Zod, llama `login()`, setea cookie httpOnly
   - `grant_type: 'refresh_token'` → lee cookie `cobertec_refresh`, llama `refresh()`, rota cookie
 - `POST /select` — requiere `request.requireAuth()`, valida con Zod, llama `selectCompany()`
 - `POST /logout` — llama `logout()`, limpia cookie con `clearCookie()`
+- `PUT /password` — requiere `requireAuth()`; cambio voluntario pide contraseña actual, cambio obligatorio no; actualiza hash en identity.db + pone `must_change_password = false`
+- `POST /forgot-password` — pública; busca usuario por email, genera token de reset (JWT 1h), envía email. Siempre responde `ok: true` (no revela si el email existe)
+- `POST /reset-password` — pública; verifica token JWT de reset, actualiza contraseña, invalida token
 
 Cookie: `httpOnly: true`, `secure: true` solo en producción, `sameSite: 'strict'` en prod / `'lax'` en dev, `path: '/api/auth'`, `maxAge: 7d`.
 
@@ -284,12 +306,36 @@ Formatea asunto y descripción del ticket:
   - Trunca a 80 chars (72 si lleva prefijo)
 - `composeDescription(intake, classification)`: estructura markdown con sección "Descripción original" + "Resumen operativo (IA)" + conteo de adjuntos
 
+### `backend/src/routes/requests.ts`
+Rutas bajo `/api/requests` para el flujo de solicitudes de alta de nuevos usuarios:
+- `GET /companies` — **pública**: lista empresas activas para el selector del formulario
+- `POST /` — **pública**: crea solicitud + notifica a admins por email; verifica email duplicado vs contacts
+- `GET /admin` — requiere admin; lista solicitudes filtrables por `?status=pending|approved|rejected`
+- `PATCH /admin/:id` — requiere admin; edita campos de una solicitud pendiente (first_name, last_name, email, company_id, phone)
+- `POST /admin/:id/approve` — requiere admin; crea usuario en Redmine + identity.db + envía email de bienvenida con contraseña temporal
+- `POST /admin/:id/reject` — requiere admin; marca rechazada + envía email de rechazo con motivo
+
+La aprobación genera un login Redmine único via `generateRedmineLogin()`, crea el usuario en Redmine real (si `REDMINE_URL` configurado), añade membresía al proyecto de la empresa, crea contact + user en identity.db con `must_change_password: true`.
+
+Constante `ADMIN_NOTIFICATION_EMAILS` en el archivo — actualmente `['o.bianchi@cobertec.com']`. **Cambiar a `soporte@cobertec.com` + `j.quintanilla@cobertec.com` en producción.**
+
+### `backend/src/services/mailer/`
+Servicio de email con nodemailer. Dos archivos:
+- `mailer-index.ts` — clase `Mailer` con métodos:
+  - `sendAdminNewRequestNotification()` — notifica a admins cuando llega una nueva solicitud
+  - `sendWelcomeEmail()` — email de bienvenida al usuario aprobado (login + contraseña temporal)
+  - `sendRejectionEmail()` — email de rechazo con motivo
+  - `sendPasswordResetEmail()` — email de recuperación de contraseña con link de reset
+- `index.ts` — barrel re-export (`export { Mailer, getMailer } from './mailer-index.js'`)
+
+Singleton `getMailer()`. Configuración via variables de entorno `SMTP_*`. Si `SMTP_HOST` no está configurado, los métodos loguean en consola sin lanzar error (modo dev).
+
 ### `backend/src/services/events/index.ts`
 Event store SQLite con 10 tipos de evento. Cada evento tiene:
 - `event_id` (UUID), `event_type`, `session_id`, `timestamp`, `data` (JSON flexible)
 
 ### `frontend/src/auth-types.ts`
-Espejo frontend de `backend/src/identity-types.ts`. Incluye: `CompanyDTO`, `LoginRequest/Response`, `SelectCompanyRequest/Response`, `RefreshResponse`, `MeResponse`, `AuthError`, `AuthState`.
+Espejo frontend de `backend/src/identity-types.ts`. Incluye: `CompanyDTO`, `LoginRequest/Response`, `SelectCompanyRequest/Response`, `RefreshResponse`, `MeResponse`, `AuthError`, `AuthState`, `UserRequestStatus`, `UserRequest`.
 
 ### `frontend/src/contexts/AuthContext.tsx`
 React Context con estado de auth global. Al montar, intenta refresh silencioso (cookie → nuevo access_token → fetch `/identity/me`). Si el usuario tiene solo 1 empresa, la auto-selecciona. Si el refresh falla, el usuario está `'unauthenticated'`.
@@ -301,7 +347,7 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 - `accessToken` en memoria (no localStorage)
 - `authFetch<T>()`: añade header `Authorization: Bearer` si hay token, lanza `AuthApiError` si falla
 - `authenticatedFetch<T>()`: auto-retry con refresh en caso de 401
-- Funciones: `loginApi()`, `selectCompanyApi()`, `refreshToken()`, `logoutApi()`, `fetchMe()`
+- Funciones: `loginApi()`, `selectCompanyApi()`, `refreshToken()`, `logoutApi()`, `fetchMe()`, `changePasswordApi()`, `forgotPasswordApi()`, `resetPasswordApi()`
 
 ---
 
@@ -310,15 +356,15 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | Componente | Estado | Notas |
 |---|---|---|
 | `frontend/src/contexts/AuthContext.tsx` | Completo | Lógica de estado, refresh silencioso, superadmin |
-| `frontend/src/services/auth-api.ts` | Completo | Cliente API con auto-refresh, token en memoria |
+| `frontend/src/services/auth-api.ts` | Completo | Cliente API con auto-refresh, token en memoria; forgot/reset password |
 | `frontend/src/services/api.ts` | Completo | submitIntake, confirmIntake, fileToAttachment |
 | `frontend/src/services/admin-api.ts` | Completo | CRUD usuarios/empresas para AdminPanel |
 | `frontend/src/services/metrics.ts` | Completo | GET /metrics, /metrics/recent |
-| `frontend/src/auth-types.ts` | Completo | Tipos espejo del backend |
+| `frontend/src/auth-types.ts` | Completo | Tipos espejo del backend; incluye UserRequest |
 | `frontend/src/types.ts` | Completo | Tipos de intake espejo del backend |
-| `frontend/src/main.tsx` | Completo | `<AuthProvider>` envuelve `<App />` |
-| `frontend/src/App.tsx` | Completo | Máquina de estados: flujo auth + páginas (intake, dashboard, admin, config) |
-| `frontend/src/components/LoginPage.tsx` | Completo | Formulario "Email o usuario" + contraseña; `type="text"` para aceptar logins Redmine; validación local y errores de servidor |
+| `frontend/src/main.tsx` | Completo | `<AuthProvider>` envuelve `<App />`; importa tailwind.css |
+| `frontend/src/App.tsx` | Completo | Máquina de estados: flujo auth + páginas (intake, dashboard, admin, config, requests) + vistas públicas (forgot-password, reset-password, request-access) |
+| `frontend/src/components/LoginPage.tsx` | Completo | "Email o usuario" + toggle visibilidad contraseña + link "¿No tienes cuenta?" |
 | `frontend/src/components/CompanySelector.tsx` | Completo | Selector multi-empresa con opción de logout |
 | `frontend/src/components/IntakeForm.tsx` | Completo | Textarea + subida archivos; validación mín. 10 chars |
 | `frontend/src/components/DynamicQuestions.tsx` | Completo | Preguntas opcionales (opciones o texto libre); Skip disponible |
@@ -329,9 +375,14 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/components/AdminPanel.tsx` | Completo | CRUD usuarios y empresas para admins |
 | `frontend/src/components/StepIndicator.tsx` | Completo | Indicador visual de progreso (breadcrumb) |
 | `frontend/src/components/Loading.tsx` | Completo | Spinner con mensaje |
-| `frontend/src/pages/ConfigPanel.tsx` | Completo* | Panel de 5 pestañas: Taxonomía / Soluciones / Necesidades / Asignación / Redmine. Ver nota. |
+| `frontend/src/components/ChangePasswordPage.tsx` | Completo | Cambio obligatorio (sin pedir actual) y voluntario; props: `voluntary?`, `onCancel?` |
+| `frontend/src/components/ForgotPasswordPage.tsx` | Completo | Formulario de recuperación; llama `forgotPasswordApi()`; siempre muestra éxito |
+| `frontend/src/components/ResetPasswordPage.tsx` | Completo | Lee `?token=` de la URL; llama `resetPasswordApi()`; redirige al login |
+| `frontend/src/pages/ConfigPanel.tsx` | Completo | Panel de 5 pestañas: Taxonomía / Soluciones / Necesidades / Asignación / Redmine |
+| `frontend/src/pages/RequestAccessPage.tsx` | Completo | Formulario público en `/solicitar-acceso`; carga empresas, valida y envía solicitud |
+| `frontend/src/pages/RequestsPanel.tsx` | Completo | Panel admin: lista solicitudes por estado, aprobar/rechazar/editar; modal de edición |
 
-**Nota sobre ConfigPanel:** Es un editor visual estructurado completo (no raw JSON). Las 5 pestañas mapean a los tres JSON de config. La pestaña "Redmine" carga usuarios reales de Redmine via `GET /config/redmine-users` para asignar `role_to_user_id` con selector dropdown. Tiene dos bugs menores de TypeScript (ver sección "Bugs conocidos activos").
+**Nota sobre Tailwind:** integrado con `preflight: false` (no resetea CSS existente). Solo se importan utilidades. Archivos: `tailwind.config.js`, `postcss.config.js`, `src/tailwind.css`. Las páginas nuevas (`RequestsPanel`, `RequestAccessPage`) usan clases Tailwind; los componentes existentes mantienen sus clases CSS propias.
 
 ---
 
@@ -521,6 +572,11 @@ No hay bugs activos rastreados en este momento.
 11. ~~TypeScript: props extra en `<RedmineTab>`, `redmineUsers` state muerto, null access en `assignmentRules`~~ — **Resuelto**: `redmineUsers` eliminado del padre, props extra quitadas de la llamada
 12. ~~`any` cast en `redmine/index.ts` — `(mapping as any).role_to_user_id`~~ — **Resuelto**: `role_to_user_id` tipado en `RedmineMappingConfig`, guard `!= null` antes de indexar
 13. ~~Sin rate limiting en `POST /api/auth/token`~~ — **Resuelto**: `@fastify/rate-limit` registrado, límite 10 req/min por IP
+14. ~~No existe `ForgotPasswordPage.tsx` ni `ResetPasswordPage.tsx`~~ — **Resuelto**: componentes creados; endpoints `POST /forgot-password` y `POST /reset-password` en `routes/auth.ts`
+15. ~~No existe formulario público de solicitud de alta~~ — **Resuelto**: `RequestAccessPage.tsx` en `/solicitar-acceso`; rutas en `routes/requests.ts`; link desde `LoginPage`
+16. ~~No existe panel admin de gestión de solicitudes~~ — **Resuelto**: `RequestsPanel.tsx` accesible desde nav para admins
+17. ~~Sin edición de solicitudes pendientes~~ — **Resuelto**: `PATCH /api/requests/admin/:id` + modal en `RequestsPanel`
+18. ~~`TokenRequestSchema` rechaza logins Redmine (`.email()` validation)~~ — **Resuelto**: campo `email` usa `.min(1)` en lugar de `.email()`
 
 ---
 
@@ -536,6 +592,8 @@ No hay bugs activos rastreados en este momento.
 | **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` | — |
 | **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` | — |
 | **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` | — |
+| **Alta** | Backend | Configurar SMTP real (host, puerto, credenciales) para que los emails de bienvenida, rechazo y recuperación funcionen en producción | Cobertec debe dar proveedor SMTP |
+| **Alta** | Backend | Cambiar `ADMIN_NOTIFICATION_EMAILS` en `routes/requests.ts` a `soporte@cobertec.com` + `j.quintanilla@cobertec.com` antes de producción | — |
 
 ---
 
@@ -572,6 +630,12 @@ npm run dev
 | `CLASSIFIER_TIMEOUT_MS` | Timeout llamada LLM | `15000` |
 | `BODY_LIMIT_MB` | Tamaño máximo request | `10` |
 | `CORS_ORIGIN` | Origen CORS permitido | `http://localhost:5173` |
+| `APP_URL` | URL pública del frontend (para links en emails) | `http://localhost:5173` |
+| `SMTP_HOST` | Servidor SMTP | — |
+| `SMTP_PORT` | Puerto SMTP | `587` |
+| `SMTP_USER` | Usuario SMTP | — |
+| `SMTP_PASS` | Contraseña SMTP | — |
+| `SMTP_FROM` | Dirección remitente | `noreply@cobertec.com` |
 
 ---
 
@@ -673,14 +737,72 @@ if (user) store.setMustChangePassword(user.id, true);
 store.close();
 ```
 
-### Pendientes de gestión de usuarios (fase siguiente)
+### Pendientes de gestión de usuarios
 
-| Ítem | Dependencia |
-|------|-------------|
-| Recuperación de contraseña olvidada (`POST /forgot-password`, `POST /reset-password`) | Requiere SMTP — pendiente definir proveedor con Cobertec |
-| Solicitud de alta de nuevo usuario (formulario público) | Pendiente decisión: ¿mismo frontend bajo `/registro`? |
-| Panel admin para aprobar/rechazar altas | Pendiente SMTP para email de bienvenida |
+| Ítem | Estado |
+|------|--------|
+| ~~Recuperación de contraseña olvidada~~ | **Implementado** — `POST /forgot-password` + `POST /reset-password` en `routes/auth.ts`; falta configurar SMTP |
+| ~~Solicitud de alta de nuevo usuario~~ | **Implementado** — `RequestAccessPage` en `/solicitar-acceso`; rutas en `routes/requests.ts` |
+| ~~Panel admin para aprobar/rechazar altas~~ | **Implementado** — `RequestsPanel` con aprobar/rechazar/editar; falta SMTP para emails |
 | Sincronización contraseña con Redmine al cambiar | Activar cuando salga del piloto — `redmine_user_id` ya está disponible |
+| Configurar SMTP | Pendiente — Cobertec debe dar proveedor y credenciales |
+
+---
+
+## Alta de usuarios, emails y mejoras de login — implementado (sesión 2026-04)
+
+### Qué se construyó
+
+1. **Toggle de visibilidad de contraseña** (`LoginPage.tsx`): icono ojo/ojo-tachado a la derecha del campo; estado `showPassword`; `type="text"|"password"` dinámico; `tabIndex={-1}` para no interrumpir el flujo de teclado.
+
+2. **Recuperación de contraseña** (`ForgotPasswordPage.tsx` + `ResetPasswordPage.tsx`):
+   - `POST /api/auth/forgot-password` — genera token JWT de reset (1h), envía email con link `APP_URL/reset-password?token=...`; siempre responde `ok: true`
+   - `POST /api/auth/reset-password` — verifica token, actualiza contraseña, invalida el token
+   - Accesibles sin login desde el flujo de `App.tsx`
+
+3. **Servicio de email** (`backend/src/services/mailer/`):
+   - Clase `Mailer` con nodemailer; 4 templates: nueva solicitud (admins), bienvenida (usuario aprobado), rechazo, reset de contraseña
+   - Sin SMTP configurado: loguea en consola (modo dev)
+
+4. **Formulario público de solicitud de alta** (`frontend/src/pages/RequestAccessPage.tsx`):
+   - Ruta `/solicitar-acceso` — no requiere login
+   - Carga empresas activas via `GET /api/requests/companies`
+   - Valida y envía via `POST /api/requests`
+   - Link desde `LoginPage`: "¿No tienes cuenta? Solicitar acceso"
+
+5. **Panel de gestión de solicitudes** (`frontend/src/pages/RequestsPanel.tsx`):
+   - Accesible desde nav para admins: "Solicitudes de alta"
+   - Tabs: Pendientes / Aprobadas / Rechazadas
+   - Acciones: Aprobar → crea usuario en Redmine + identity.db + email; Rechazar → pide motivo + email; Editar → modal con todos los campos
+   - Modal de edición: Nombre, Apellido, Email, Empresa (select), Teléfono
+
+6. **Backend de solicitudes** (`backend/src/routes/requests.ts`):
+   - 6 endpoints bajo `/api/requests`; tabla `user_requests` en identity.db
+   - `generateRedmineLogin()` genera login único con deduplicación
+   - Aprobación crea usuario real en Redmine (si configurado) y añade membresía al proyecto
+
+7. **Tailwind CSS** integrado en frontend:
+   - `preflight: false` para no romper CSS existente
+   - Solo `@tailwind utilities` importado
+   - Páginas nuevas usan Tailwind; componentes existentes mantienen sus clases CSS propias
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/routes/requests.ts` | 6 rutas de alta de usuarios |
+| `backend/src/services/mailer/mailer-index.ts` | Clase Mailer con nodemailer |
+| `backend/src/services/mailer/index.ts` | Barrel re-export |
+| `backend/src/services/email/service.ts` | Servicio de email base |
+| `backend/scripts/import-cobertec-users.ts` | Importa usuarios @cobertec.com desde Redmine |
+| `backend/scripts/check-users.ts` | Utilidad de diagnóstico de usuarios |
+| `frontend/src/pages/RequestAccessPage.tsx` | Formulario público de alta |
+| `frontend/src/pages/RequestsPanel.tsx` | Panel admin de solicitudes |
+| `frontend/src/components/ForgotPasswordPage.tsx` | Página forgot password |
+| `frontend/src/components/ResetPasswordPage.tsx` | Página reset password |
+| `frontend/tailwind.config.js` | Config Tailwind (preflight: false) |
+| `frontend/postcss.config.js` | Config PostCSS |
+| `frontend/src/tailwind.css` | Entry point Tailwind (solo utilities) |
 
 ---
 
@@ -740,13 +862,19 @@ Cobertec gestiona una única API key admin (`cobertec_intake`, id: 847). Los cli
 **¿Por qué `redmine_login` sirve ahora también como identificador de login?**
 La columna se añadió inicialmente para impersonación (`X-Redmine-Switch-User`). Al importar usuarios con `import-cobertec-users.ts` se puebla sistemáticamente. Dado que los usuarios internos de Cobertec conocen su login de Redmine pero pueden no saber el email asociado en identity.db, se habilitó `getUserByRedmineLogin()` como fallback en `login()`. Esto no cambia la seguridad: el flujo de verificación bcrypt es idéntico.
 
-### SMTP y funcionalidades pendientes
+### SMTP y flujo de alta de usuarios
 
-**¿Por qué no se implementó recuperación de contraseña ni alta de usuarios en esta sesión?**
-Ambas funcionalidades requieren envío de email. El proveedor SMTP (SendGrid, Gmail, servidor propio de Cobertec) está pendiente de definir con Cobertec. Implementar el flujo sin email funcional no tiene valor — se pospone hasta confirmar el proveedor.
+**¿Por qué nodemailer sin SMTP configurado en desarrollo?**
+El `Mailer` está implementado completo. Si `SMTP_HOST` no está en el entorno, los métodos de envío loguean el contenido en consola en lugar de fallar. Esto permite desarrollar y probar el flujo completo sin un servidor de correo real. En producción solo hay que añadir las 5 variables `SMTP_*`.
 
-**Decisiones pendientes de confirmar con Cobertec antes de continuar:**
-1. Proveedor SMTP para emails transaccionales
-2. ¿El formulario de alta de nuevo usuario va en el mismo frontend bajo `/registro` o separado?
-3. ¿Quién es el admin de Cobertec que aprueba las altas? (configurar su cuenta como superadmin)
-4. ¿Los nuevos usuarios de Redmine deben crearse con algún rol adicional además de Cliente SAT (role_id: 6)?
+**¿Por qué el formulario de alta va bajo `/solicitar-acceso` en el mismo frontend?**
+Decisión conservadora: mismo dominio, mismo deployment, sin gestionar un subdominio separado. La ruta pública no requiere login — `App.tsx` detecta `window.location.pathname === '/solicitar-acceso'` antes de intentar el refresh silencioso y muestra `<RequestAccessPage />` directamente.
+
+**¿Por qué `forgot-password` siempre responde `ok: true`?**
+Seguridad estándar: no revelar si un email existe en la base de datos. El usuario siempre ve "si el email existe, recibirás un enlace", independientemente de si la cuenta existe o no.
+
+**Decisiones pendientes de confirmar con Cobertec antes de producción:**
+1. Proveedor SMTP para emails transaccionales (credenciales de servidor)
+2. ¿Quién es el admin de Cobertec que aprueba las altas? (configurar su cuenta como superadmin si no lo está)
+3. ¿Los nuevos usuarios de Redmine deben crearse con algún rol adicional además de Cliente SAT (role_id: 6)?
+4. Confirmar `ADMIN_NOTIFICATION_EMAILS` en `routes/requests.ts` (actualmente solo `o.bianchi@cobertec.com`)
