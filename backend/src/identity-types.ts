@@ -57,8 +57,9 @@ export interface UserRequest {
   first_name: string;
   last_name: string;
   email: string;
-  company_id: string;
-  phone: string | null;
+  company_id: string | null;           // nullable — asignado por el admin antes de aprobar
+  company_name_requested: string;      // nombre de empresa escrito por el usuario
+  phone: string;                       // requerido
   status: UserRequestStatus;
   rejection_reason: string | null;
   redmine_user_id: number | null;  // poblado al aprobar
@@ -70,8 +71,10 @@ export const UserRequestFormSchema = z.object({
   first_name: z.string().min(1, 'Nombre requerido'),
   last_name: z.string().min(1, 'Apellido requerido'),
   email: z.string().email('Email no válido'),
-  company_id: z.string().min(1, 'Empresa requerida'),
-  phone: z.string().nullable().optional(),
+  company_name: z.string().min(1, 'Nombre de empresa requerido'),
+  phone: z.string().min(1, 'Teléfono requerido'),
+  // company_id: solo en edición admin (opcional)
+  company_id: z.string().uuid().optional().nullable(),
 });
 export type UserRequestForm = z.infer<typeof UserRequestFormSchema>;
 

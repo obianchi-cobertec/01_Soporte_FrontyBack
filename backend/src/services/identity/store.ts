@@ -119,17 +119,18 @@ export class IdentityStore {
       CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens(user_id);
 
       CREATE TABLE IF NOT EXISTS user_requests (
-        id               TEXT PRIMARY KEY,
-        first_name       TEXT NOT NULL,
-        last_name        TEXT NOT NULL,
-        email            TEXT NOT NULL COLLATE NOCASE,
-        company_id       TEXT NOT NULL REFERENCES companies(id),
-        phone            TEXT,
-        status           TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
-        rejection_reason TEXT,
-        redmine_user_id  INTEGER,
-        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+        id                     TEXT PRIMARY KEY,
+        first_name             TEXT NOT NULL,
+        last_name              TEXT NOT NULL,
+        email                  TEXT NOT NULL COLLATE NOCASE,
+        company_id             TEXT REFERENCES companies(id),
+        company_name_requested TEXT NOT NULL DEFAULT '',
+        phone                  TEXT NOT NULL DEFAULT '',
+        status                 TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+        rejection_reason       TEXT,
+        redmine_user_id        INTEGER,
+        created_at             TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at             TEXT NOT NULL DEFAULT (datetime('now'))
       );
 
       CREATE INDEX IF NOT EXISTS idx_ur_status ON user_requests(status);
@@ -150,6 +151,38 @@ export class IdentityStore {
     }
     if (!existingCols.includes('must_change_password')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`);
+    }
+
+    // Migración user_requests: añadir company_name_requested + hacer company_id nullable
+    const urCols = (this.db.prepare('PRAGMA table_info(user_requests)').all() as { name: string }[]).map(c => c.name);
+    if (urCols.length > 0 && !urCols.includes('company_name_requested')) {
+      this.db.exec(`
+        ALTER TABLE user_requests RENAME TO _user_requests_bak;
+
+        CREATE TABLE user_requests (
+          id                     TEXT PRIMARY KEY,
+          first_name             TEXT NOT NULL,
+          last_name              TEXT NOT NULL,
+          email                  TEXT NOT NULL COLLATE NOCASE,
+          company_id             TEXT REFERENCES companies(id),
+          company_name_requested TEXT NOT NULL DEFAULT '',
+          phone                  TEXT NOT NULL DEFAULT '',
+          status                 TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+          rejection_reason       TEXT,
+          redmine_user_id        INTEGER,
+          created_at             TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at             TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        INSERT INTO user_requests (id, first_name, last_name, email, company_id, company_name_requested, phone, status, rejection_reason, redmine_user_id, created_at, updated_at)
+        SELECT id, first_name, last_name, email, company_id, '', COALESCE(phone,''), status, rejection_reason, redmine_user_id, created_at, updated_at
+        FROM _user_requests_bak;
+
+        DROP TABLE _user_requests_bak;
+
+        CREATE INDEX IF NOT EXISTS idx_ur_status ON user_requests(status);
+        CREATE INDEX IF NOT EXISTS idx_ur_email ON user_requests(email);
+      `);
     }
   }
 
@@ -458,15 +491,15 @@ export class IdentityStore {
     first_name: string;
     last_name: string;
     email: string;
-    company_id: string;
-    phone?: string | null;
+    company_name_requested: string;
+    phone: string;
   }): UserRequest {
     const id = randomUUID();
     const now = new Date().toISOString();
     this.db.prepare(`
-      INSERT INTO user_requests (id, first_name, last_name, email, company_id, phone, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-    `).run(id, data.first_name, data.last_name, data.email, data.company_id, data.phone ?? null, now, now);
+      INSERT INTO user_requests (id, first_name, last_name, email, company_id, company_name_requested, phone, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, NULL, ?, ?, 'pending', ?, ?)
+    `).run(id, data.first_name, data.last_name, data.email, data.company_name_requested, data.phone, now, now);
     return this.getUserRequestById(id)!;
   }
 
@@ -478,7 +511,8 @@ export class IdentityStore {
     first_name?: string;
     last_name?: string;
     email?: string;
-    company_id?: string;
+    company_id?: string | null;
+    company_name_requested?: string;
     phone?: string | null;
   }): void {
     const fields: string[] = [];
@@ -488,6 +522,7 @@ export class IdentityStore {
     if (data.last_name !== undefined) { fields.push('last_name = ?'); values.push(data.last_name); }
     if (data.email !== undefined) { fields.push('email = ?'); values.push(data.email); }
     if (data.company_id !== undefined) { fields.push('company_id = ?'); values.push(data.company_id); }
+    if (data.company_name_requested !== undefined) { fields.push('company_name_requested = ?'); values.push(data.company_name_requested); }
     if (data.phone !== undefined) { fields.push('phone = ?'); values.push(data.phone); }
 
     if (fields.length === 0) return;
@@ -499,22 +534,22 @@ export class IdentityStore {
     ).run(...values);
   }
 
-  listUserRequests(status?: UserRequestStatus): (UserRequest & { company_name: string })[] {
+  listUserRequests(status?: UserRequestStatus): (UserRequest & { company_name: string | null })[] {
     if (status) {
       return this.db.prepare(`
         SELECT ur.*, co.name as company_name
         FROM user_requests ur
-        JOIN companies co ON ur.company_id = co.id
+        LEFT JOIN companies co ON ur.company_id = co.id
         WHERE ur.status = ?
         ORDER BY ur.created_at DESC
-      `).all(status) as (UserRequest & { company_name: string })[];
+      `).all(status) as (UserRequest & { company_name: string | null })[];
     }
     return this.db.prepare(`
       SELECT ur.*, co.name as company_name
       FROM user_requests ur
-      JOIN companies co ON ur.company_id = co.id
+      LEFT JOIN companies co ON ur.company_id = co.id
       ORDER BY ur.created_at DESC
-    `).all() as (UserRequest & { company_name: string })[];
+    `).all() as (UserRequest & { company_name: string | null })[];
   }
 
   approveUserRequest(id: string, redmineUserId: number): void {

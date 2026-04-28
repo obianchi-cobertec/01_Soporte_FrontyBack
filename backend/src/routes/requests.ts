@@ -126,13 +126,7 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     const store = getIdentityStore();
-    const { first_name, last_name, email, company_id, phone } = parsed.data;
-
-    // Verificar que la empresa existe
-    const company = store.getCompanyById(company_id);
-    if (!company || !company.active) {
-      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Empresa no encontrada' });
-    }
+    const { first_name, last_name, email, company_name, phone } = parsed.data;
 
     // Verificar que no existe ya un usuario con ese email
     const existingContact = store.getContactByEmail(email);
@@ -143,7 +137,13 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
 
-    const userRequest = store.createUserRequest({ first_name, last_name, email, company_id, phone });
+    const userRequest = store.createUserRequest({
+      first_name,
+      last_name,
+      email,
+      company_name_requested: company_name,
+      phone,
+    });
 
     // Notificar a los admins
     const mailer = getMailer();
@@ -154,7 +154,7 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
         first_name,
         last_name,
         email,
-        company_name: company.name,
+        company_name: company_name,
         phone: phone ?? null,
         created_at: userRequest.created_at,
       },
@@ -212,7 +212,14 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
       }
     }
 
-    store.updateUserRequest(request.params.id, parsed.data);
+    store.updateUserRequest(request.params.id, {
+      first_name: parsed.data.first_name,
+      last_name: parsed.data.last_name,
+      email: parsed.data.email,
+      company_id: parsed.data.company_id,
+      company_name_requested: parsed.data.company_name,
+      phone: parsed.data.phone,
+    });
     return reply.send({ ok: true });
   });
 
@@ -234,6 +241,9 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(409).send({ error: 'ALREADY_PROCESSED', message: 'La solicitud ya fue procesada' });
     }
 
+    if (!userRequest.company_id) {
+      return reply.status(409).send({ error: 'COMPANY_NOT_ASSIGNED', message: 'Debes asignar una empresa antes de aprobar. Edita la solicitud primero.' });
+    }
     const company = store.getCompanyById(userRequest.company_id);
     if (!company) {
       return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Empresa no encontrada' });
@@ -346,12 +356,12 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
 
     // Enviar email de rechazo
     const mailer = getMailer();
-    const company = store.getCompanyById(userRequest.company_id);
+    const company = userRequest.company_id ? store.getCompanyById(userRequest.company_id) : null;
     await mailer.sendRejectionEmail({
       to: userRequest.email,
       first_name: userRequest.first_name,
       reason: parsed.data.reason,
-      company_name: company?.name ?? '',
+      company_name: company?.name ?? userRequest.company_name_requested,
     }).catch((err: unknown) => {
       console.error('[requests/reject] Error sending rejection email:', err);
     });

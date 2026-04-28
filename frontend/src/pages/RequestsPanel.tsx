@@ -6,8 +6,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { authenticatedFetch } from '../services/auth-api';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
-
 // ─── Types ───────────────────────────────────────────────
 
 type RequestStatus = 'pending' | 'approved' | 'rejected';
@@ -17,9 +15,10 @@ interface UserRequest {
   first_name: string;
   last_name: string;
   email: string;
-  company_id: string;
-  company_name: string;
-  phone: string | null;
+  company_id: string | null;
+  company_name_requested: string;
+  company_name: string | null;  // empresa asignada (JOIN)
+  phone: string;
   status: RequestStatus;
   rejection_reason: string | null;
   redmine_user_id: number | null;
@@ -38,6 +37,7 @@ interface EditForm {
   first_name: string;
   last_name: string;
   email: string;
+  company_name: string;
   company_id: string;
   phone: string;
 }
@@ -55,7 +55,7 @@ export function RequestsPanel() {
 
   // Modal de edición
   const [editModalRequest, setEditModalRequest] = useState<UserRequest | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ first_name: '', last_name: '', email: '', company_id: '', phone: '' });
+  const [editForm, setEditForm] = useState<EditForm>({ first_name: '', last_name: '', email: '', company_name: '', company_id: '', phone: '' });
   const [companies, setCompanies] = useState<Company[]>([]);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
@@ -64,10 +64,9 @@ export function RequestsPanel() {
   const [actionStates, setActionStates] = useState<Record<string, ActionState>>({});
   const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
 
-  // Cargar empresas al montar
+  // Cargar empresas al montar (para el selector del modal de edición)
   useEffect(() => {
-    fetch(`${API_BASE}/requests/companies`)
-      .then((r) => r.json())
+    authenticatedFetch<{ companies: Company[] }>('/admin/companies')
       .then((data) => setCompanies(data.companies ?? []))
       .catch(() => setCompanies([]));
   }, []);
@@ -76,9 +75,7 @@ export function RequestsPanel() {
     setLoading(true);
     try {
       const params = filter === 'all' ? '' : `?status=${filter}`;
-      const data = await authenticatedFetch<{ requests: UserRequest[] }>(
-        `${API_BASE}/requests/admin${params}`
-      );
+      const data = await authenticatedFetch<{ requests: UserRequest[] }>(`/requests/admin${params}`);
       setRequests(data.requests);
     } catch {
       setRequests([]);
@@ -94,9 +91,7 @@ export function RequestsPanel() {
     setActionErrors((e) => { const n = { ...e }; delete n[id]; return n; });
 
     try {
-      await authenticatedFetch(`${API_BASE}/requests/admin/${id}/approve`, {
-        method: 'POST',
-      });
+      await authenticatedFetch(`/requests/admin/${id}/approve`, { method: 'POST' });
       setActionStates((s) => ({ ...s, [id]: 'success' }));
       setTimeout(() => fetchRequests(), 800);
     } catch (err: unknown) {
@@ -114,7 +109,7 @@ export function RequestsPanel() {
     setRejectModalId(null);
 
     try {
-      await authenticatedFetch(`${API_BASE}/requests/admin/${id}/reject`, {
+      await authenticatedFetch(`/requests/admin/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: rejectReason.trim() }),
@@ -135,8 +130,9 @@ export function RequestsPanel() {
       first_name: req.first_name,
       last_name: req.last_name,
       email: req.email,
-      company_id: req.company_id,
-      phone: req.phone ?? '',
+      company_name: req.company_name_requested,
+      company_id: req.company_id ?? '',
+      phone: req.phone,
     });
     setEditError('');
   }
@@ -147,15 +143,16 @@ export function RequestsPanel() {
     setEditError('');
 
     try {
-      await authenticatedFetch(`${API_BASE}/requests/admin/${editModalRequest.id}`, {
+      await authenticatedFetch(`/requests/admin/${editModalRequest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           first_name: editForm.first_name.trim(),
           last_name: editForm.last_name.trim(),
           email: editForm.email.trim(),
-          company_id: editForm.company_id,
-          phone: editForm.phone.trim() || null,
+          company_name: editForm.company_name.trim(),
+          company_id: editForm.company_id || null,
+          phone: editForm.phone.trim(),
         }),
       });
       setEditModalRequest(null);
@@ -308,23 +305,36 @@ export function RequestsPanel() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Empresa</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Empresa (texto solicitado)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.company_name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, company_name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nombre de empresa escrito por el usuario"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Empresa asignada <span className="text-gray-400 font-normal">(requerida para aprobar)</span>
+                </label>
                 <select
                   value={editForm.company_id}
                   onChange={(e) => setEditForm((f) => ({ ...f, company_id: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  <option value="">Selecciona una empresa...</option>
-                  {companies.map((c) => (
+                  <option value="">Sin asignar</option>
+                  {companies.filter((c) => (c as Company & { active?: boolean }).active !== false).map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
-                </label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
                 <input
                   type="tel"
                   value={editForm.phone}
@@ -351,7 +361,7 @@ export function RequestsPanel() {
               </button>
               <button
                 onClick={handleEditSave}
-                disabled={editLoading || !editForm.first_name.trim() || !editForm.last_name.trim() || !editForm.email.trim() || !editForm.company_id}
+                disabled={editLoading || !editForm.first_name.trim() || !editForm.last_name.trim() || !editForm.email.trim()}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {editLoading ? 'Guardando...' : 'Guardar cambios'}
@@ -399,7 +409,15 @@ function RequestCard({ request, actionState, actionError, onApprove, onReject, o
           <div className="text-sm text-gray-500 space-y-0.5">
             <div>{request.email}</div>
             <div className="flex gap-4">
-              <span>{request.company_name}</span>
+              <span>
+                {request.company_name_requested}
+                {request.company_name && request.company_name !== request.company_name_requested && (
+                  <span className="text-green-600 ml-1">→ {request.company_name}</span>
+                )}
+                {!request.company_id && request.status === 'pending' && (
+                  <span className="text-orange-500 ml-1 text-xs">(sin asignar)</span>
+                )}
+              </span>
               {request.phone && <span>{request.phone}</span>}
             </div>
             <div className="text-xs text-gray-400">{date}</div>
@@ -432,7 +450,9 @@ function RequestCard({ request, actionState, actionError, onApprove, onReject, o
                 </button>
                 <button
                   onClick={onApprove}
-                  className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  disabled={!request.company_id}
+                  title={!request.company_id ? 'Edita la solicitud y asigna una empresa primero' : undefined}
+                  className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Aprobar
                 </button>

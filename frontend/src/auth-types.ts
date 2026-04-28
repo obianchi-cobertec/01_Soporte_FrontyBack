@@ -103,8 +103,9 @@ export interface UserRequest {
   first_name: string;
   last_name: string;
   email: string;
-  company_id: string;
-  phone: string | null;
+  company_id: string | null;
+  company_name_requested: string;
+  phone: string;
   status: UserRequestStatus;
   rejection_reason: string | null;
   redmine_user_id: number | null;

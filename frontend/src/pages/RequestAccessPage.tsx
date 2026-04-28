@@ -3,34 +3,21 @@
  * Accesible en /solicitar-acceso sin autenticación.
  */
 
-import { useState, useEffect } from 'react';
-
-interface Company {
-  id: string;
-  name: string;
-}
+import { useState } from 'react';
 
 type FormState = 'idle' | 'loading' | 'submitted' | 'error';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function RequestAccessPage() {
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [companyId, setCompanyId] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
-
-  useEffect(() => {
-    fetch(`${API_BASE}/requests/companies`)
-      .then((r) => r.json())
-      .then((data) => setCompanies(data.companies ?? []))
-      .catch(() => setCompanies([]));
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,8 +32,8 @@ export function RequestAccessPage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           email: email.trim(),
-          company_id: companyId,
-          phone: phone.trim() || null,
+          company_name: companyName.trim(),
+          phone: phone.trim(),
         }),
       });
 
@@ -78,10 +65,7 @@ export function RequestAccessPage() {
           <p className="text-gray-600 mb-6">
             Hemos recibido tu solicitud. El equipo de Cobertec la revisará y recibirás un email con el resultado en breve.
           </p>
-          <a
-            href="/"
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
-          >
+          <a href="/" className="text-sm text-blue-600 hover:text-blue-800 underline">
             Volver al inicio de sesión
           </a>
         </div>
@@ -92,12 +76,9 @@ export function RequestAccessPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Solicitar acceso</h1>
-          <p className="text-gray-500 text-sm mt-2">
-            Sistema de soporte técnico — Cobertec
-          </p>
+          <p className="text-gray-500 text-sm mt-2">Sistema de soporte técnico — Cobertec</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,32 +132,31 @@ export function RequestAccessPage() {
           </div>
 
           <div>
-            <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
               Empresa <span className="text-red-500">*</span>
             </label>
-            <select
-              id="company"
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
+            <input
+              id="companyName"
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            >
-              <option value="">Selecciona tu empresa...</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              autoComplete="organization"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Nombre de tu empresa"
+            />
           </div>
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono móvil <span className="text-gray-400 font-normal">(opcional)</span>
+              Teléfono móvil <span className="text-red-500">*</span>
             </label>
             <input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              required
               autoComplete="tel"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="+34 600 000 000"
@@ -200,9 +180,7 @@ export function RequestAccessPage() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           ¿Ya tienes cuenta?{' '}
-          <a href="/" className="text-blue-600 hover:text-blue-800">
-            Inicia sesión
-          </a>
+          <a href="/" className="text-blue-600 hover:text-blue-800">Inicia sesión</a>
         </p>
       </div>
     </div>

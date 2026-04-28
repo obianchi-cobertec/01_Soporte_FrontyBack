@@ -13,6 +13,24 @@ interface Props {
   onCancel?: () => void;
 }
 
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
 export function ChangePasswordPage({ voluntary = false, onCancel }: Props) {
   const { changePassword, isLoading, error } = useAuth();
 
@@ -21,6 +39,10 @@ export function ChangePasswordPage({ voluntary = false, onCancel }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -80,45 +102,78 @@ export function ChangePasswordPage({ voluntary = false, onCancel }: Props) {
           {voluntary && (
             <div className="form-field">
               <label htmlFor="current-password">Contraseña actual</label>
-              <input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                disabled={isLoading}
-              />
+              <div className="password-wrapper">
+                <input
+                  id="current-password"
+                  type={showCurrent ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  tabIndex={-1}
+                  aria-label={showCurrent ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  onClick={() => setShowCurrent(v => !v)}
+                >
+                  {showCurrent ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
             </div>
           )}
 
           <div className="form-field">
             <label htmlFor="new-password">Nueva contraseña</label>
-            <input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={8}
-              required
-              disabled={isLoading}
-              placeholder="Mínimo 8 caracteres"
-            />
+            <div className="password-wrapper">
+              <input
+                id="new-password"
+                type={showNew ? 'text' : 'password'}
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+                disabled={isLoading}
+                placeholder="Mínimo 8 caracteres"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                tabIndex={-1}
+                aria-label={showNew ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                onClick={() => setShowNew(v => !v)}
+              >
+                {showNew ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           <div className="form-field">
             <label htmlFor="confirm-password">Confirmar nueva contraseña</label>
-            <input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={8}
-              required
-              disabled={isLoading}
-            />
+            <div className="password-wrapper">
+              <input
+                id="confirm-password"
+                type={showConfirm ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                tabIndex={-1}
+                aria-label={showConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                onClick={() => setShowConfirm(v => !v)}
+              >
+                {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           {displayError && (

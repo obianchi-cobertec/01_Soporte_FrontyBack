@@ -121,3 +121,18 @@ export async function updateCompany(companyId: string, data: UpdateCompanyData):
     body: JSON.stringify(data),
   });
 }
+
+// ─── Redmine projects ────────────────────────────────────
+
+export interface RedmineProject {
+  id: number;
+  identifier: string;
+  name: string;
+}
+
+export async function fetchRedmineProjects(refresh = false): Promise<RedmineProject[]> {
+  const res = await authenticatedFetch<{ projects: RedmineProject[] }>(
+    `/admin/redmine-projects${refresh ? '?refresh=true' : ''}`,
+  );
+  return res.projects;
+}

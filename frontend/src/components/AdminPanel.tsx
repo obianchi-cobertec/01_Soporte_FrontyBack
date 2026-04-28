@@ -24,6 +24,8 @@ import {
   updateCompany,
   linkUserCompany,
   unlinkUserCompany,
+  fetchRedmineProjects,
+  type RedmineProject,
 } from '../services/admin-api';
 
 type Tab = 'users' | 'companies';
@@ -38,6 +40,8 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
   const [modal, setModal] = useState<Modal>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<AdminCompany | null>(null);
+  const [redmineProjects, setRedmineProjects] = useState<RedmineProject[]>([]);
+  const [syncingRedmine, setSyncingRedmine] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -118,6 +122,18 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleSyncRedmine = async (refresh = true) => {
+    setSyncingRedmine(true);
+    try {
+      const projects = await fetchRedmineProjects(refresh);
+      setRedmineProjects(projects);
+    } catch {
+      setError('Error al sincronizar proyectos Redmine');
+    } finally {
+      setSyncingRedmine(false);
+    }
+  };
+
   // ─── Company actions ────────────────────────────────
 
   const handleCreateCompany = async (data: CreateCompanyData) => {
@@ -184,6 +200,9 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
       ) : (
         <CompaniesTab
           companies={companies}
+          redmineProjects={redmineProjects}
+          syncingRedmine={syncingRedmine}
+          onSyncRedmine={() => handleSyncRedmine(true)}
           onCreateClick={() => setModal('create-company')}
           onEditClick={(c) => { setSelectedCompany(c); setModal('edit-company'); }}
         />
@@ -221,6 +240,7 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
       {modal === 'create-company' && (
         <CompanyFormModal
           title="Nueva Empresa"
+          redmineProjects={redmineProjects}
           onSubmit={handleCreateCompany}
           onClose={() => setModal(null)}
         />
@@ -230,6 +250,7 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
         <CompanyFormModal
           title="Editar Empresa"
           company={selectedCompany}
+          redmineProjects={redmineProjects}
           onSubmit={(data) => handleUpdateCompany(selectedCompany.id, data)}
           onClose={() => { setModal(null); setSelectedCompany(null); }}
         />
@@ -335,19 +356,38 @@ function UsersTab({
 
 function CompaniesTab({
   companies,
+  redmineProjects,
+  syncingRedmine,
+  onSyncRedmine,
   onCreateClick,
   onEditClick,
 }: {
   companies: AdminCompany[];
+  redmineProjects: RedmineProject[];
+  syncingRedmine: boolean;
+  onSyncRedmine: () => void;
   onCreateClick: () => void;
   onEditClick: (c: AdminCompany) => void;
 }) {
   return (
     <div className="admin-section">
-      <div className="admin-section-header">
+      <div className="admin-section-header" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={onCreateClick}>
           + Nueva empresa
         </button>
+        <button
+          className="btn btn-secondary"
+          onClick={onSyncRedmine}
+          disabled={syncingRedmine}
+          title="Carga los proyectos de Redmine para asignarlos en el formulario de empresa"
+        >
+          {syncingRedmine ? 'Sincronizando...' : '⟳ Sincronizar proyectos Redmine'}
+        </button>
+        {redmineProjects.length > 0 && (
+          <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+            {redmineProjects.length} proyectos cargados
+          </span>
+        )}
       </div>
 
       <table className="admin-table">
@@ -565,11 +605,13 @@ function AssignCompanyModal({
 function CompanyFormModal({
   title,
   company,
+  redmineProjects,
   onSubmit,
   onClose,
 }: {
   title: string;
   company?: AdminCompany;
+  redmineProjects: RedmineProject[];
   onSubmit: (data: CreateCompanyData & UpdateCompanyData) => Promise<void>;
   onClose: () => void;
 }) {
@@ -611,12 +653,27 @@ function CompanyFormModal({
         </div>
 
         <div className="form-field">
-          <label>Proyecto Redmine ID</label>
-          <input
-            value={redmineId}
-            onChange={(e) => setRedmineId(e.target.value)}
-            placeholder="Opcional — se configurará en integración"
-          />
+          <label>Proyecto Redmine</label>
+          {redmineProjects.length > 0 ? (
+            <select
+              value={redmineId}
+              onChange={(e) => setRedmineId(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              <option value="">Sin vincular</option>
+              {redmineProjects.map((p) => (
+                <option key={p.identifier} value={p.identifier}>
+                  {p.name} ({p.identifier})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={redmineId}
+              onChange={(e) => setRedmineId(e.target.value)}
+              placeholder="Identificador del proyecto (ej: cobertec-sat). Pulsa 'Sincronizar' para usar selector."
+            />
+          )}
         </div>
 
         {isEdit && (

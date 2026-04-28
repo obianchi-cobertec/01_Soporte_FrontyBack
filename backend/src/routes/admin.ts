@@ -66,6 +66,15 @@ function requireAdmin(request: FastifyRequest): void {
   }
 }
 
+// ─── Redmine projects cache ──────────────────────────────
+
+const REDMINE_URL = process.env.REDMINE_URL ?? '';
+const REDMINE_API_KEY = process.env.REDMINE_API_KEY ?? '';
+
+let _redmineProjectsCache: { id: number; identifier: string; name: string }[] | null = null;
+let _redmineProjectsCacheTime = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 // ─── Routes ─────────────────────────────────────────────
 
 export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
@@ -271,6 +280,54 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
       active: true,
       user_count: 0,
     });
+  });
+
+  fastify.get('/redmine-projects', async (request: FastifyRequest, reply: FastifyReply) => {
+    requireAdmin(request);
+
+    const refresh = (request.query as Record<string, string>).refresh === 'true';
+    const now = Date.now();
+
+    if (!refresh && _redmineProjectsCache && (now - _redmineProjectsCacheTime) < CACHE_TTL_MS) {
+      return reply.send({ projects: _redmineProjectsCache });
+    }
+
+    if (!REDMINE_URL || !REDMINE_API_KEY) {
+      return reply.status(503).send({ error: 'REDMINE_NOT_CONFIGURED', message: 'Redmine no está configurado' });
+    }
+
+    const projects: { id: number; identifier: string; name: string }[] = [];
+    let offset = 0;
+    const limit = 100;
+
+    while (true) {
+      const res = await fetch(`${REDMINE_URL}/projects.json?limit=${limit}&offset=${offset}&include=`, {
+        headers: { 'Content-Type': 'application/json', 'X-Redmine-API-Key': REDMINE_API_KEY },
+      });
+
+      if (!res.ok) {
+        return reply.status(502).send({ error: 'REDMINE_ERROR', message: `Error al obtener proyectos (${res.status})` });
+      }
+
+      const data = await res.json() as {
+        projects: { id: number; identifier: string; name: string; status: number }[];
+        total_count: number;
+      };
+
+      projects.push(
+        ...data.projects
+          .filter((p) => p.status === 1)
+          .map((p) => ({ id: p.id, identifier: p.identifier, name: p.name })),
+      );
+
+      if (offset + limit >= data.total_count) break;
+      offset += limit;
+    }
+
+    _redmineProjectsCache = projects;
+    _redmineProjectsCacheTime = Date.now();
+
+    return reply.send({ projects });
   });
 
   fastify.patch('/companies/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
