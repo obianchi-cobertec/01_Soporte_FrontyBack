@@ -309,7 +309,7 @@ export async function changePassword(
 
   const user = store.getUserById(userId);
   if (!user) {
-    throw new AuthServiceError('INVALID_CREDENTIALS', 'Usuario no encontrado');
+    throw new AuthServiceError('INVALID_CREDENTIALS', 'Error de sesión. Cierra sesión y vuelve a entrar.', 401);
   }
 
   // Si must_change_password=true, no verificamos la contraseña actual

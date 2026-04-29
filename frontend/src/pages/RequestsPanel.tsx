@@ -91,7 +91,7 @@ export function RequestsPanel() {
     setActionErrors((e) => { const n = { ...e }; delete n[id]; return n; });
 
     try {
-      await authenticatedFetch(`/requests/admin/${id}/approve`, { method: 'POST' });
+      await authenticatedFetch(`/requests/admin/${id}/approve`, { method: 'POST', body: JSON.stringify({}) });
       setActionStates((s) => ({ ...s, [id]: 'success' }));
       setTimeout(() => fetchRequests(), 800);
     } catch (err: unknown) {
@@ -150,7 +150,6 @@ export function RequestsPanel() {
           first_name: editForm.first_name.trim(),
           last_name: editForm.last_name.trim(),
           email: editForm.email.trim(),
-          company_name: editForm.company_name.trim(),
           company_id: editForm.company_id || null,
           phone: editForm.phone.trim(),
         }),
@@ -306,14 +305,13 @@ export function RequestsPanel() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Empresa (texto solicitado)
+                  Empresa (texto solicitado por el cliente)
                 </label>
                 <input
                   type="text"
                   value={editForm.company_name}
-                  onChange={(e) => setEditForm((f) => ({ ...f, company_name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nombre de empresa escrito por el usuario"
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-gray-50 text-gray-500 cursor-default"
                 />
               </div>
 

@@ -55,8 +55,13 @@ async function createRedmineUser(payload: RedmineUserPayload): Promise<number> {
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Redmine createUser failed (${res.status}): ${body}`);
+    const bodyText = await res.text();
+    let detail = '';
+    try {
+      const parsed = JSON.parse(bodyText) as { errors?: string[] };
+      if (parsed.errors?.length) detail = parsed.errors.join(', ');
+    } catch { /* body no era JSON */ }
+    throw new Error(detail || `Error al crear el usuario en Redmine (${res.status})`);
   }
 
   const data = await res.json() as { user: { id: number } };
@@ -278,9 +283,10 @@ export async function requestRoutes(fastify: FastifyInstance): Promise<void> {
         }
       } catch (err) {
         console.error('[requests/approve] Redmine error:', err);
+        const detail = err instanceof Error ? err.message : 'Error desconocido';
         return reply.status(502).send({
           error: 'REDMINE_ERROR',
-          message: 'Error al crear el usuario en Redmine. La solicitud no fue procesada.',
+          message: `Error al crear el usuario en Redmine: ${detail}. La solicitud no fue procesada.`,
         });
       }
     }

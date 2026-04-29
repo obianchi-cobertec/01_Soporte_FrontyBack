@@ -49,6 +49,10 @@ async function main() {
 
   await app.register(rateLimit, {
     global: false, // opt-in por ruta
+    errorResponseBuilder: (_request, context) => ({
+      error: 'TOO_MANY_REQUESTS',
+      message: `Demasiados intentos. Espera ${Math.ceil(context.ttl / 1000)} segundos antes de volver a intentarlo.`,
+    }),
   });
 
   await app.register(cookie);

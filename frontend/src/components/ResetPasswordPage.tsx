@@ -30,6 +30,7 @@ export function ResetPasswordPage({ token, onDone }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [expired, setExpired] = useState(false);
 
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -54,6 +55,7 @@ export function ResetPasswordPage({ token, onDone }: Props) {
     } catch (err) {
       if (err instanceof AuthApiError) {
         setError(err.body.message);
+        if (err.body.error === 'RESET_TOKEN_EXPIRED') setExpired(true);
       } else {
         setError('Error de conexión. Inténtalo de nuevo.');
       }
@@ -137,7 +139,16 @@ export function ResetPasswordPage({ token, onDone }: Props) {
             </div>
           </div>
 
-          {error && <div className="login-error">{error}</div>}
+          {error && (
+            <div className="login-error">
+              {error}
+              {expired && (
+                <p style={{ marginTop: '0.5rem' }}>
+                  <a href="/forgot-password" className="btn-link">Solicitar nuevo enlace</a>
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"

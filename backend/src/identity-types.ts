@@ -73,8 +73,8 @@ export const UserRequestFormSchema = z.object({
   email: z.string().email('Email no válido'),
   company_name: z.string().min(1, 'Nombre de empresa requerido'),
   phone: z.string().min(1, 'Teléfono requerido'),
-  // company_id: solo en edición admin (opcional)
-  company_id: z.string().uuid().optional().nullable(),
+  // company_id: solo en edición admin (opcional); puede ser UUID o ID numérico string (empresas importadas de Redmine)
+  company_id: z.string().min(1).optional().nullable(),
 });
 export type UserRequestForm = z.infer<typeof UserRequestFormSchema>;
 
@@ -82,7 +82,7 @@ export const ApproveRequestSchema = z.object({});
 export type ApproveRequest = z.infer<typeof ApproveRequestSchema>;
 
 export const RejectRequestSchema = z.object({
-  reason: z.string().min(1, 'Motivo requerido'),
+  reason: z.string().min(1, 'El motivo del rechazo es obligatorio'),
 });
 export type RejectRequest = z.infer<typeof RejectRequestSchema>;
 

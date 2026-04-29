@@ -147,8 +147,12 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 - `AccessTokenPayload`, `RefreshTokenPayload` — contenido del JWT
 - `AuthErrorCode`, `AuthError` — errores tipados
 - `LoginRequestSchema` — **@deprecated**, usar `TokenRequestSchema` con `grant_type: 'password'`
-- `UserRequestStatus`, `UserRequest` — entidad de solicitudes de alta (tabla `user_requests`)
-- `UserRequestFormSchema`, `RejectRequestSchema` — schemas Zod para el flujo de alta
+- `UserRequestStatus`, `UserRequest` — entidad de solicitudes de alta (tabla `user_requests`):
+  - `company_id: string | null` — nullable; el admin lo asigna después de revisar la solicitud
+  - `company_name_requested: string` — nombre de empresa en texto libre que escribió el solicitante
+  - `phone: string` — requerido (no nullable)
+- `UserRequestFormSchema` — schema Zod del formulario público: `company_name: z.string().min(1)` (texto libre, **no** `company_id`); `phone: z.string().min(1)` (requerido); `company_id: z.string().min(1).optional().nullable()` (solo para edición admin — usa `.min(1)` en lugar de `.uuid()` porque las empresas importadas de Redmine tienen IDs numéricos como PK, no UUIDs)
+- `RejectRequestSchema` — schema Zod para el motivo de rechazo; campo `reason` con mensaje de error en español: `"El motivo del rechazo es obligatorio"`
 
 **Regla importante:** `frontend/src/auth-types.ts` es espejo de este archivo. Cambios aquí → actualizar también en frontend.
 
@@ -179,7 +183,7 @@ Notas de seguridad:
 - `companies`: name, redmine_project_id, active
 - `user_companies`: (user_id, company_id) PK, role ('user'|'admin')
 - `refresh_tokens`: token_hash PK, user_id FK, expires_at
-- `user_requests`: id (UUID), first_name, last_name, email, company_id (FK), phone, status ('pending'|'approved'|'rejected'), rejection_reason, redmine_user_id, created_at, updated_at
+- `user_requests`: id (UUID), first_name, last_name, email, company_id (FK, **NULLABLE** — admin asigna tras revisión), company_name_requested (TEXT — nombre libre del formulario), phone (TEXT NOT NULL), status ('pending'|'approved'|'rejected'), rejection_reason, redmine_user_id, created_at, updated_at. **Nota de migración:** la tabla se recrea vía rename→recreate→INSERT SELECT→DROP backup si la columna `company_name_requested` no existe, para añadir la constraint nullable de `company_id` (SQLite no permite ALTER COLUMN).
 
 Métodos principales:
 - `getUserByEmail()`, `getUserById()`, `createUser()`, `updateUserActive()`, `updateUserPassword()`
@@ -213,6 +217,8 @@ Cinco endpoints bajo `/api/auth` (estilo OAuth 2.0):
 
 Cookie: `httpOnly: true`, `secure: true` solo en producción, `sameSite: 'strict'` en prod / `'lax'` en dev, `path: '/api/auth'`, `maxAge: 7d`.
 
+Rate limiting: `@fastify/rate-limit` con límite 10 req/min por IP en `POST /token`; el `errorResponseBuilder` devuelve el mensaje de error en español: `"Demasiados intentos. Espera X segundos antes de volver a intentarlo."`
+
 ### `backend/src/routes/identity.ts`
 Un endpoint: `GET /api/identity/me`. Requiere auth. Consulta IdentityStore para armar `MeResponse` con user_id, is_superadmin, contact, empresa actual (del token) y lista de empresas disponibles.
 
@@ -227,6 +233,7 @@ CRUD de usuarios y empresas bajo `/api/admin`. Requiere rol `admin` o `superadmi
 - `GET /companies` — lista todas las empresas
 - `POST /companies` — crea empresa con `redmine_project_id` opcional
 - `PATCH /companies/:id` — edita nombre, redmine_project_id, activo
+- `GET /redmine-projects` — lista proyectos activos de Redmine (status=1); caché en memoria con TTL de 5 min; `?refresh=true` fuerza refresco; 503 si `REDMINE_URL`/`REDMINE_API_KEY` no configurados; 502 si error Redmine. Cache: variables de módulo `_redmineProjectsCache` + `_redmineProjectsCacheTime`.
 
 El guard `requireAdmin()` verifica `IdentityStore.isAdmin(auth.sub)`. Los superadmin también pasan este guard.
 
@@ -308,12 +315,12 @@ Formatea asunto y descripción del ticket:
 
 ### `backend/src/routes/requests.ts`
 Rutas bajo `/api/requests` para el flujo de solicitudes de alta de nuevos usuarios:
-- `GET /companies` — **pública**: lista empresas activas para el selector del formulario
-- `POST /` — **pública**: crea solicitud + notifica a admins por email; verifica email duplicado vs contacts
-- `GET /admin` — requiere admin; lista solicitudes filtrables por `?status=pending|approved|rejected`
-- `PATCH /admin/:id` — requiere admin; edita campos de una solicitud pendiente (first_name, last_name, email, company_id, phone)
-- `POST /admin/:id/approve` — requiere admin; crea usuario en Redmine + identity.db + envía email de bienvenida con contraseña temporal
-- `POST /admin/:id/reject` — requiere admin; marca rechazada + envía email de rechazo con motivo
+- `GET /companies` — **pública**: lista empresas activas (ya no se usa en el frontend — el formulario ahora usa texto libre — pero se mantiene por compatibilidad)
+- `POST /` — **pública**: crea solicitud con `company_name` (texto libre) + notifica a admins por email; verifica email duplicado vs contacts; **no** valida la existencia de la empresa
+- `GET /admin` — requiere admin; lista solicitudes filtrables por `?status=pending|approved|rejected`; usa `LEFT JOIN` a companies (company_id puede ser null)
+- `PATCH /admin/:id` — requiere admin; edita solicitud pendiente; mapea `body.company_name → company_name_requested` y acepta `company_id` opcional para asignar empresa concreta
+- `POST /admin/:id/approve` — requiere admin; **bloquea con 409 (`COMPANY_NOT_ASSIGNED`) si `company_id` es null** — el admin debe asignar empresa primero; luego crea usuario en Redmine + identity.db + envía email de bienvenida
+- `POST /admin/:id/reject` — requiere admin; marca rechazada + envía email de rechazo; usa `company?.name ?? userRequest.company_name_requested` como nombre de empresa en el email
 
 La aprobación genera un login Redmine único via `generateRedmineLogin()`, crea el usuario en Redmine real (si `REDMINE_URL` configurado), añade membresía al proyecto de la empresa, crea contact + user en identity.db con `must_change_password: true`.
 
@@ -358,7 +365,7 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/contexts/AuthContext.tsx` | Completo | Lógica de estado, refresh silencioso, superadmin |
 | `frontend/src/services/auth-api.ts` | Completo | Cliente API con auto-refresh, token en memoria; forgot/reset password |
 | `frontend/src/services/api.ts` | Completo | submitIntake, confirmIntake, fileToAttachment |
-| `frontend/src/services/admin-api.ts` | Completo | CRUD usuarios/empresas para AdminPanel |
+| `frontend/src/services/admin-api.ts` | Completo | CRUD usuarios/empresas para AdminPanel; `fetchRedmineProjects(refresh?)` |
 | `frontend/src/services/metrics.ts` | Completo | GET /metrics, /metrics/recent |
 | `frontend/src/auth-types.ts` | Completo | Tipos espejo del backend; incluye UserRequest |
 | `frontend/src/types.ts` | Completo | Tipos de intake espejo del backend |
@@ -372,15 +379,15 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/components/TicketResult.tsx` | Completo | Pantalla éxito: ticket_id + ticket_url |
 | `frontend/src/components/ErrorDisplay.tsx` | Completo | Mensaje de error + botones Reintentar / Nueva incidencia |
 | `frontend/src/components/Dashboard.tsx` | Completo | Métricas piloto: totales, tasa completado, distribución confianza |
-| `frontend/src/components/AdminPanel.tsx` | Completo | CRUD usuarios y empresas para admins |
+| `frontend/src/components/AdminPanel.tsx` | Completo | CRUD usuarios y empresas; botón "Sincronizar proyectos Redmine"; `CompanyFormModal` usa dropdown cuando proyectos cargados |
 | `frontend/src/components/StepIndicator.tsx` | Completo | Indicador visual de progreso (breadcrumb) |
 | `frontend/src/components/Loading.tsx` | Completo | Spinner con mensaje |
-| `frontend/src/components/ChangePasswordPage.tsx` | Completo | Cambio obligatorio (sin pedir actual) y voluntario; props: `voluntary?`, `onCancel?` |
+| `frontend/src/components/ChangePasswordPage.tsx` | Completo | Cambio obligatorio (sin pedir actual) y voluntario; props: `voluntary?`, `onCancel?`; toggle visibilidad en todos los campos |
 | `frontend/src/components/ForgotPasswordPage.tsx` | Completo | Formulario de recuperación; llama `forgotPasswordApi()`; siempre muestra éxito |
-| `frontend/src/components/ResetPasswordPage.tsx` | Completo | Lee `?token=` de la URL; llama `resetPasswordApi()`; redirige al login |
+| `frontend/src/components/ResetPasswordPage.tsx` | Completo | Lee `?token=` de la URL; llama `resetPasswordApi()`; redirige al login; toggle visibilidad en ambos campos |
 | `frontend/src/pages/ConfigPanel.tsx` | Completo | Panel de 5 pestañas: Taxonomía / Soluciones / Necesidades / Asignación / Redmine |
-| `frontend/src/pages/RequestAccessPage.tsx` | Completo | Formulario público en `/solicitar-acceso`; carga empresas, valida y envía solicitud |
-| `frontend/src/pages/RequestsPanel.tsx` | Completo | Panel admin: lista solicitudes por estado, aprobar/rechazar/editar; modal de edición |
+| `frontend/src/pages/RequestAccessPage.tsx` | Completo | Formulario público en `/solicitar-acceso`; empresa como **texto libre** (no dropdown); teléfono obligatorio |
+| `frontend/src/pages/RequestsPanel.tsx` | Completo | Panel admin: lista solicitudes por estado, aprobar/rechazar/editar; modal edición con campo empresa texto + selector ID; botón Aprobar deshabilitado sin company_id |
 
 **Nota sobre Tailwind:** integrado con `preflight: false` (no resetea CSS existente). Solo se importan utilidades. Archivos: `tailwind.config.js`, `postcss.config.js`, `src/tailwind.css`. Las páginas nuevas (`RequestsPanel`, `RequestAccessPage`) usan clases Tailwind; los componentes existentes mantienen sus clases CSS propias.
 
@@ -526,6 +533,8 @@ interface ClassificationResponse {
 
 11. **Ejecución autónoma** — Claude Code debe ejecutar todas las tareas hasta el final sin pausas ni preguntas de confirmación. Ante dudas, tomar la decisión más conservadora y documentarla al final.
 
+12. **Mensajes en español** — **Todos los mensajes visibles por el usuario deben estar en español sin excepción.** Esto incluye: errores de validación Zod, respuestas de error HTTP, mensajes de rate limiting, textos de UI, emails, y cualquier cadena que llegue al usuario final.
+
 ---
 
 ## Estado de la integración Redmine
@@ -577,6 +586,12 @@ No hay bugs activos rastreados en este momento.
 16. ~~No existe panel admin de gestión de solicitudes~~ — **Resuelto**: `RequestsPanel.tsx` accesible desde nav para admins
 17. ~~Sin edición de solicitudes pendientes~~ — **Resuelto**: `PATCH /api/requests/admin/:id` + modal en `RequestsPanel`
 18. ~~`TokenRequestSchema` rechaza logins Redmine (`.email()` validation)~~ — **Resuelto**: campo `email` usa `.min(1)` en lugar de `.email()`
+19. ~~`user_requests.company_id NOT NULL` bloqueaba solicitudes sin empresa asignada~~ — **Resuelto**: tabla recreada via rename→recreate→INSERT SELECT→DROP backup (SQLite no permite ALTER COLUMN); `company_id` ahora nullable; `company_name_requested` añadida
+20. ~~`RequestsPanel` usaba URLs completas en `authenticatedFetch` causando doble prefijo~~ — **Resuelto**: todas las llamadas usan rutas relativas (`/requests/admin`, etc.)
+21. ~~`reject` route fallaba si `company_id` era null al llamar `getCompanyById()`~~ — **Resuelto**: guard ternario `userRequest.company_id ? store.getCompanyById(...) : null`; fallback a `company_name_requested` en el email
+22. ~~`POST /admin/:id/approve` enviaba `Content-Type: application/json` sin body~~ — **Resuelto**: añadido `body: JSON.stringify({})` en la llamada `fetch` del frontend para evitar error 400 en algunos servidores
+23. ~~`company_id` con validación `.uuid()` rechazaba empresas importadas de Redmine con IDs numéricos~~ — **Resuelto**: validación cambiada a `.min(1)` en `UserRequestFormSchema` (frontend y backend); los IDs de Redmine son enteros, no UUIDs
+24. ~~`RequestsPanel` enviaba `company_name` en el body del PATCH del modal de edición~~ — **Resuelto**: campo `company_name` puesto como solo lectura en el modal; eliminado del body enviado al backend (el backend espera `company_name_requested` vía mapeo interno)
 
 ---
 
@@ -589,7 +604,7 @@ No hay bugs activos rastreados en este momento.
 | **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a proyecto de producción | Cobertec debe definirlo |
 | **Alta** | Backend | Activar impersonación Redmine (`X-Redmine-Switch-User`) en producción — `redmine_login` ya está poblado para usuarios `@cobertec.com` | Decisión operativa |
 | **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen en la instancia Redmine de Cobertec | Acceso a Redmine de prod |
-| **Media** | Frontend | Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController` | — |
+| ~~**Media**~~ | ~~Frontend~~ | ~~Llamadas a `submitIntake`/`confirmIntake` sin timeout explícito — añadir `AbortController`~~ | ~~Resuelto: `REQUEST_TIMEOUT_MS = 25_000` con `AbortController` en `frontend/src/services/api.ts`~~ |
 | **Baja** | Seguridad | Los archivos `backend/scripts/redmine_*.json` contienen datos de usuarios — añadir al `.gitignore` | — |
 | **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` | — |
 | **Alta** | Backend | Configurar SMTP real (host, puerto, credenciales) para que los emails de bienvenida, rechazo y recuperación funcionen en producción | Cobertec debe dar proveedor SMTP |
@@ -878,3 +893,81 @@ Seguridad estándar: no revelar si un email existe en la base de datos. El usuar
 2. ¿Quién es el admin de Cobertec que aprueba las altas? (configurar su cuenta como superadmin si no lo está)
 3. ¿Los nuevos usuarios de Redmine deben crearse con algún rol adicional además de Cliente SAT (role_id: 6)?
 4. Confirmar `ADMIN_NOTIFICATION_EMAILS` en `routes/requests.ts` (actualmente solo `o.bianchi@cobertec.com`)
+
+---
+
+## Solicitudes de alta mejoradas, Redmine en AdminPanel y toggles de contraseña — sesión 2026-04b
+
+### Qué se construyó
+
+1. **Formulario de alta: empresa como texto libre** (`RequestAccessPage.tsx`):
+   - El campo empresa cambia de `<select>` (cargado desde API) a `<input type="text">` libre
+   - El teléfono pasa de opcional a **obligatorio**
+   - Backend: `UserRequestFormSchema` usa `company_name: z.string().min(1)` en lugar de `company_id`; `phone: z.string().min(1)` (requerido)
+   - El flujo admin ahora es: solicitud llega con nombre libre → admin asigna empresa concreta en el modal de edición → aprueba
+
+2. **Esquema `user_requests` actualizado**:
+   - Nueva columna `company_name_requested TEXT` — guarda el nombre libre del solicitante
+   - `company_id` ahora nullable — se asigna por el admin tras revisar la solicitud
+   - Migración automática al iniciar el backend: detecta si falta `company_name_requested`, recrea la tabla (SQLite no permite ALTER COLUMN nullable)
+   - `PATCH /admin/:id` mapea `body.company_name → company_name_requested` y acepta `company_id` opcional
+   - `POST /admin/:id/approve` bloquea con 409 `COMPANY_NOT_ASSIGNED` si `company_id` es null
+
+3. **Proyectos Redmine en AdminPanel** (`routes/admin.ts` + `AdminPanel.tsx`):
+   - Nuevo endpoint `GET /api/admin/redmine-projects`: pagina la API de Redmine, filtra activos (status=1), cachea 5 min en módulo; `?refresh=true` invalida caché
+   - `AdminPanel`: estado `redmineProjects` + botón "Sincronizar proyectos Redmine" con spinner; muestra recuento de proyectos cargados
+   - `CompanyFormModal`: cuando `redmineProjects` está cargado, muestra `<select>` dropdown para `redmine_project_id`; si no, input de texto libre
+
+4. **Toggle visibilidad de contraseña** (`ChangePasswordPage.tsx` + `ResetPasswordPage.tsx`):
+   - Mismo patrón que `LoginPage.tsx`: componentes `EyeIcon`/`EyeOffIcon` SVG + estado `showX` + clases `.password-wrapper`/`.password-toggle`
+   - `ChangePasswordPage`: tres toggles (contraseña actual, nueva, confirmar)
+   - `ResetPasswordPage`: dos toggles (nueva contraseña, confirmar)
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `backend/src/identity-types.ts` | `UserRequest.company_id: string \| null`; nuevo `UserRequest.company_name_requested: string`; `UserRequest.phone: string`; `UserRequestFormSchema` usa `company_name` (texto) en lugar de `company_id` |
+| `backend/src/services/identity/store.ts` | Schema `user_requests` actualizado; migración automática de tabla; `createUserRequest` acepta `company_name_requested`; `listUserRequests` usa LEFT JOIN |
+| `backend/src/routes/requests.ts` | POST usa `company_name` libre; PATCH mapea a `company_name_requested`; approve bloquea si `company_id` null; reject con null guard |
+| `backend/src/routes/admin.ts` | Nuevo endpoint `GET /redmine-projects` con caché en módulo |
+| `frontend/src/auth-types.ts` | `UserRequest` actualizado: `company_id \| null`, `company_name_requested`, `phone` requerido |
+| `frontend/src/pages/RequestAccessPage.tsx` | Empresa: `<select>` → `<input type="text">`; teléfono requerido; sin `useEffect` de empresas |
+| `frontend/src/pages/RequestsPanel.tsx` | URLs relativas en `authenticatedFetch`; modal edición con texto libre + selector ID; badge "(sin asignar)"; botón Aprobar deshabilitado sin company_id |
+| `frontend/src/services/admin-api.ts` | Nueva función `fetchRedmineProjects(refresh?)` e interfaz `RedmineProject` |
+| `frontend/src/components/AdminPanel.tsx` | Estado `redmineProjects`; botón Sincronizar; `CompanyFormModal` con dropdown condicional |
+| `frontend/src/components/ChangePasswordPage.tsx` | Eye/EyeOff toggles en los 3 campos de contraseña |
+| `frontend/src/components/ResetPasswordPage.tsx` | Eye/EyeOff toggles en los 2 campos de contraseña |
+
+---
+
+## Mensajes de error amigables y validaciones en español — sesión 2026-04c
+
+### Qué se corrigió
+
+1. **`frontend/src/services/api.ts` — Errores HTTP con mensajes amigables en español**:
+   - Los errores HTTP crudos (códigos numéricos sin contexto) se reemplazaron por mensajes comprensibles por código:
+     - 401 → "Tu sesión ha expirado. Por favor, vuelve a iniciar sesión."
+     - 403 → "No tienes permiso para realizar esta acción."
+     - 500 → "Ha ocurrido un error en el servidor. Inténtalo de nuevo más tarde."
+     - Resto → "Ha ocurrido un error inesperado. Inténtalo de nuevo."
+   - Timeout con `AbortController` implementado: `REQUEST_TIMEOUT_MS = 25_000`
+
+2. **`backend/src/routes/intake.ts` — Errores Zod sin path técnico**:
+   - Los errores de validación Zod ahora exponen solo el campo `message` al cliente, sin el array `path` (que contenía nombres de campos internos en inglés)
+
+3. **`backend/src/services/auth/service.ts` — Error de sesión en español**:
+   - El mensaje interno "Usuario no encontrado" (que podía llegar al cliente en flujos de refresh) se sustituyó por: `"Error de sesión. Cierra sesión y vuelve a entrar."`
+
+4. **`frontend/src/components/ResetPasswordPage.tsx` — Token expirado con enlace de acción**:
+   - Cuando el token de reset ha expirado, el mensaje de error incluye un enlace directo a `/forgot-password` para que el usuario pueda solicitar uno nuevo sin tener que navegar manualmente
+
+5. **`backend/src/identity-types.ts` — `RejectRequestSchema` en español**:
+   - El campo `reason` lleva mensaje de error explícito en español: `"El motivo del rechazo es obligatorio"` (antes era el default "Required" de Zod en inglés)
+
+6. **`backend/src/routes/auth.ts` — Rate limiting en español**:
+   - El `errorResponseBuilder` de `@fastify/rate-limit` devuelve: `"Demasiados intentos. Espera X segundos antes de volver a intentarlo."` (X = segundos restantes)
+
+### Regla consolidada
+
+**Todos los mensajes visibles por el usuario deben estar en español sin excepción.** Aplica a: errores de validación Zod, respuestas de error HTTP, mensajes de rate limiting, textos de UI, emails, y cualquier cadena que llegue al usuario final. Los nombres de campos internos (path de Zod, códigos de error internos) no deben exponerse directamente al cliente.

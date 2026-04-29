@@ -59,6 +59,11 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       rateLimit: {
         max: 10,
         timeWindow: '1 minute',
+        errorResponseBuilder: (_req: FastifyRequest, ctx: { ttl: number; statusCode: number }) => {
+          const msg = `Demasiados intentos. Espera ${Math.ceil(ctx.ttl / 1000)} segundos antes de volver a intentarlo.`;
+          const err = Object.assign(new Error(msg), { statusCode: 429, error: 'TOO_MANY_REQUESTS' });
+          return err;
+        },
       },
     },
   }, async (request: FastifyRequest, reply: FastifyReply) => {

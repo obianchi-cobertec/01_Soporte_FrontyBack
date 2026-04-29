@@ -43,7 +43,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   // El backend siempre devuelve un objeto con status
   // Si es error HTTP pero el body tiene estructura, lo devolvemos como ErrorResponse
   if (!response.ok && !data.status) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
+    const friendlyErrors: Record<number, string> = {
+      401: 'Tu sesión ha expirado. Vuelve a iniciar sesión.',
+      403: 'No tienes permiso para realizar esta acción.',
+      500: 'Error interno del servidor. Inténtalo de nuevo en unos minutos.',
+    };
+    throw new Error(friendlyErrors[response.status] ?? 'Error inesperado. Inténtalo de nuevo.');
   }
 
   return data as T;

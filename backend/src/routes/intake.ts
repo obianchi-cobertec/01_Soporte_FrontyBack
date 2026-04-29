@@ -47,7 +47,7 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
         status: 'error',
         error_code: 'validation_failed',
         error_message: parseResult.error.issues
-          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .map(i => i.message)
           .join('; '),
       };
       return reply.status(400).send(errorResponse);
@@ -164,7 +164,7 @@ export async function intakeRoutes(app: FastifyInstance): Promise<void> {
         status: 'error',
         error_code: 'validation_failed',
         error_message: parseResult.error.issues
-          .map(i => `${i.path.join('.')}: ${i.message}`)
+          .map(i => i.message)
           .join('; '),
       };
       return reply.status(400).send(errorResponse);
