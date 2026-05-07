@@ -73,7 +73,7 @@ function signAccessToken(payload: Omit<AccessTokenPayload, 'type'>): string {
   return jwt.sign(
     { ...payload, type: 'access' } satisfies AccessTokenPayload,
     JWT_SECRET,
-    { expiresIn: ACCESS_TOKEN_TTL },
+    { expiresIn: ACCESS_TOKEN_TTL as unknown as number },
   );
 }
 

@@ -27,6 +27,7 @@ export interface TaxonomyDomainValue {
   keywords_negative?: string[];
   examples?: string[];
   examples_positive?: string[];
+  examples_negative?: string[];
   decision_rules?: string[];
   confusion_with?: string[];
 }
@@ -100,11 +101,42 @@ export interface RedmineMappingConfig {
     tracker_id: string;
     status_id_initial: string;
     default_assignee?: string;
-    default_assignee_id?: string;
+    default_assignee_id?: number | null;
+    unassignable_fallback_assignee_id?: number | null;
+    /** Role ID que se asigna al staff de Cobertec cuando se les añade a un proyecto de cliente.
+     *  Default: 4 (Developer en Redmine estándar). Cambiar si Cobertec usa un role distinto. */
+    support_role_id?: number;
   };
   custom_fields: Record<string, { id: string; name: string }>;
   company_to_project: Record<string, string>;
   role_to_user_id?: Record<string, number>;
+  billable_rules?: BillableRulesConfig;
+}
+
+export interface BillableRuleConfig {
+  nature: string;
+  domains?: string[];
+  min_cost_eur: number;
+  requires_disambiguation?: boolean;
+  disambiguation_question_id?: string;
+  billable_when_answer?: string;
+}
+
+export interface DisambiguationQuestionOption {
+  id: string;
+  label: string;
+}
+
+export interface DisambiguationQuestionConfig {
+  question: string;
+  options: DisambiguationQuestionOption[];
+}
+
+export interface BillableRulesConfig {
+  default_min_cost_eur: number;
+  notice_template: string;
+  rules: BillableRuleConfig[];
+  disambiguation_questions: Record<string, DisambiguationQuestionConfig>;
 }
 
 export interface AssignmentRule {
@@ -113,6 +145,8 @@ export interface AssignmentRule {
   module: string;
   need: string;
   assignee: string;
+  solution?: string;
+  nature?: string; // si está presente, la regla solo aplica cuando classification.nature coincide (soporta "*")
   condition?: Record<string, string>;
   assignee_id?: string;
   comment?: string;

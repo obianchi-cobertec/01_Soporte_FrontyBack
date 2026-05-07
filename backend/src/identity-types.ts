@@ -26,6 +26,7 @@ export interface User {
   password_hash: string;
   active: boolean;
   is_superadmin: boolean;
+  is_support_lead: boolean;
   must_change_password: boolean;
   last_login: string | null;
   created_at: string;
@@ -96,6 +97,7 @@ export interface CompanyDTO {
 export interface MeResponse {
   user_id: string;
   is_superadmin: boolean;
+  is_support_lead: boolean;
   contact: {
     name: string;
     email: string;

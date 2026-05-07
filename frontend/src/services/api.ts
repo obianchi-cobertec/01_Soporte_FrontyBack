@@ -3,6 +3,7 @@ import type {
   ConfirmationPayload,
   IntakeResponse,
 } from '../types';
+
 import { getAccessToken } from './auth-api';
 
 const API_BASE = '/api';
@@ -43,6 +44,11 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   // El backend siempre devuelve un objeto con status
   // Si es error HTTP pero el body tiene estructura, lo devolvemos como ErrorResponse
   if (!response.ok && !data.status) {
+    // Si el backend devolvió un error estructurado con mensaje amigable, usarlo directamente
+    // (p.ej. EXECUTABLE_NOT_ALLOWED o PAYLOAD_TOO_LARGE que ya vienen en español)
+    if (data.error?.message) {
+      throw new Error(data.error.message);
+    }
     const friendlyErrors: Record<number, string> = {
       401: 'Tu sesión ha expirado. Vuelve a iniciar sesión.',
       403: 'No tienes permiso para realizar esta acción.',
@@ -66,6 +72,52 @@ export async function submitIntake(payload: IntakePayload): Promise<IntakeRespon
  */
 export async function confirmIntake(payload: ConfirmationPayload): Promise<IntakeResponse> {
   return post<IntakeResponse>('/intake/confirm', payload);
+}
+
+/**
+ * Envía la respuesta a la pregunta aclaratoria para re-clasificar.
+ */
+export async function clarifyIntake(
+  sessionId: string,
+  question: string,
+  answer: string
+): Promise<IntakeResponse> {
+  const payload: ConfirmationPayload = {
+    session_id: sessionId,
+    action: 'clarify',
+    edited_description: null,
+    additional_attachments: [],
+    timestamp: new Date().toISOString(),
+    clarification_question: question,
+    clarification_answer: answer,
+  };
+  return post<IntakeResponse>('/intake/confirm', payload);
+}
+
+/**
+ * Cancela una sesión de intake activa. No lanza error si falla — best-effort.
+ */
+export async function cancelIntake(sessionId: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    await fetch(`${API_BASE}/intake/session?session_id=${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE',
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    console.error('[cancelIntake] Error al cancelar sesión:', err);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**

@@ -183,9 +183,369 @@
       "priority": 2,
       "block": "gmao",
       "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 2,
+      "block": "gmao",
+      "module": "*",
       "need": "*",
       "solution": "Expertis / Movilsat ERP",
       "assignee": "gmao_general"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "campo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "sacarcampo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "proceso",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_procesos"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "personalizacion",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_medida"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "infor",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "modificar-informe",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "importdatos",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 2,
+      "block": "ventas_facturacion",
+      "module": "*",
+      "need": "*",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "logistica_formacion"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "campo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "sacarcampo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "proceso",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_procesos"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "personalizacion",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_medida"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "infor",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "modificar-informe",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "importdatos",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 2,
+      "block": "compras",
+      "module": "*",
+      "need": "*",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "logistica_formacion"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "campo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "sacarcampo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "proceso",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_procesos"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "personalizacion",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_medida"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "infor",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "modificar-informe",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "importdatos",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 2,
+      "block": "almacen_stocks",
+      "module": "*",
+      "need": "*",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "logistica_formacion"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "campo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "sacarcampo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "proceso",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_procesos"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "personalizacion",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_medida"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "infor",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "modificar-informe",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "importdatos",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 2,
+      "block": "obras",
+      "module": "*",
+      "need": "*",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "obras_formacion"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "campo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "sacarcampo",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_campos"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "proceso",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_procesos"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "personalizacion",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_medida"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "infor",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "modificar-informe",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_informes"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "importdatos",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 2,
+      "block": "financiero",
+      "module": "*",
+      "need": "error",
+      "solution": "Expertis / Movilsat ERP",
+      "assignee": "soporte_errores_expertis"
     },
     {
       "priority": 2,
@@ -252,6 +612,22 @@
       "assignee": "otras_operativa"
     },
     {
+      "priority": 2,
+      "block": "academia",
+      "module": "*",
+      "need": "*",
+      "solution": "Academia Cobertec",
+      "assignee": "academia_operativa"
+    },
+    {
+      "priority": 2,
+      "block": "ecommerce",
+      "module": "*",
+      "need": "*",
+      "solution": "Ecommerce / Web",
+      "assignee": "ecommerce_operativa"
+    },
+    {
       "_comment": "── PRIORIDAD 3: Genéricas por need — solo aplican cuando ningún bloque específico matcheó ──"
     },
     {
@@ -277,6 +653,15 @@
       "need": "error",
       "solution": "Expertis / Movilsat ERP",
       "assignee": "soporte_errores_expertis"
+    },
+    {
+      "priority": 3,
+      "nature": "importacion_exportacion",
+      "block": "*",
+      "module": "*",
+      "need": "*",
+      "solution": "*",
+      "assignee": "desarrollo_exportaciones"
     },
     {
       "priority": 3,
@@ -328,6 +713,7 @@
     "desarrollo_exportaciones": "Desarrollo exportaciones",
     "desarrollo_medida": "Desarrollo a medida",
     "desarrollo_procesos": "Desarrollo procesos",
+    "logistica_formacion": "Logística formación",
     "financiero_formacion": "Financiero formación",
     "formacion_general": "Formación general",
     "gmao_formacion": "GMAO formación",
@@ -354,7 +740,9 @@
     "soporte_sesiones_generales": "Soporte sesiones generales",
     "solucionesia_operativa": "Soluciones IA operativa",
     "tarifas_operativa": "Tarifas operativa",
-    "otras_operativa": "Otras operativa"
+    "otras_operativa": "Otras operativa",
+    "academia_operativa": "Academia Cobertec",
+    "ecommerce_operativa": "Ecommerce / Web"
   },
   "default_assignee": "soporte_errores_expertis",
   "review_status_overrides": {

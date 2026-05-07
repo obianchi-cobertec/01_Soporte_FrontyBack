@@ -29,16 +29,15 @@ const ClassificationSchema = z.object({
   suggested_priority: z.enum(PRIORITY_VALUES),
   suggested_assignee: z.string().nullable(),
   reasoning: z.string().min(1),
-});
-
-export type ValidationResult =
-  | { success: true; data: Omit<ClassificationResponse, 'session_id'> }
-  | { success: false; errors: string[]; raw: string };
+  alternative_solutions: z.array(z.string()).default([]),
+}).passthrough(); // ignora campos extra que el LLM pueda devolver
 
 export function validateClassificationResponse(
   raw: string,
   sessionId: string
-): { success: true; data: ClassificationResponse } | { success: false; errors: string[]; raw: string } {
+):
+  | { success: true; data: ClassificationResponse }
+  | { success: false; errors: string[]; raw: string } {
   let cleaned = raw.trim();
   if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
   else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
@@ -81,7 +80,6 @@ export function validateClassificationResponse(
   }
 
   // Corrección: si solution = Comercial → marcar out_of_map
-  // Va antes de la coherencia para que no sea sobreescrito por confidence=high → auto_ok
   if (data.solution_associated === 'Comercial') {
     data.review_status = 'out_of_map';
     if (data.confidence === 'high') {
@@ -135,5 +133,6 @@ export function buildFallbackResponse(
     suggested_priority: 'normal',
     suggested_assignee: 'soporte_errores_expertis',
     reasoning: 'Fallback: el motor IA no pudo clasificar este caso. Requiere revisión humana completa.',
+    alternative_solutions: [],
   };
 }

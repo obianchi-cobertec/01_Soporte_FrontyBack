@@ -148,7 +148,8 @@
         "decision_rules": [
           "Usar cuando el cliente necesita guía operativa sobre un proceso.",
           "Priorizar sobre consulta funcional si la pregunta es procedural.",
-          "No usar si el problema es que algo falla realmente."
+          "No usar si el problema es que algo falla realmente.",
+          "Si el usuario pregunta cómo funciona un proceso de negocio y necesita que le expliquen los pasos → formacion_duda_uso, aunque use palabras como 'por qué' o 'cómo se actualiza'"
         ],
         "confusion_with": [
           "consulta_funcional",
@@ -628,7 +629,11 @@
           "factura impresa",
           "presupuesto impreso",
           "columna",
-          "filtro"
+          "filtro",
+          "parte de trabajo",
+          "número de orden",
+          "mostrar en parte",
+          "nº ot en parte"
         ],
         "keywords_negative": [
           "login",
@@ -1438,7 +1443,13 @@
           "openvpn",
           "open vpn",
           "vpn error",
-          "aviso vpn"
+          "aviso vpn",
+          "mail",
+          "correo",
+          "panel de correo",
+          "webmail",
+          "cuenta de correo",
+          "dominio correo"
         ],
         "keywords_negative": [
           "factura",
@@ -1549,6 +1560,52 @@
         "examples": [
           "hay un problema",
           "revisad esto"
+        ]
+      },
+      {
+        "id": "ecommerce_web",
+        "label": "Ecommerce / Web",
+        "description": "Tienda online, web corporativa, integraciones con plataformas ecommerce (Shopware, WooCommerce, PrestaShop) y sincronización de pedidos online con el ERP.",
+        "keywords_positive": [
+          "shopware",
+          "woocommerce",
+          "prestashop",
+          "tienda online",
+          "pedido online",
+          "ecommerce",
+          "web",
+          "pasarela de pago",
+          "bizum",
+          "carrito",
+          "plugin",
+          "sincronización web",
+          "pedido web",
+          "no pasa al erp",
+          "no llega al erp"
+        ],
+        "keywords_negative": [
+          "factura",
+          "pedido de compra",
+          "almacén",
+          "stock"
+        ],
+        "confusion_with": [
+          "importacion_exportacion",
+          "ventas_facturacion"
+        ],
+        "decision_rules": [
+          "Usar cuando el problema involucra una tienda online o integración ecommerce con el ERP",
+          "Shopware, WooCommerce, PrestaShop → siempre ecommerce_web",
+          "Pedido online que no pasa al ERP → ecommerce_web, no importacion_exportacion"
+        ],
+        "examples_positive": [
+          "el pedido de Shopware no llega al ERP",
+          "problema con la tienda online",
+          "la integración con WooCommerce falla"
+        ],
+        "examples": [
+          "pedido Shopware no pasa al ERP",
+          "problema tienda online"
         ]
       }
     ]

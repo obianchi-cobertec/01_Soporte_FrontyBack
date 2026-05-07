@@ -16,17 +16,20 @@ export function resolveAssignee(classification: ClassificationResponse): string 
   const module = classification.redmine_mapping.module;
   const need = classification.redmine_mapping.need;
   const solution = classification.solution_associated;
+  const nature = classification.classification.nature;
 
   // Ordenar por prioridad ascendente (menor = más específica)
   const sorted = [...rules].sort((a, b) => a.priority - b.priority);
 
   for (const rule of sorted) {
+    if (!rule.assignee) continue; // ignorar objetos de comentario sin assignee
     const matchBlock = rule.block === '*' || rule.block === block;
     const matchModule = rule.module === '*' || rule.module === module;
     const matchNeed = rule.need === '*' || rule.need === need;
-    const matchSolution = !rule.solution || rule.solution === solution;
+    const matchSolution = !rule.solution || rule.solution === '*' || rule.solution === solution;
+    const matchNature = !rule.nature || rule.nature === '*' || rule.nature === nature;
 
-    if (matchBlock && matchModule && matchNeed && matchSolution) {
+    if (matchBlock && matchModule && matchNeed && matchSolution && matchNature) {
       return rule.assignee;
     }
   }

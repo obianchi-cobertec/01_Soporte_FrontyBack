@@ -656,6 +656,15 @@
     },
     {
       "priority": 3,
+      "nature": "importacion_exportacion",
+      "block": "*",
+      "module": "*",
+      "need": "*",
+      "solution": "*",
+      "assignee": "desarrollo_exportaciones"
+    },
+    {
+      "priority": 3,
       "block": "*",
       "module": "*",
       "need": "formacion",

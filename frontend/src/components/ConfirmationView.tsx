@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import type { ClassifiedResponse } from '../types';
+import type { ClassifiedResponse, BillingAcceptance } from '../types';
+import { CancelConfirm } from './CancelConfirm';
 
 interface ConfirmationViewProps {
   data: ClassifiedResponse;
-  onConfirm: () => void;
+  onConfirm: (billingAcceptance?: BillingAcceptance | null) => void;
   onEdit: () => void;
+  onCancel: () => void;
   disabled?: boolean;
 }
 
@@ -31,13 +33,20 @@ const DOMAIN_LABELS: Record<string, string> = {
   dominio_no_claro: 'Pendiente de clasificar',
 };
 
-/** Necesidades que implican coste para el cliente */
-const BILLABLE_NEEDS = new Set(['campo', 'sacarcampo', 'infor', 'modificar-informe']);
-
-export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: ConfirmationViewProps) {
+export function ConfirmationView({ data, onConfirm, onEdit, onCancel, disabled = false }: ConfirmationViewProps) {
   const areaLabel = DOMAIN_LABELS[data.display.estimated_area] ?? data.display.estimated_area;
-  const isBillable = data.display.need != null && BILLABLE_NEEDS.has(data.display.need);
+  const billable = data.billable;
+  const isBillable = billable?.is_billable === true;
   const [costAccepted, setCostAccepted] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  function handleConfirm() {
+    if (isBillable && costAccepted) {
+      onConfirm({ accepted: true, accepted_at: new Date().toISOString() });
+    } else {
+      onConfirm();
+    }
+  }
 
   return (
     <div className="confirmation-view">
@@ -73,13 +82,10 @@ export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: 
         )}
       </div>
 
-      {isBillable && (
+      {isBillable && billable && (
         <div className="cost-warning">
           <div className="cost-warning-icon">€</div>
-          <p className="cost-warning-text">
-            Este tipo de petición tiene un coste mínimo de <strong>120 €</strong>. 
-            En caso de que el precio sea mayor, se lo indicaremos para su aprobación.
-          </p>
+          <p className="cost-warning-text">{billable.notice_text}</p>
           <label className="cost-warning-check">
             <input
               type="checkbox"
@@ -98,7 +104,7 @@ export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: 
 
       <div className="confirmation-actions">
         <button
-          onClick={onConfirm}
+          onClick={handleConfirm}
           disabled={disabled || (isBillable && !costAccepted)}
           className="btn-primary"
         >
@@ -108,6 +114,23 @@ export function ConfirmationView({ data, onConfirm, onEdit, disabled = false }: 
           Editar
         </button>
       </div>
+
+      {showCancelConfirm ? (
+        <CancelConfirm
+          onConfirm={onCancel}
+          onDismiss={() => setShowCancelConfirm(false)}
+        />
+      ) : (
+        <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={() => setShowCancelConfirm(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--color-text-hint)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline', padding: '0.25rem' }}
+          >
+            Cancelar incidencia
+          </button>
+        </div>
+      )}
     </div>
   );
 }

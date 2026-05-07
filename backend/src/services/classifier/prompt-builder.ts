@@ -241,7 +241,8 @@ Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
   "review_status": "auto_ok | review_recommended | ambiguous | out_of_map | human_required",
   "suggested_priority": "normal | high | urgent",
   "suggested_assignee": "string — rol funcional id según tabla (ej: soporte_errores_expertis, gmao_formacion...)",
-  "reasoning": "string — dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada"
+  "reasoning": "string — dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada",
+  "alternative_solutions": ["string"] — otras soluciones que consideraste antes de elegir solution_associated. Array vacío [] si la elección fue clara. Incluir solo soluciones con señales reales en la descripción, no especulativas.
 }
 
 ## REGLAS DE CONFIANZA
@@ -259,7 +260,8 @@ Responde SOLO con un objeto JSON válido. Sin texto adicional, sin markdown.
 - Siempre devuelve TODOS los campos.
 - suggested_assignee NUNCA puede ser null — usa "${defaultAssignee}" (${defaultRolNombre}) si no hay regla.
 - No inventes información que no esté en la descripción.
-- reasoning debe mencionar: dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada.`;
+- reasoning debe mencionar: dominio elegido y por qué, solución elegida, módulo Expertis si aplica, need aplicado, regla de asignación usada.
+- alternative_solutions debe incluir cualquier solución que tuvieras en consideración con señales reales en la descripción, aunque la hayas descartado. Si la descripción menciona keywords de BI, App Fichajes, Planificador, Soluciones IA, Portal OT, Academia, Ecommerce u otras soluciones concretas además de Movilsat ERP, inclúyelas aquí.`;
 }
 
 export function buildUserPrompt(request: ClassificationRequest): string {
@@ -275,6 +277,10 @@ ${request.description}
 
   if (request.attachment_names.length > 0) {
     prompt += `\n- Archivos adjuntos: ${request.attachment_names.join(', ')}`;
+  }
+
+  if (request.clarification) {
+    prompt += `\n\n## ⚠ ACLARACIÓN PRIORITARIA — LEER ANTES DE CLASIFICAR\n\nEl usuario ha respondido una pregunta aclaratoria. Esta respuesta es la información MÁS IMPORTANTE para la clasificación y DEBE PREVALECER sobre cualquier inferencia de la descripción original.\n\n**Pregunta formulada:** ${request.clarification.question}\n**Respuesta del usuario:** ${request.clarification.answer}\n\nINSTRUCCIÓN OBLIGATORIA: Reclasifica basándote principalmente en esta respuesta. Si indica que el problema es en el programa de gestión (ERP/ordenador de oficina), clasifica solution_associated como "Expertis / Movilsat ERP" aunque la descripción original mencione móviles u otros dispositivos. Si indica móvil o tablet de técnicos, clasifica como "Movilsat". La respuesta del usuario corrige y tiene prioridad sobre la descripción original.`;
   }
 
   prompt += `\n\nClasifica esta incidencia siguiendo el flujo de decisión. Responde SOLO con JSON válido.`;

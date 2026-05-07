@@ -7,17 +7,20 @@ import { CompanySelector } from './components/CompanySelector';
 import { AdminPanel } from './components/AdminPanel';
 import { RequestsPanel } from './pages/RequestsPanel';
 import { RequestAccessPage } from './pages/RequestAccessPage';
+import { ReviewPage } from './pages/ReviewPage';
 import ConfigPanel from './pages/ConfigPanel';
+import { PendingReviewsPanel } from './pages/PendingReviewsPanel';
+import { ConfigProposalsPanel } from './pages/ConfigProposalsPanel';
 import { IntakeForm } from './components/IntakeForm';
 import { ConfirmationView } from './components/ConfirmationView';
-import { DynamicQuestions } from './components/DynamicQuestions';
+import { ClarifyingQuestion } from './components/ClarifyingQuestion';
 import { TicketResult } from './components/TicketResult';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Loading } from './components/Loading';
 import { StepIndicator } from './components/StepIndicator';
 import { Dashboard } from './components/Dashboard';
 import { ChangePasswordPage } from './components/ChangePasswordPage';
-import { submitIntake, confirmIntake } from './services/api';
+import { submitIntake, confirmIntake, clarifyIntake, cancelIntake } from './services/api';
 import { generateSessionId } from './utils/session';
 import { authenticatedFetch } from './services/auth-api';
 import type {
@@ -25,24 +28,30 @@ import type {
   Attachment,
   ClassifiedResponse,
   CreatedResponse,
-  DynamicQuestion,
+  ClarifyingQuestion as ClarifyingQuestionType,
+  BillingAcceptance,
 } from './types';
 import type { CompanyDTO } from './auth-types';
 
-type Page = 'intake' | 'dashboard' | 'admin' | 'config' | 'requests';
-type PublicView = 'forgot-password' | 'reset-password' | 'request-access' | null;
+type Page = 'intake' | 'dashboard' | 'admin' | 'config' | 'requests' | 'pending-reviews' | 'config-proposals';
+type PublicView = 'forgot-password' | 'reset-password' | 'request-access' | 'review' | null;
 
 export default function App() {
   const { authState, isLoading: authLoading, logout, selectCompany } = useAuth();
 
-  // Vista pública: se inicializa desde la URL (para reset-password con ?token=)
+  // Vista pública: se inicializa desde la URL (para reset-password con ?token= y /review?t=)
   const [publicView, setPublicView] = useState<PublicView>(() => {
+    const params = new URLSearchParams(window.location.search);
     if (window.location.pathname === '/solicitar-acceso') return 'request-access';
-    if (new URLSearchParams(window.location.search).has('token')) return 'reset-password';
+    if (window.location.pathname === '/review' && params.has('t')) return 'review';
+    if (params.has('token')) return 'reset-password';
     return null;
   });
   const [resetToken] = useState<string>(() =>
     new URLSearchParams(window.location.search).get('token') ?? '',
+  );
+  const [reviewToken] = useState<string>(() =>
+    new URLSearchParams(window.location.search).get('t') ?? '',
   );
 
   const handleResetDone = useCallback(() => {
@@ -55,7 +64,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [classifiedData, setClassifiedData] = useState<ClassifiedResponse | null>(null);
   const [createdData, setCreatedData] = useState<CreatedResponse | null>(null);
-  const [questions, setQuestions] = useState<DynamicQuestion[]>([]);
+  const [clarifyingQuestion, setClarifyingQuestion] = useState<ClarifyingQuestionType | null>(null);
+  const [isClarifying, setIsClarifying] = useState(false);
   const [lastDescription, setLastDescription] = useState('');
   const [lastAttachments, setLastAttachments] = useState<Attachment[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -63,6 +73,7 @@ export default function App() {
 
   const sessionIdRef = useRef(generateSessionId());
   const isSuperAdmin = authState.user?.is_superadmin ?? false;
+  const isSupportLead = authState.user?.is_support_lead ?? false;
 
   // Superadmin entra directo a Configuración IA
   useEffect(() => {
@@ -88,7 +99,8 @@ export default function App() {
     setError(null);
     setClassifiedData(null);
     setCreatedData(null);
-    setQuestions([]);
+    setClarifyingQuestion(null);
+    setIsClarifying(false);
     setLastDescription('');
     setLastAttachments([]);
     setSuperadminCompany(null);
@@ -122,9 +134,9 @@ export default function App() {
 
       if (response.status === 'classified') {
         setClassifiedData(response);
-        if (response.questions && response.questions.length > 0) {
-          setQuestions(response.questions);
-          setStep('questions');
+        if (response.clarifying_question) {
+          setClarifyingQuestion(response.clarifying_question);
+          setStep('clarifying');
         } else {
           setStep('confirmation');
         }
@@ -138,15 +150,38 @@ export default function App() {
     }
   }, [authState, isSuperAdmin, superadminCompany]);
 
-  const handleQuestionsSubmit = useCallback((_answers: Record<string, string>) => {
-    setStep('confirmation');
-  }, []);
+  const handleClarifyAnswer = useCallback(async (answer: string) => {
+    if (!classifiedData?.clarifying_question) return;
 
-  const handleQuestionsSkip = useCallback(() => {
-    setStep('confirmation');
-  }, []);
+    const question = classifiedData.clarifying_question.question;
+    setIsClarifying(true);
+    setError(null);
 
-  const handleConfirm = useCallback(async () => {
+    try {
+      const response = await clarifyIntake(sessionIdRef.current, question, answer);
+
+      if (response.status === 'classified') {
+        setClassifiedData(response);
+        if (response.clarifying_question) {
+          setClarifyingQuestion(response.clarifying_question);
+          setStep('clarifying');
+        } else {
+          setClarifyingQuestion(null);
+          setStep('confirmation');
+        }
+      } else if (response.status === 'error') {
+        setError(response.error_message);
+        setStep('error');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error de conexión con el servidor');
+      setStep('error');
+    } finally {
+      setIsClarifying(false);
+    }
+  }, [classifiedData]);
+
+  const handleConfirm = useCallback(async (billingAcceptance?: BillingAcceptance | null) => {
     setStep('creating');
     setError(null);
 
@@ -157,6 +192,7 @@ export default function App() {
         edited_description: null,
         additional_attachments: [],
         timestamp: new Date().toISOString(),
+        billing_acceptance: billingAcceptance ?? null,
       });
 
       if (response.status === 'created') {
@@ -176,6 +212,11 @@ export default function App() {
     setStep('form');
   }, []);
 
+  const handleCancelIntake = useCallback(async () => {
+    await cancelIntake(sessionIdRef.current);
+    resetFlow();
+  }, [resetFlow]);
+
   const handleRetry = useCallback(() => {
     if (lastDescription) {
       setStep('form');
@@ -188,6 +229,10 @@ export default function App() {
 
   if (publicView === 'request-access') {
     return <RequestAccessPage />;
+  }
+
+  if (publicView === 'review') {
+    return <ReviewPage token={reviewToken} />;
   }
 
   if (publicView === 'reset-password') {
@@ -327,6 +372,22 @@ export default function App() {
                 Configuración IA
               </button>
             )}
+            {(isSupportLead || isSuperAdmin) && (
+              <button
+                className={`nav-link${page === 'pending-reviews' ? ' nav-link-active' : ''}`}
+                onClick={() => setPage('pending-reviews')}
+              >
+                Revisiones
+              </button>
+            )}
+            {(isAdmin || isSuperAdmin || isSupportLead) && (
+              <button
+                className={`nav-link${page === 'config-proposals' ? ' nav-link-active' : ''}`}
+                onClick={() => setPage('config-proposals')}
+              >
+                Propuestas IA
+              </button>
+            )}
             <div className="nav-divider" />
             <button className="nav-link nav-link-logout" onClick={logout}>
               Salir
@@ -335,13 +396,17 @@ export default function App() {
         </div>
       </header>
 
-      <main className={`app-main${(page === 'admin' || page === 'config' || page === 'requests') ? ' app-main-wide' : ''}`}>
+      <main className={`app-main${(page === 'admin' || page === 'config' || page === 'requests' || page === 'pending-reviews' || page === 'config-proposals') ? ' app-main-wide' : ''}`}>
         {page === 'admin' ? (
           <AdminPanel onBack={resetFlow} />
         ) : page === 'requests' ? (
           <RequestsPanel />
         ) : page === 'config' ? (
           <ConfigPanel />
+        ) : page === 'pending-reviews' ? (
+          <PendingReviewsPanel />
+        ) : page === 'config-proposals' ? (
+          <ConfigProposalsPanel />
         ) : page === 'dashboard' ? (
           <Dashboard onBack={resetFlow} />
         ) : (
@@ -389,11 +454,12 @@ export default function App() {
 
               {step === 'loading' && <Loading message="Analizando tu consulta..." />}
 
-              {step === 'questions' && questions.length > 0 && (
-                <DynamicQuestions
-                  questions={questions}
-                  onSubmit={handleQuestionsSubmit}
-                  onSkip={handleQuestionsSkip}
+              {step === 'clarifying' && clarifyingQuestion && (
+                <ClarifyingQuestion
+                  question={clarifyingQuestion}
+                  onAnswer={handleClarifyAnswer}
+                  onCancel={handleCancelIntake}
+                  loading={isClarifying}
                 />
               )}
 
@@ -402,6 +468,7 @@ export default function App() {
                   data={classifiedData}
                   onConfirm={handleConfirm}
                   onEdit={handleEdit}
+                  onCancel={handleCancelIntake}
                 />
               )}
 

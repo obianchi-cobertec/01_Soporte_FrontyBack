@@ -65,7 +65,18 @@ Frontend (React :5173)
     │                                        └─► ticket_id + ticket_url
     │
     ├─ POST /api/intake/confirm  ─────► [Auth Plugin] → ClassifierService (re-classify)
-    │   action='edit'
+    │   action='edit'                        │ Reset clarification state, re-clasifica
+    │                                        └─► ClassifiedResponse (puede incluir nueva pregunta)
+    │
+    ├─ POST /api/intake/confirm  ─────► [Auth Plugin] → ClassifierService (re-classify con contexto)
+    │   action='clarify'                     │ Re-clasifica con { question, answer } del usuario
+    │                                        │ Solo una iteración de clarify por sesión
+    │                                        └─► ClassifiedResponse (clarifying_question: null)
+    │
+    ├─ DELETE /api/intake/session ────► [Auth Plugin] → sessionStore.delete(session_id)
+    │   ?session_id=xxx                      │ Borra la sesión del Map en memoria
+    │   (requiere company en token)          │ Loguea evento intake_cancelled
+    │                                        └─► { ok: true } (idempotente)
     │
     ├─ GET /api/config/redmine-users ──► Llama Redmine API, filtra @cobertec.com
     │   (requiere admin o superadmin)        └─► Lista de usuarios internos con id, login, name
@@ -99,6 +110,11 @@ El backend mantiene un `Map<session_id, SessionState>` en memoria. Cada sesión 
 - `intake`: payload original del usuario
 - `classification`: última clasificación del LLM
 - `attempt`: número de re-clasificaciones
+- `clarification_attempted`: flag que impide bucles (solo una iteración de clarify por sesión)
+- `clarification?`: `{ question, answer }` si el usuario respondió la pregunta (se incluye en la descripción del ticket)
+- `clarifying_question_reason`: reason del último `ClarifyingQuestion` generado (para detectar el caso especial `heuristic_solution_confirm + "No"`)
+
+La sesión se elimina del Map al confirmar el ticket (`action='confirm'`) o al cancelar (`DELETE /api/intake/session`).
 
 El session_id lo genera el frontend (UUID v4) y viaja en cada request.
 
@@ -126,14 +142,17 @@ El auth plugin (`plugins/auth.ts`) decora cada request con:
 
 ### `backend/src/types.ts`
 **Los contratos de datos del sistema de intake.** Define todos los tipos TypeScript:
-- `Nature` — 10 valores posibles del tipo de problema
-- `Domain` — 21 valores del área de negocio afectada (incluyendo `academia_cobertec` y `ecommerce_web` recientes)
-- `Solution` — 12 productos de Cobertec posibles (incluyendo Academia Cobertec y Ecommerce/Web)
-- `ExpertisModule` — 12 módulos del ERP
-- `Classification`, `ClassificationResponse` — salida del LLM
-- `IntakePayload`, `ConfirmationPayload` — entradas del usuario
+- `NATURE_VALUES`, `SOLUTION_VALUES`, `EXPERTIS_MODULE_VALUES`, `CONFIDENCE_VALUES`, `REVIEW_STATUS_VALUES`, `PRIORITY_VALUES` — constantes `as const` usadas por Zod en `response-validator.ts`
+- `Nature`, `Solution`, `ExpertisModule`, `Confidence`, `ReviewStatus`, `Priority` — tipos derivados de las constantes
+- `ClarifyingQuestion` — `{ question: string; options: string[] | null; reason: string }` — pregunta única generada por el LLM (null = no hay pregunta)
+- `ClassificationRequest` — entrada al `ClassifierService`; incluye `clarification?: { question, answer }` para re-clasificación tras aclaración
+- `ClassificationResponse` — salida del LLM; `nature` y `domain` anidados en sub-objeto `classification`; incluye `alternative_solutions: string[]` (soluciones que el LLM consideró antes de elegir, array vacío si la elección fue clara)
+- `ConfirmationPayload` — entrada del `/confirm`; `action: 'confirm' | 'edit' | 'clarify'`; campos opcionales `clarification_answer?` y `clarification_question?` para action='clarify'
+- `ClassifiedResponse` — respuesta al frontend tras clasificar; incluye `clarifying_question: ClarifyingQuestion | null`
+- `FlowStep` — `'form' | 'loading' | 'clarifying' | 'confirmation' | 'creating' | 'done' | 'error'`
+- `IntakePayload` — entrada del `/submit`
 - `IntakeResponse` (union: `ClassifiedResponse | CreatedResponse | ErrorResponse`) — respuesta del backend al frontend
-- `IntakeEvent`, `EventType` — eventos del event store
+- `EventType` — incluye `clarifying_question_generated`, `clarifying_question_answered`, `unassignable_fallback_applied`, `intake_cancelled`
 
 **Regla importante:** frontend (`frontend/src/types.ts`) es un subconjunto espejo de este archivo. Si cambias los contratos en backend, actualizar frontend también.
 
@@ -248,13 +267,33 @@ Validación superficial de estructura (solo verifica claves de primer nivel). El
 **Nota:** hay `console.log('[config GET] Reading:', filePath)` tanto en el GET como en el PUT — son debug logs a eliminar antes de producción.
 
 ### `backend/src/routes/intake.ts`
-Dos rutas principales:
-- `POST /api/intake/submit` — valida payload, llama classifier, genera preguntas dinámicas, guarda en session store, devuelve `ClassifiedResponse`
-- `POST /api/intake/confirm` — si `action='edit'`: re-clasifica; si `action='confirm'`: crea ticket en Redmine y limpia sesión
+Tres rutas:
+- `POST /api/intake/submit` — valida payload, llama classifier, genera `ClarifyingQuestion` via `question-generator.ts`, guarda en session store, devuelve `ClassifiedResponse` con la pregunta
+- `POST /api/intake/confirm` — tres acciones:
+  - `action='clarify'`: re-clasifica incluyendo `{ question, answer }` en el prompt; caso especial si `reason='heuristic_solution_confirm'` y respuesta es "No" (devuelve follow-up de texto libre); impide bucles (`clarification_attempted` flag)
+  - `action='edit'`: actualiza descripción, reset del estado de clarificación, re-clasifica; puede generar nueva pregunta
+  - `action='confirm'`: sube adjuntos, crea ticket Redmine (pasando `clarification?`), loguea eventos, limpia sesión
+- `DELETE /api/intake/session?session_id=xxx` — cancela y elimina la sesión del Map; requiere `requireAuth()` + `requireCompany()`; responde `{ ok: true }` siempre (idempotente); loguea `intake_cancelled`
 
-Ambas rutas llaman `request.requireCompany()` — el intake requiere un token JWT con empresa seleccionada. El `user_id`, `company_id` y `company_name` del payload se sobreescriben siempre con los valores del token (nunca se confía en el body del cliente).
+Todas las rutas llaman `request.requireCompany()`. El `user_id`, `company_id` y `company_name` se sobreescriben siempre con los valores del JWT.
 
-**Nota:** hay debug `console.log` en las líneas 262-266 y 293 que imprimen datos de clasificación y errores Redmine. Eliminar antes de producción.
+Eventos logueados: `clarifying_question_generated`, `clarifying_question_answered`, `unassignable_fallback_applied`, `intake_cancelled`.
+
+### `config/cobertec-users.json` y `docs/redmine-users.md`
+
+**Fuente de verdad de los usuarios internos de Cobertec en Redmine.** Estos dos archivos son espejos: el `.json` para uso programático del backend, el `.md` para consulta humana. Contienen ID Redmine, login, nombre real y email de cada usuario `@cobertec.com`.
+
+- **Cualquier ID en `config/redmine-mapping.json` → `role_to_user_id` o `default_assignee_id` debe existir en `cobertec-users.json`.** El backend valida esto al arranque y emite warning si hay IDs huérfanos (ver `services/redmine/identity-validator.ts`).
+- **Cuando se añade o quita personal en Cobertec:** actualizar AMBOS archivos antes de tocar `role_to_user_id`.
+- **No reproducir esta lista en otros lugares de la documentación** — referenciar siempre estos archivos como fuente única.
+
+### `backend/src/services/redmine/identity-validator.ts`
+
+Módulo de validación de configuración Redmine al arranque. Dos funciones:
+- `validateRedmineMapping(mapping)` — comprueba que todos los IDs en `role_to_user_id`, `default_assignee_id` y `unassignable_fallback_assignee_id` existen en `cobertec-users.json`. Devuelve `{ valid, orphanIds }`.
+- `lookupCobertecUser(id)` — devuelve el objeto `{ id, login, name, email }` de un usuario por ID, o `null` si no existe.
+
+Se llama desde `index.ts` al arranque (tras `app.listen()`). Si hay IDs huérfanos: `console.warn` con detalle. Si todo OK: `console.log` de confirmación. **No lanza excepción** — un ID huérfano no debe romper el arranque.
 
 ### `backend/scripts/` — Scripts de utilidad
 
@@ -276,30 +315,43 @@ Ejecutar cualquier script desde el directorio `backend/`:
 cd backend && npx tsx scripts/<nombre>.ts
 ```
 
+### `backend/src/services/classifier/assignee-resolver.ts`
+Resolución **determinista** del assignee: lee `assignment-rules.json` y aplica las reglas (ordenadas por `priority` ascendente) sobre `block`, `module`, `need`, y opcionalmente `solution`. La primera regla que hace match devuelve el `assignee`. Si ninguna hace match, devuelve `default_assignee`. Esto garantiza que el asignado siempre sea correcto independientemente del assignee que el LLM haya devuelto.
+
+Nota: en `classifier/index.ts`, después de `validateClassificationResponse()`, se sobreescribe `validation.data.suggested_assignee` con `resolveAssignee(validation.data)`.
+
 ### `backend/src/services/classifier/prompt-builder.ts`
 Construye dos prompts:
-1. **System prompt** — vuelca taxonomy completa (nature + domain con keywords, ejemplos, reglas) + need_resolution + assignment roles
-2. **User prompt** — descripción del usuario + company_name + lista de adjuntos
+1. **System prompt** — vuelca taxonomy completa (nature + domain con keywords, señales positivas/negativas, ejemplos, reglas) + soluciones con pesos + módulos Expertis + domain→block mapping + need catalogue + reglas de asignación. El JSON schema pedido al LLM incluye el campo `alternative_solutions: ["string"]` con instrucción explícita en REGLAS FINALES para declarar soluciones alternativas con señales reales.
+2. **User prompt** — descripción del usuario + company_name + lista de adjuntos. Si hay `request.clarification`, añade sección `## ⚠ ACLARACIÓN PRIORITARIA — LEER ANTES DE CLASIFICAR` con instrucción explícita de que la respuesta del usuario prevalece sobre la descripción original (incluye regla específica ERP vs Movilsat App).
 
 ### `backend/src/services/classifier/response-validator.ts`
-Valida la respuesta JSON del LLM con Zod. También aplica **coherencia**:
+Valida la respuesta JSON del LLM con Zod. Aplica **coherencia**:
+- `solution ≠ Expertis` → `expertis_module = null`
+- `solution = Expertis` y `expertis_module = null` → fuerza `'general'`
+- `solution = Comercial` → `review_status = 'out_of_map'`, confidence baja a `'medium'` si era `'high'`
 - `confidence:high` → fuerza `review_status:'auto_ok'`
-- `confidence:low` → fuerza `review_status:'review_recommended'` como mínimo
-- Si el JSON falla parsing → genera una clasificación fallback (ambiguo, low confidence, human_required)
+- `confidence:medium/low` → fuerza `review_status:'review_recommended'` si era `'auto_ok'`
+- `alternative_solutions: z.array(z.string()).default([])` — si el LLM no lo devuelve o es null, defaultea a `[]`
+
+Usa `.passthrough()` para ignorar campos extra. `buildFallbackResponse()` incluye `alternative_solutions: []`.
+
+Si el JSON falla parsing → genera clasificación fallback (ambiguo, low confidence, human_required).
 
 ### `backend/src/services/redmine/index.ts`
 Dos implementaciones del cliente Redmine:
 
 **`RedmineClient`** (real, con `REDMINE_URL` + `REDMINE_API_KEY`):
-- `createTicket(intake, classification)`: orquesta el flujo completo de creación
-  1. `uploadAttachments()` — sube todos los adjuntos **en paralelo** (`Promise.all`); los que fallan se omiten
-  2. Resuelve el `projectId` via `mapping.company_to_project[intake.company_id]` → fallback `_default` → fallback hardcoded `'cobertec-intake-test'`
-  3. `buildIssuePayload()` — construye el payload completo:
+- `createTicket(intake, classification, clarification?)`: orquesta el flujo completo de creación
+  1. Detecta **caso inasignable**: `suggested_assignee` no resuelve en `role_to_user_id` AND (`domain === 'dominio_no_claro'` OR `nature === 'ambiguo'`). Si es inasignable, usa `mapping.redmine_defaults.unassignable_fallback_assignee_id` (actualmente `null`) y loguea `unassignable_fallback_applied`.
+  2. `uploadAttachments()` — sube todos los adjuntos **en paralelo** (`Promise.all`); los que fallan se omiten
+  3. Resuelve el `projectId` via `mapping.company_to_project[intake.company_id]` → fallback `_default` → fallback hardcoded `'cobertec-intake-test'`
+  4. `buildIssuePayload()` — construye el payload completo:
      - Normaliza `solution_associated` con tabla `SOLUTION_NORMALIZE` (ej: 'Expertis / Movilsat ERP' → 'expertis')
      - Normaliza `expertis_module` con tabla `MODULE_NORMALIZE`
-     - Resuelve assignee: `role_to_user_id[classification.suggested_assignee]` → fallback `default_assignee_id`; si ambos null, el ticket se crea sin asignar
+     - Resuelve assignee: `role_to_user_id[classification.suggested_assignee]`; si inasignable, usa `unassignable_fallback_assignee_id`; si ambos null, el ticket se crea sin asignar
      - Construye array de `custom_fields` usando los IDs del config (`mapping.custom_fields.*.id`)
-  4. `postIssue()` — POST a `/issues.json`; si el usuario tiene `redmine_login`, añade header `X-Redmine-Switch-User` para impersonación
+  5. `postIssue()` — POST a `/issues.json`; si el usuario tiene `redmine_login`, añade header `X-Redmine-Switch-User` para impersonación
 
 **`SimulatedRedmineClient`**: devuelve tickets ficticios con IDs incrementales a partir de 1000. Se activa automáticamente si no están configuradas `REDMINE_URL`/`REDMINE_API_KEY`.
 
@@ -307,11 +359,11 @@ Dos implementaciones del cliente Redmine:
 
 ### `backend/src/services/redmine/ticket-composer.ts`
 Formatea asunto y descripción del ticket:
-- `composeSubject(classification)`: genera asunto limpio:
+- `composeSubject(classification, forceReview?)`: genera asunto limpio:
   - `stripSubject()` elimina prefijos en tercera persona que el LLM puede añadir ("El cliente no puede…" → "…")
-  - Añade prefijo `[REVISIÓN]` si `confidence: 'low'` o `review_status` es `'out_of_map'` / `'human_required'`
+  - Añade prefijo `[REVISIÓN]` si `forceReview=true` (caso inasignable), `confidence: 'low'` o `review_status` es `'out_of_map'` / `'human_required'`
   - Trunca a 80 chars (72 si lleva prefijo)
-- `composeDescription(intake, classification)`: estructura markdown con sección "Descripción original" + "Resumen operativo (IA)" + conteo de adjuntos
+- `composeDescription(intake, classification, clarification?)`: estructura markdown con sección "Descripción original" + (si `clarification`) sección "Aclaración del usuario" con la pregunta y respuesta + "Resumen operativo (IA)" + conteo de adjuntos
 
 ### `backend/src/routes/requests.ts`
 Rutas bajo `/api/requests` para el flujo de solicitudes de alta de nuevos usuarios:
@@ -338,8 +390,10 @@ Servicio de email con nodemailer. Dos archivos:
 Singleton `getMailer()`. Configuración via variables de entorno `SMTP_*`. Si `SMTP_HOST` no está configurado, los métodos loguean en consola sin lanzar error (modo dev).
 
 ### `backend/src/services/events/index.ts`
-Event store SQLite con 10 tipos de evento. Cada evento tiene:
+Event store SQLite. Cada evento tiene:
 - `event_id` (UUID), `event_type`, `session_id`, `timestamp`, `data` (JSON flexible)
+
+Tipos de evento del flujo de intake: `flow_started`, `description_submitted`, `classification_requested`, `classification_completed`, `confirmation_shown`, `confirmation_accepted`, `confirmation_edited`, `ticket_created`, `flow_error`, `flow_abandoned`, `clarifying_question_generated`, `clarifying_question_answered`, `clarifying_question_skipped`, `unassignable_fallback_applied`
 
 ### `frontend/src/auth-types.ts`
 Espejo frontend de `backend/src/identity-types.ts`. Incluye: `CompanyDTO`, `LoginRequest/Response`, `SelectCompanyRequest/Response`, `RefreshResponse`, `MeResponse`, `AuthError`, `AuthState`, `UserRequestStatus`, `UserRequest`.
@@ -364,23 +418,24 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 |---|---|---|
 | `frontend/src/contexts/AuthContext.tsx` | Completo | Lógica de estado, refresh silencioso, superadmin |
 | `frontend/src/services/auth-api.ts` | Completo | Cliente API con auto-refresh, token en memoria; forgot/reset password |
-| `frontend/src/services/api.ts` | Completo | submitIntake, confirmIntake, fileToAttachment |
+| `frontend/src/services/api.ts` | Completo | submitIntake, confirmIntake, clarifyIntake, cancelIntake, fileToAttachment |
 | `frontend/src/services/admin-api.ts` | Completo | CRUD usuarios/empresas para AdminPanel; `fetchRedmineProjects(refresh?)` |
 | `frontend/src/services/metrics.ts` | Completo | GET /metrics, /metrics/recent |
 | `frontend/src/auth-types.ts` | Completo | Tipos espejo del backend; incluye UserRequest |
 | `frontend/src/types.ts` | Completo | Tipos de intake espejo del backend |
 | `frontend/src/main.tsx` | Completo | `<AuthProvider>` envuelve `<App />`; importa tailwind.css |
-| `frontend/src/App.tsx` | Completo | Máquina de estados: flujo auth + páginas (intake, dashboard, admin, config, requests) + vistas públicas (forgot-password, reset-password, request-access) |
+| `frontend/src/App.tsx` | Completo | Máquina de estados: flujo auth + páginas (intake, dashboard, admin, config, requests) + vistas públicas; maneja estado `'clarifying'` con `<ClarifyingQuestion>`; `handleCancelIntake` llama `cancelIntake()` + `resetFlow()` |
 | `frontend/src/components/LoginPage.tsx` | Completo | "Email o usuario" + toggle visibilidad contraseña + link "¿No tienes cuenta?" |
 | `frontend/src/components/CompanySelector.tsx` | Completo | Selector multi-empresa con opción de logout |
-| `frontend/src/components/IntakeForm.tsx` | Completo | Textarea + subida archivos; validación mín. 10 chars |
-| `frontend/src/components/DynamicQuestions.tsx` | Completo | Preguntas opcionales (opciones o texto libre); Skip disponible |
-| `frontend/src/components/ConfirmationView.tsx` | Completo | Resumen, área estimada, badge de impacto, lista adjuntos |
+| `frontend/src/components/IntakeForm.tsx` | Completo | Textarea + subida archivos + paste handler; galería miniaturas; contador MB; validación mín. 10 chars |
+| `frontend/src/components/ClarifyingQuestion.tsx` | Completo | Pregunta única; >4 opciones → `<select>` dropdown, ≤4 → botones, sin opciones → textarea; `onAnswer` + `onCancel` + `loading`; botón "Cancelar incidencia" con `<CancelConfirm>` inline |
+| `frontend/src/components/ConfirmationView.tsx` | Completo | Resumen, área estimada, badge de impacto, lista adjuntos; `onConfirm` + `onEdit` + `onCancel`; botón "Cancelar incidencia" con `<CancelConfirm>` inline |
+| `frontend/src/components/CancelConfirm.tsx` | Completo | Confirmación inline "¿Seguro que quieres cancelar?"; props `onConfirm` + `onDismiss`; sin modal ni overlay |
 | `frontend/src/components/TicketResult.tsx` | Completo | Pantalla éxito: ticket_id + ticket_url |
 | `frontend/src/components/ErrorDisplay.tsx` | Completo | Mensaje de error + botones Reintentar / Nueva incidencia |
 | `frontend/src/components/Dashboard.tsx` | Completo | Métricas piloto: totales, tasa completado, distribución confianza |
 | `frontend/src/components/AdminPanel.tsx` | Completo | CRUD usuarios y empresas; botón "Sincronizar proyectos Redmine"; `CompanyFormModal` usa dropdown cuando proyectos cargados |
-| `frontend/src/components/StepIndicator.tsx` | Completo | Indicador visual de progreso (breadcrumb) |
+| `frontend/src/components/StepIndicator.tsx` | Completo | Indicador visual de progreso; `'clarifying'` mapea al mismo índice visual que `'loading'` (paso 1 de 4) |
 | `frontend/src/components/Loading.tsx` | Completo | Spinner con mensaje |
 | `frontend/src/components/ChangePasswordPage.tsx` | Completo | Cambio obligatorio (sin pedir actual) y voluntario; props: `voluntary?`, `onCancel?`; toggle visibilidad en todos los campos |
 | `frontend/src/components/ForgotPasswordPage.tsx` | Completo | Formulario de recuperación; llama `forgotPasswordApi()`; siempre muestra éxito |
@@ -388,6 +443,9 @@ Wrapper de fetch para llamadas a `/api/auth/*` y `/api/identity/*`:
 | `frontend/src/pages/ConfigPanel.tsx` | Completo | Panel de 5 pestañas: Taxonomía / Soluciones / Necesidades / Asignación / Redmine |
 | `frontend/src/pages/RequestAccessPage.tsx` | Completo | Formulario público en `/solicitar-acceso`; empresa como **texto libre** (no dropdown); teléfono obligatorio |
 | `frontend/src/pages/RequestsPanel.tsx` | Completo | Panel admin: lista solicitudes por estado, aprobar/rechazar/editar; modal edición con campo empresa texto + selector ID; botón Aprobar deshabilitado sin company_id |
+| `frontend/src/pages/ReviewPage.tsx` | Completo | Página pública `/review/:token`; approve/reassign con formulario; sin login |
+| `frontend/src/pages/PendingReviewsPanel.tsx` | Completo | Panel support_lead: filtros, tabla con estado, audit log expandible, forzar aprobación/reasignación; botón "Nota" abre modal con historial de reasignaciones + sync Redmine; botón "Exportar CSV" (UTF-8 BOM, Excel-compatible) |
+| `frontend/src/pages/ConfigProposalsPanel.tsx` | Completo | Panel admin/support_lead: tabs Pendientes/Aplicadas/Rechazadas, diff visual antes/después, modal Aplicar/Rechazar con motivo; visible para `isAdmin \|\| isSuperAdmin \|\| isSupportLead` |
 
 **Nota sobre Tailwind:** integrado con `preflight: false` (no resetea CSS existente). Solo se importan utilidades. Archivos: `tailwind.config.js`, `postcss.config.js`, `src/tailwind.css`. Las páginas nuevas (`RequestsPanel`, `RequestAccessPage`) usan clases Tailwind; los componentes existentes mantienen sus clases CSS propias.
 
@@ -437,6 +495,44 @@ interface IntakePayload {
   timestamp: string;
 }
 
+// Pregunta aclaratoria opcional (generada por el LLM, sanitizada por response-validator)
+interface ClarifyingQuestion {
+  question: string;
+  options: string[] | null;  // null = pregunta abierta; si array, máx 4 opciones
+  reason: string;            // por qué el LLM cree que necesita aclarar (logging)
+}
+
+// Respuesta al frontend tras clasificar (incluye pregunta si la hay)
+interface ClassifiedResponse {
+  session_id: string;
+  status: 'classified';
+  display: {
+    summary: string;
+    nature?: string;
+    estimated_area: string;
+    impact: string | null;
+    attachments_received: string[];
+    need: string | null;
+  };
+  clarifying_question: ClarifyingQuestion | null;
+  billable: BillableInfo | null; // null si no aplica ninguna regla de facturación
+}
+
+// BillableInfo: lo que el backend devuelve al frontend sobre facturación
+interface BillableInfo {
+  is_billable: boolean;              // true → mostrar aviso + checkbox
+  requires_disambiguation: boolean;  // true → pendiente de respuesta a pregunta de desambiguación
+  min_cost_eur: number;
+  notice_text: string;               // texto con placeholder {min_cost_eur} ya sustituido
+  matched_rule_nature?: string;
+}
+
+// BillingAcceptance: enviado por el frontend en action='confirm' cuando is_billable=true
+interface BillingAcceptance {
+  accepted: boolean;
+  accepted_at: string; // ISO timestamp
+}
+
 // Salida del LLM (tipo real en backend/src/types.ts)
 // ¡ATENCIÓN: nature y domain están anidados en el sub-objeto classification!
 interface ClassificationResponse {
@@ -456,6 +552,7 @@ interface ClassificationResponse {
   suggested_priority: Priority;
   suggested_assignee: string | null;
   reasoning: string;
+  alternative_solutions: string[]; // soluciones que el LLM consideró antes de elegir; [] si elección clara
 }
 ```
 
@@ -486,21 +583,31 @@ interface ClassificationResponse {
    → [Auth Plugin] verifica JWT → request.auth con company_id garantizado
    → requireCompany() valida que el token incluye empresa
    → loader.ts carga taxonomy + redmine-mapping + assignment-rules
-   → prompt-builder construye system prompt
+   → prompt-builder construye system prompt (con instrucciones de clarifying_question)
    → LLM call con timeout 15s
-   → response-validator valida JSON + aplica coherencia
-   → dynamic-questions genera 0-2 preguntas
-   → Guarda { intake, classification, attempt:1 } en session Map
-   → Devuelve ClassifiedResponse
+   → response-validator valida JSON + aplica coherencia + sanitiza clarifying_question
+   → assignee-resolver sobreescribe suggested_assignee de forma determinista
+   → Guarda { intake, classification, attempt:1, clarification_attempted:false } en session Map
+   → Devuelve ClassifiedResponse (con clarifying_question si la hay)
 
-3. Frontend muestra preguntas → usuario responde o salta
-   Frontend muestra ConfirmationView
+3a. Si ClassifiedResponse.clarifying_question ≠ null:
+   Frontend muestra <ClarifyingQuestion> → usuario responde o salta (step='clarifying')
+
+3b. POST /api/intake/confirm { action: 'clarify', clarification_question, clarification_answer }:
+   → Re-clasifica con la aclaración embebida en el prompt
+   → session.clarification_attempted = true (impide nuevo clarify)
+   → Devuelve ClassifiedResponse con clarifying_question: null
+   → Frontend pasa a step='confirmation'
+
+3c. Si el usuario salta la pregunta:
+   Frontend pasa directamente a step='confirmation' (se logueará clarifying_question_skipped al confirmar)
 
 4. POST /api/intake/confirm { action: 'edit' }:
-   → Actualiza description → Re-clasifica → Devuelve ClassifiedResponse
+   → Actualiza description → reset clarification state → Re-clasifica → Devuelve ClassifiedResponse (puede incluir nueva pregunta)
 
 4b. POST /api/intake/confirm { action: 'confirm' }:
-   → Sube adjuntos en paralelo a Redmine → ticket-composer → POST /issues.json
+   → Detecta unassignable (si aplica) → sube adjuntos en paralelo a Redmine
+   → ticket-composer (incluye sección "Aclaración" si la hubo) → POST /issues.json
    → Loguea event: ticket_created → Borra sesión
    → Devuelve CreatedResponse { ticket_id, ticket_url }
 
@@ -541,6 +648,8 @@ interface ClassificationResponse {
 
 La integración con Redmine está **sustancialmente completada** en config pero aún requiere validación en producción.
 
+> **Referencia de usuarios:** los IDs numéricos de Redmine y sus nombres reales están documentados en `docs/redmine-users.md`. Consultar ese archivo antes de interpretar cualquier ID en `redmine-mapping.json`.
+
 ### Mapeados y resueltos
 
 - **Custom fields IDs** — IDs 21-28 configurados en `redmine-mapping.json` → `custom_fields`
@@ -554,6 +663,7 @@ La integración con Redmine está **sustancialmente completada** en config pero 
 | Ítem | Estado | Impacto |
 |------|--------|---------|
 | `redmine_defaults.default_assignee_id` | `null` en config | Si `role_to_user_id` no resuelve el assignee, el ticket se crea **sin asignar** |
+| `redmine_defaults.unassignable_fallback_assignee_id` | **736** en config | Casos inasignables (dominio ambiguo + assignee no resuelto) → asignado al usuario 736 con `[REVISIÓN]` en el asunto |
 | `company_to_project._default` | apunta a `"cobertec-intake-test"` | Las empresas sin mapeo explícito van al proyecto de prueba |
 | `users.redmine_login` | **poblado** por `import-cobertec-users.ts` para usuarios `@cobertec.com` | La impersonación vía `X-Redmine-Switch-User` está lista para activarse en producción |
 | Validación E2E en Redmine real | No realizada | Los IDs de custom fields (21-28) deben verificarse contra la instancia real |
@@ -592,6 +702,16 @@ No hay bugs activos rastreados en este momento.
 22. ~~`POST /admin/:id/approve` enviaba `Content-Type: application/json` sin body~~ — **Resuelto**: añadido `body: JSON.stringify({})` en la llamada `fetch` del frontend para evitar error 400 en algunos servidores
 23. ~~`company_id` con validación `.uuid()` rechazaba empresas importadas de Redmine con IDs numéricos~~ — **Resuelto**: validación cambiada a `.min(1)` en `UserRequestFormSchema` (frontend y backend); los IDs de Redmine son enteros, no UUIDs
 24. ~~`RequestsPanel` enviaba `company_name` en el body del PATCH del modal de edición~~ — **Resuelto**: campo `company_name` puesto como solo lectura en el modal; eliminado del body enviado al backend (el backend espera `company_name_requested` vía mapeo interno)
+25. ~~`config-agent/agent.ts` usaba un cast temporal `(classifier as unknown as { callRaw... })` para llamar al LLM~~ — **Resuelto**: extraída capa `services/llm/index.ts` con `getLLMProvider()` consumido directamente por el agente; el clasificador también pasa por esta capa internamente.
+26. ~~`PendingReviewsPanel` — botón "Nota" no mostraba historial de reasignaciones~~ — **Resuelto**: el botón llamaba `retryRedmineNoteSync` en vez de mostrar el historial. Ahora abre un modal con la tabla de reasignaciones (`reassignment_history`), estado de sync de cada nota Redmine (cargado via `fetchPendingReviewDetail`), y el botón "Reintentar sync Redmine" movido al footer del modal.
+27. ~~`PendingReviewsPanel` — sin exportación CSV~~ — **Resuelto** (nueva funcionalidad): botón "Exportar CSV" en la cabecera exporta todas las revisiones visibles según el filtro activo. CSV UTF-8 con BOM (compatible con Excel en español), separador coma, nombre `revisiones_YYYY-MM-DD.csv`. Columnas principales: `ticket_id, empresa, asignado_actual, rol_actual, estado, reasignaciones, fecha_creacion, fecha_resolucion, dominio, naturaleza, descripcion_resumida`. Para revisiones con reasignaciones: filas de detalle adicionales con `de_rol, a_rol, motivo, fecha_reasignacion, sync_redmine`.
+28. ~~`review-tokens/index.ts` — token JWT con `aud` duplicado~~ — **Resuelto**: `signReviewToken` usaba `audience: 'review'` (estándar JWT) y además la interfaz `ReviewTokenPayload` declaraba `aud: 'review'`, lo que podía causar doble escritura dependiendo de la versión de jsonwebtoken. Corregido: el campo `aud` solo se declara en los options de `jwt.sign`, no en el payload manual.
+29. ~~Ruta `/api/review/:token` no capturaba el JWT (los puntos del token fragmentaban el parámetro de ruta en Fastify)~~ — **Resuelto**: ruta cambiada a `/api/review?t=<token>` como query param; el frontend actualizado con `?t=` en todas las URLs de revisión.
+30. ~~PUT Redmine devolvía 422 al intentar reasignar un usuario sin membresía en el proyecto~~ — **Resuelto**: `RedmineClient.updateIssueAssignee()` llama ahora a `ensureMembership(projectIdentifier, userId)` antes de la actualización del assignee; si ya existe la membresía, Redmine responde 422 (ignorado por el método privado) o 201/200.
+31. ~~`SOLUTION_VALUES` no incluía `'Academia Cobertec'`~~ — **Resuelto**: añadida a la constante en `backend/src/types.ts`; el LLM puede ahora clasificar correctamente tickets del módulo Academia sin que el validador los rechace ni aplique fallback.
+32. ~~`ConfigProposalsPanel` solo visible en el menú para `isSupportLead`~~ — **Resuelto**: condición de menú en `App.tsx` expandida a `isAdmin || isSuperAdmin || isSupportLead`; guard del backend (`admin-config-proposals.ts`) actualizado a `isSupportLead || isSuperAdmin || isAdmin` para evitar 403 a administradores.
+33. ~~`PendingReviewsPanel` mostraba roles técnicos en lugar de nombres reales en la columna "Reasignado por" y en el historial del modal "Nota"~~ — **Resuelto**: `listPendingReviews` en `store.ts` enriquece cada fila con un subquery correlacionado sobre `review_audit_log` (action='reassigned' ORDER BY created_at DESC LIMIT 1) → campo `last_reassigned_by_name`; el modal "Nota" correlaciona `notaReassignEvents` con `notaHistory` por índice para mostrar `"<actor_name> reasignó de <from_role> a <to_role>"`; el CSV añade columnas `reasignado_por` (en filas de resumen) y `actor_nombre` (en filas de detalle).
+34. ~~`review_audit_log.actor_name` era `null` en reasignaciones vía email (token público) y vía panel admin~~ — **Resuelto**: en `routes/review.ts` se añade `actor_name: review.current_assignee_name` al evento `'reassigned'`; en `routes/admin-reviews.ts` se añade `getContactByUserId(auth.sub)` (nuevo método en `IdentityStore`) para resolver el nombre del admin antes de insertar el log.
 
 ---
 
@@ -601,6 +721,7 @@ No hay bugs activos rastreados en este momento.
 |-----------|------|-------------|------------|
 | **Alta** | Backend | Session store en memoria (Map) → migrar a SQLite/Redis para sobrevivir reinicios | Decisión de arquitectura |
 | **Alta** | Config | Definir `redmine_defaults.default_assignee_id` con ID numérico real de Redmine | Cobertec debe dar el ID |
+| ~~**Alta**~~ | ~~Config~~ | ~~Definir `redmine_defaults.unassignable_fallback_assignee_id`~~ | ~~Resuelto: valor 736~~ |
 | **Alta** | Config | Cambiar `company_to_project._default` de `"cobertec-intake-test"` a proyecto de producción | Cobertec debe definirlo |
 | **Alta** | Backend | Activar impersonación Redmine (`X-Redmine-Switch-User`) en producción — `redmine_login` ya está poblado para usuarios `@cobertec.com` | Decisión operativa |
 | **Alta** | Config | Verificar que los IDs de custom fields (21-28) existen en la instancia Redmine de Cobertec | Acceso a Redmine de prod |
@@ -609,6 +730,11 @@ No hay bugs activos rastreados en este momento.
 | **Baja** | Scripts | Documentar uso de `import-redmine-clients.ts` e `import-new-projects.ts` | — |
 | **Alta** | Backend | Configurar SMTP real (host, puerto, credenciales) para que los emails de bienvenida, rechazo y recuperación funcionen en producción | Cobertec debe dar proveedor SMTP |
 | **Alta** | Backend | Cambiar `ADMIN_NOTIFICATION_EMAILS` en `routes/requests.ts` a `soporte@cobertec.com` + `j.quintanilla@cobertec.com` antes de producción | — |
+| **Alta** | Config | Configurar al menos un usuario como `is_support_lead = 1` (Bruno Saiz) ejecutando `npx tsx scripts/set-support-lead.ts <email>` antes de activar el flujo de revisión | — |
+| **Alta** | Config | Verificar que `APP_URL` apunta al dominio público correcto en producción — los emails de revisión llevan links absolutos a `/review/<token>` | — |
+| **Media** | Redmine | Validar el formato de la nota privada en la instancia Redmine real — confirmar que aparece como privada y no visible para el cliente | Acceso a Redmine de prod |
+| ~~**Baja**~~ | ~~Ops~~ | ~~Verificar que el cron del agente (03:00 UTC, configurable con `CONFIG_AGENT_CRON_HOUR`) no coincide con ventanas de mantenimiento de Cobertec~~ | **Verificado 2026-05-07**: agente probado manualmente con `run-agent-once.ts`; detectó 2 patrones y generó 2 propuestas en `config_change_log`. Flujo end-to-end funcional. |
+| **Media** | Ops | Configurar ventana de cron del agente (`CONFIG_AGENT_CRON_HOUR`) para que no coincida con ventanas de mantenimiento de Cobertec en producción | Cobertec debe confirmar horario |
 
 ---
 
@@ -643,7 +769,7 @@ npm run dev
 | `ACCESS_TOKEN_TTL` | Duración access token | `15m` |
 | `IDENTITY_DB_PATH` | Ruta DB de identidad | `data/identity.db` |
 | `CLASSIFIER_TIMEOUT_MS` | Timeout llamada LLM | `15000` |
-| `BODY_LIMIT_MB` | Tamaño máximo request | `10` |
+| `BODY_LIMIT_MB` | Tamaño máximo request | `25` |
 | `CORS_ORIGIN` | Origen CORS permitido | `http://localhost:5173` |
 | `APP_URL` | URL pública del frontend (para links en emails) | `http://localhost:5173` |
 | `SMTP_HOST` | Servidor SMTP | — |
@@ -651,6 +777,11 @@ npm run dev
 | `SMTP_USER` | Usuario SMTP | — |
 | `SMTP_PASS` | Contraseña SMTP | — |
 | `SMTP_FROM` | Dirección remitente | `noreply@cobertec.com` |
+| `REQUIRE_HUMAN_REVIEW` | Activa el flujo de revisión humana post-Redmine | `true` |
+| `INTAKE_DB_PATH` | Ruta DB de intake (intake.db) | `data/intake.db` |
+| `REVIEW_TOKEN_TTL_DAYS` | TTL tokens de revisión enviados a técnicos | `7` |
+| `REASSIGNMENT_PATTERN_BUFFER_DAYS` | Días de vida de un patrón en estado buffering | `14` |
+| `CONFIG_AGENT_CRON_HOUR` | Hora UTC del cron del agente de configuración | `3` |
 
 ---
 
@@ -671,6 +802,11 @@ npm run dev
 | Nuevo usuario/empresa | `backend/scripts/seed-identity.ts` o vía AdminPanel → `POST /api/admin/users` |
 | Poblar redmine_login de usuarios Cobertec | Ejecutar `import-cobertec-users.ts` — lo hace automáticamente para todos los `@cobertec.com` |
 | Poblar redmine_login de usuario concreto | Query directa: `UPDATE users SET redmine_login='login.redmine' WHERE id='...'` |
+| Nuevo tipo de evento en revisión | `backend/src/intake-store-types.ts` → `ReviewAuditAction` |
+| Cambiar política del agente (umbrales, ventanas) | Variables de entorno `REASSIGNMENT_PATTERN_BUFFER_DAYS`, `CONFIG_AGENT_CRON_HOUR` |
+| Nuevo template de email | `backend/src/services/mailer/mailer-index.ts` |
+| Marcar a alguien como support lead | `cd backend && npx tsx scripts/set-support-lead.ts <email>` |
+| Nuevo proveedor LLM | `backend/src/services/classifier/provider-*.ts` + factory en `backend/src/services/llm/index.ts`; el clasificador y el agente lo heredan automáticamente |
 
 ---
 
@@ -971,3 +1107,352 @@ Seguridad estándar: no revelar si un email existe en la base de datos. El usuar
 ### Regla consolidada
 
 **Todos los mensajes visibles por el usuario deben estar en español sin excepción.** Aplica a: errores de validación Zod, respuestas de error HTTP, mensajes de rate limiting, textos de UI, emails, y cualquier cadena que llegue al usuario final. Los nombres de campos internos (path de Zod, códigos de error internos) no deben exponerse directamente al cliente.
+
+---
+
+## Adjuntos múltiples y paste de capturas — sesión 2026-05
+
+### Qué se construyó
+
+1. **Paste de capturas de pantalla** (`IntakeForm.tsx`): handler `onPaste` en el textarea detecta imágenes en el portapapeles (Ctrl+V). Si hay imágenes, las intercepta y añade como adjuntos; si no, deja pasar el paste de texto sin interferir.
+
+2. **Galería de miniaturas** (`IntakeForm.tsx`): grid responsive de tarjetas 80×80. Las imágenes muestran preview con `object-fit: cover`. Los archivos no imagen muestran un icono 📄 con la extensión. Cada tarjeta tiene nombre truncado (tooltip completo), tamaño legible y botón ✕ para borrado individual.
+
+3. **Contador de tamaño total** (`IntakeForm.tsx`): muestra "Adjuntos: X.X MB / 25 MB" con color verde (<60%), ámbar (60-90%) o rojo (>90%).
+
+4. **Bloqueo de ejecutables**: extensiones bloqueadas validadas en frontend (mensajes amigables sin envío) y en backend (400 `EXECUTABLE_NOT_ALLOWED`). Lista idéntica en ambos lados.
+
+5. **Límite 25 MB**: `BODY_LIMIT_MB` subido de 10 a 25. El backend responde 413 con mensaje amigable en español (`PAYLOAD_TOO_LARGE`) en lugar del HTML por defecto de Fastify. El frontend tiene margen de seguridad de 1 MB (`SAFE_LIMIT_BYTES = 24 MB`) para JSON + texto.
+
+6. **Error handler global** (`index.ts`): `app.setErrorHandler` unificado que maneja `FST_ERR_CTP_BODY_TOO_LARGE` (→ 413 español) y `AuthServiceError` (comportamiento idéntico al auth plugin, que queda reemplazado por este handler al estar en la misma scope vía fastify-plugin).
+
+7. **Nombres de capturas pegadas**: formato `captura-YYYYMMDD-HHmmss.png` con sufijo `-N` si colisión (función `generatePasteFilename`).
+
+8. **Cleanup de object URLs**: `useEffect` con cleanup que revoca todos los `preview_url` al desmontar el componente, evitando memory leaks.
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/utils/blocked-extensions.ts` | Lista negra de extensiones + `isExecutableExtension()` |
+| `frontend/src/utils/attachments.ts` | Constantes y utilidades: `BLOCKED_EXTENSIONS`, `MAX_TOTAL_BYTES`, `SAFE_LIMIT_BYTES`, `isExecutableExtension()`, `generatePasteFilename()`, `formatBytes()`, `getExtension()` |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `backend/src/index.ts` | Default `BODY_LIMIT_MB` 10 → 25; `setErrorHandler` global para `FST_ERR_CTP_BODY_TOO_LARGE` y `AuthServiceError` |
+| `backend/src/routes/intake.ts` | Validación de extensiones bloqueadas en `/submit` y en `/confirm` action='edit' |
+| `backend/.env` | `BODY_LIMIT_MB=25` |
+| `frontend/src/types.ts` | Nuevo tipo `AttachmentItem` (local al frontend, no viaja al backend) |
+| `frontend/src/components/IntakeForm.tsx` | Refactor completo: estado `AttachmentItem[]`, paste handler, galería, contador, cleanup |
+| `frontend/src/services/api.ts` | Manejo de `data.error?.message` para pasar mensajes del backend directamente al usuario |
+| `frontend/src/index.css` | Clases CSS para galería de adjuntos (`attachment-gallery`, `attachment-thumb`, etc.) |
+
+---
+
+## Pregunta aclaratoria única (LLM-driven) — sesión 2026-05b
+
+### Qué se construyó
+
+El sistema de preguntas dinámicas multi-paso (`DynamicQuestions.tsx` + `dynamic-questions.ts`) se reemplazó por un sistema de **pregunta aclaratoria única generada por el propio LLM**. El LLM decide si hay una ambigüedad concreta y resoluble, y si es así devuelve una sola pregunta con opciones cerradas (o abierta). Esto elimina la capa de generación determinista post-clasificación.
+
+> **Supersedido por sesión 2026-05c** — ver sección siguiente.
+
+---
+
+## Pregunta aclaratoria determinista — sesión 2026-05c
+
+### Qué cambió respecto a 2026-05b
+
+La generación de la pregunta se movió del LLM a un módulo determinista `question-generator.ts`. El LLM **ya no decide si preguntar ni qué preguntar** — solo clasifica. La pregunta la genera siempre el backend justo después de la clasificación, basándose en `solution_associated`.
+
+**La pregunta es ahora obligatoria** — no existe botón "Saltar". El usuario debe responder antes de ver la confirmación.
+
+### Flujo completo
+
+1. `POST /submit` → LLM clasifica (sin `clarifying_question` en su respuesta)
+2. `question-generator.ts` genera siempre una `ClarifyingQuestion` basada en `solution_associated`
+3. `ClassifiedResponse.clarifying_question` siempre `≠ null` → frontend pasa a `step='clarifying'`
+4. Usuario responde → `POST /confirm { action: 'clarify', clarification_question, clarification_answer }`
+5. Backend re-clasifica con la aclaración en el prompt; devuelve `ClassifiedResponse` con `clarifying_question: null`
+6. Frontend pasa a `step='confirmation'`
+7. La aclaración se incluye en la descripción del ticket Redmine
+
+### Los casos del question-generator
+
+**Caso 0 — Conflicto entre soluciones** (se evalúa antes que los demás):
+- Condición: `confidence !== 'high'` AND `alternative_solutions.length > 0`
+- El LLM declara en `alternative_solutions` las soluciones que consideró antes de elegir
+- Las opciones se construyen dinámicamente: solución elegida + alternativas (máx 3 en total) + "Otra aplicación o servicio"
+- Si `alternative_solutions` está vacío → se salta este caso
+
+| Caso | Condición | Pregunta | Opciones | reason |
+|------|-----------|----------|----------|--------|
+| 0 — Conflicto | `confidence !== 'high'` AND `alternative_solutions.length > 0` | Para identificar mejor tu incidencia, ¿sobre qué solución o aplicación es tu consulta? | Dinámicas: solución elegida + alternativas (máx 3) + "Otra aplicación o servicio" | `heuristic_solution_conflict` |
+| 1 — Movilsat ERP | `solution = 'Expertis / Movilsat ERP'` | Para identificar mejor la incidencia, indica el módulo de Movilsat ERP en el que te ocurre. | GMAO, Proyectos, General, Financiero, Logística, Comercial, CRM, Fabricación, No sé, Otro | `heuristic_expertis_module` |
+| 2 — Movilsat App | `solution = 'Movilsat'` | ¿Dónde estás viendo el problema? | En el programa de gestión Movilsat ERP (ordenador de oficina), En la app móvil Movilsat (móvil o tablet de los técnicos), En ambos, No sé | `heuristic_movilsat_device` |
+| 3 — Solución concreta | Cualquier otra solución con label conocido (Sistemas, Portal OT, App Fichajes, Soluciones IA, Planificador Inteligente, Business Intelligence) | ¿Tu consulta es sobre {label}? | Sí, No | `heuristic_solution_confirm` |
+| 4 — Ambiguo | Comercial, Resto o sin identificar | ¿Dónde estás experimentando este problema? | En el programa de gestión Movilsat ERP, En la app móvil Movilsat, Otro | `heuristic_ambiguous` |
+
+### Caso especial: Caso 3 + respuesta "No"
+
+Cuando `reason = 'heuristic_solution_confirm'` y el usuario responde "No":
+- El backend **no re-clasifica** todavía
+- Devuelve una nueva `ClassifiedResponse` con pregunta de texto libre: `"¿Sobre qué solución o aplicación es tu consulta? Descríbelo brevemente."` (`options: null`, `reason: 'heuristic_solution_confirm_no'`)
+- Marca `clarification_attempted = true` (no habrá tercera pregunta)
+- La respuesta de texto libre del usuario se usa en el siguiente `action='clarify'` para re-clasificar normalmente
+
+### Lógica anti-bucle
+
+`clarification_attempted` en la sesión impide más de una iteración de `action='clarify'` (salvo el caso especial "No" que consume el flag en la primera llamada, reservando la segunda para re-clasificar). La acción `action='edit'` resetea el estado de clarificación.
+
+### Resolución determinista del assignee
+
+`assignee-resolver.ts` aplica las reglas de `assignment-rules.json` de forma determinista sobre el resultado del LLM, sobreescribiendo `suggested_assignee`.
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/services/classifier/assignee-resolver.ts` | Resolución determinista de assignee por reglas de `assignment-rules.json` |
+| `backend/src/services/classifier/question-generator.ts` | Genera `ClarifyingQuestion` determinista según `solution_associated`; 4 casos |
+| `frontend/src/components/ClarifyingQuestion.tsx` | Componente pregunta única; botones para opciones o textarea libre; `onAnswer` + `loading`; **sin botón Saltar** |
+
+### Archivos eliminados
+
+| Archivo | Motivo |
+|---------|--------|
+| `backend/src/services/classifier/dynamic-questions.ts` | Reemplazado por `question-generator.ts` |
+| `frontend/src/components/DynamicQuestions.tsx` | Reemplazado por `ClarifyingQuestion.tsx` |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `backend/src/types.ts` | Nueva interfaz `ClarifyingQuestion`; `ConfirmationPayload.action` incluye `'clarify'`; `ClassifiedResponse.clarifying_question`; `FlowStep='clarifying'`; constantes Zod; `ClassificationRequest.clarification?`; eventos: eliminado `clarifying_question_skipped`, añadido `reason` en `clarifying_question_generated` |
+| `backend/src/middleware/validation.ts` | `ConfirmationPayloadSchema` acepta `action: 'clarify'`; `superRefine` exige ambos campos de clarificación cuando `action='clarify'` |
+| `backend/src/services/classifier/index.ts` | Importa `generateClarifyingQuestion`; llama siempre en primera clasificación; nunca en re-clasificación (`request.clarification` presente) |
+| `backend/src/services/classifier/prompt-builder.ts` | Eliminada sección `## PREGUNTA ACLARATORIA` y campo `clarifying_question` del JSON schema del LLM; user prompt mantiene inyección de `clarification` para re-clasificación |
+| `backend/src/services/classifier/response-validator.ts` | Eliminada validación de `clarifying_question` del schema Zod; tipo de retorno simplificado (ya no devuelve `clarifying_question`); usa `.passthrough()` para ignorar campos extra del LLM |
+| `backend/src/routes/intake.ts` | SessionStore: `clarifying_question_reason` reemplaza `clarifying_question_was_shown`; handler `clarify` detecta `heuristic_solution_confirm + "No"` → devuelve pregunta follow-up; eliminado log `clarifying_question_skipped`; log `clarifying_question_generated` incluye `reason` |
+| `backend/src/services/redmine/index.ts` | `createTicket()` acepta `clarification?`; lógica de `unassignable_fallback_assignee_id` (736 = Bruno Saiz) |
+| `backend/src/services/redmine/ticket-composer.ts` | `composeSubject()` acepta `forceReview?`; `composeDescription()` acepta `clarification?` y añade sección "Aclaración del usuario" |
+| `frontend/src/types.ts` | Espeja cambios del backend; nota sobre eliminación de `clarifying_question_skipped` |
+| `frontend/src/services/api.ts` | Nueva función `clarifyIntake(sessionId, question, answer)` |
+| `frontend/src/App.tsx` | Eliminado `handleClarifySkip`; `handleClarifyAnswer` redirige a `'clarifying'` si la respuesta trae nueva `clarifying_question` (caso "No"); `<ClarifyingQuestion>` sin prop `onSkip` |
+| `frontend/src/components/StepIndicator.tsx` | `step='clarifying'` mapea a índice 1 |
+
+---
+
+## Aviso de coste para incidencias facturables — sesión 2026-05d
+
+### Qué se construyó
+
+Sistema de facturación configurable que muestra un aviso de coste mínimo (120€) que el usuario debe aceptar explícitamente antes de confirmar incidencias facturables. La aceptación se registra en la descripción del ticket Redmine.
+
+### Flujo
+
+**Para natures directamente facturables** (`peticion_cambio_mejora`, `configuracion` con dominios específicos):
+1. Submit → LLM clasifica → `evaluateBillable` → `is_billable: true`
+2. `ClassifiedResponse.billable` incluye el aviso con texto y coste
+3. Pregunta aclaratoria normal sigue su flujo habitual
+4. En la pantalla de confirmación: aviso + checkbox obligatorio
+5. Usuario marca checkbox → `onConfirm({ accepted: true, accepted_at: '...' })`
+6. Backend valida `billing_acceptance.accepted === true` → crea ticket con línea de coste en la descripción
+
+**Para `importacion_exportacion`** (requires_disambiguation):
+1. Submit → LLM clasifica → `evaluateBillable` → `requires_disambiguation: true`
+2. Pregunta de desambiguación de facturación **reemplaza** la pregunta aclaratoria normal
+3. Usuario responde via `action='clarify'` → backend detecta `billing_disambiguation_question_id` en sesión
+4. Backend re-evalúa sin llamar al LLM → si `fuera_alcance` → `is_billable: true`, si `en_alcance` → null
+5. Frontend pasa a confirmación con el `billable` actualizado
+
+### Arquitectura del módulo
+
+**`billable-evaluator.ts`** — tres funciones:
+- `evaluateBillable(classification, disambiguationAnswers, config)` → `BillableInfo | null`
+- `buildBillingDisambiguationQuestion(questionId, config)` → `ClarifyingQuestion`
+- `findDisambiguationOptionId(questionId, selectedLabel, config)` → `string | null`
+
+**Reglas en `config/redmine-mapping.json`** → nueva sección `billable_rules`:
+- `default_min_cost_eur`: 120
+- `rules`: array de reglas con `nature`, `domains?`, `min_cost_eur`, `requires_disambiguation?`
+- `disambiguation_questions`: mapa `questionId` → `{ question, options: [{id, label}] }`
+
+**SessionState** — nuevos campos:
+- `billable: BillableInfo | null` — evaluación más reciente
+- `billing_disambiguation_question_id: string | null` — si hay desambiguación pendiente
+- `billing_disambiguation_answer?: DisambiguationAnswer` — respuesta guardada para re-evaluaciones
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/services/classifier/billable-evaluator.ts` | Evaluación determinista de facturación |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `config/redmine-mapping.json` | Nueva sección `billable_rules` al final |
+| `backend/src/config/loader.ts` | Nuevas interfaces `BillableRuleConfig`, `DisambiguationQuestionOption`, `DisambiguationQuestionConfig`, `BillableRulesConfig`; campo `billable_rules?` en `RedmineMappingConfig` |
+| `backend/src/types.ts` | Nuevas interfaces `BillableInfo`, `BillingAcceptance`; `is_billing_disambiguation?` en `ClarifyingQuestion`; `billable` en `ClassifiedResponse`; `billing_acceptance?` en `ConfirmationPayload` |
+| `frontend/src/types.ts` | Espejo de los nuevos tipos del backend |
+| `backend/src/middleware/validation.ts` | Campo `billing_acceptance` opcional en `ConfirmationPayloadSchema` |
+| `backend/src/routes/intake.ts` | Integración completa: evaluación en submit/edit/clarify; handler especial billing disambiguation; validación en confirm |
+| `backend/src/services/redmine/ticket-composer.ts` | `composeDescription()` acepta `billable?` y `billingAcceptance?`; añade línea "Coste mínimo aceptado" |
+| `backend/src/services/redmine/index.ts` | `createTicket()` acepta y propaga `billable?` y `billingAcceptance?` |
+| `frontend/src/components/ConfirmationView.tsx` | Reemplazado `BILLABLE_NEEDS` hardcoded por `data.billable`; `onConfirm` pasa `BillingAcceptance`; texto del aviso desde `billable.notice_text` |
+| `frontend/src/App.tsx` | `handleConfirm` acepta y propaga `BillingAcceptance` |
+
+---
+
+## Fix asignación import/export y mapeo de IDs — sesión 2026-04e
+
+### Qué se corrigió
+
+1. **`config/redmine-mapping.json`** — `logistica_formacion` corregido de ID 21 a ID 525 (Hildegart Nieto). El ID 21 es Lorena Baños (formación financiero/general), no la persona responsable de logística.
+
+2. **`docs/redmine-users.md`** — Tabla de referencia corregida:
+   - ID 21: era "Andres Arnaiz" → correcto: **Lorena Baños** (login: Financiero)
+   - ID 221: era "Álvaro Andrés" → correcto: **Andrés Arnaiz** (login: a.arnaiz)
+   - Nota sobre IDs 221/322 corregida (son personas distintas)
+
+3. **Resolver de asignaciones** (`assignee-resolver.ts` + `loader.ts`) — El resolver ahora acepta un campo opcional `nature` en las reglas de `assignment-rules.json`:
+   - Si la regla no tiene `nature` → comportamiento anterior (wildcard implícito, compatibilidad hacia atrás)
+   - Si la regla tiene `nature: "*"` → wildcard explícito
+   - Si la regla tiene `nature: "importacion_exportacion"` → solo matchea esa nature
+   - También corregido: `solution: "*"` ahora actúa como wildcard (antes solo `undefined`/vacío era wildcard)
+   - Añadido guard `if (!rule.assignee) continue` para objetos de comentario en el JSON
+
+4. **`config/assignment-rules.json`** — Nueva regla catch-all priority 3:
+   ```json
+   { "priority": 3, "nature": "importacion_exportacion", "block": "*", "module": "*", "need": "*", "solution": "*", "assignee": "desarrollo_exportaciones" }
+   ```
+   Insertada antes de la regla `need: "formacion"`. Garantiza que cualquier `importacion_exportacion` que no matchee una regla priority 1/2 más específica vaya a Hildegart Nieto (ID 525).
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `config/redmine-mapping.json` | `logistica_formacion: 21 → 525` |
+| `docs/redmine-users.md` | IDs 21 y 221 corregidos; nota sobre 221/322 actualizada |
+| `backend/src/config/loader.ts` | `nature?: string` añadido a interfaz `AssignmentRule` |
+| `backend/src/services/classifier/assignee-resolver.ts` | Evalúa `matchNature`; `solution: "*"` como wildcard; guard para reglas sin `assignee` |
+| `config/assignment-rules.json` | Nueva regla priority 3 catch-all por `nature: importacion_exportacion` |
+
+### Decisión de diseño
+
+`nature` ausente en una regla se trata como wildcard (compatible con todas las reglas existentes que no tienen este campo). Esto mantiene compatibilidad hacia atrás sin requerir migración de ninguna regla existente.
+
+---
+
+## Fuente de verdad de usuarios Cobertec consolidada — sesión 2026-05-05
+
+### Qué se construyó
+
+- `config/cobertec-users.json` (nuevo): 19 usuarios @cobertec.com con ID, login, nombre, email — uso programático
+- `docs/redmine-users.md` (reescrito): tabla espejo del JSON + reglas de mantenimiento — consulta humana
+- `backend/src/services/redmine/identity-validator.ts` (nuevo): `validateRedmineMapping()` valida `role_to_user_id`, `default_assignee_id` y `unassignable_fallback_assignee_id`; `lookupCobertecUser(id)` busca por ID
+- `backend/src/index.ts` (modificado): importa y llama `validateRedmineMapping(getRedmineMapping())` tras `app.listen()`; log positivo si todo OK, `console.warn` con detalle si hay IDs huérfanos
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `config/cobertec-users.json` | **Nuevo** — fuente de verdad JSON con 19 usuarios |
+| `docs/redmine-users.md` | Reescrito completo — tabla + reglas de mantenimiento |
+| `backend/src/services/redmine/identity-validator.ts` | **Nuevo** — `validateRedmineMapping()` + `lookupCobertecUser()` |
+| `backend/src/index.ts` | Importa validador; llama validación al arranque con log positivo/warning |
+
+### Decisión de diseño
+
+La lista de usuarios NO se duplica en CLAUDE.md — solo se referencia. El validador cubre los tres campos de ID en `redmine_defaults`. No bloquea el arranque — warning visible es suficiente; un ID huérfano en config intermedia no debe romper el servicio.
+
+---
+
+## Capa de revisión humana post-Redmine + agente de configuración — sesión 2026-05
+
+### Qué se construyó
+
+Sistema completo de revisión humana que opera **en paralelo al flujo del cliente**: cuando el cliente confirma, el ticket se crea en Redmine inmediatamente (sin afectar su SLA). Si `REQUIRE_HUMAN_REVIEW=true`, el backend además crea un `pending_review` en `intake.db`, genera un token JWT de revisión y envía un email al técnico asignado con un enlace de un solo uso.
+
+**Flujo de revisión:**
+1. Técnico recibe email → clic en enlace → `/review/<token>` (página pública, sin login)
+2. Ve la descripción del problema y la clasificación propuesta
+3. Puede **aprobar** (confirma asignación) o **reasignar** (elige otro rol)
+4. Si reasigna: se actualiza Redmine vía API + se genera nuevo token para el siguiente técnico + se loguea el patrón en `reassignment_patterns`
+5. Con 2 reasignaciones: se alerta al responsable de soporte (Bruno Saiz)
+6. Con 3 reasignaciones: el ticket se escala (`status='escalated'`), solo Bruno puede resolverlo desde el panel de revisiones
+7. El responsable de soporte también puede actuar desde `PendingReviewsPanel` (forzar aprobación o reasignación)
+
+**Agente de configuración (nocturno):**
+- Cada noche a las 03:00 UTC, el agente analiza los patrones de reasignación acumulados
+- Si detecta que un rol `A` siempre se reasigna a `B` para un dominio concreto, propone un cambio en `assignment-rules.json`
+- Las propuestas quedan en `config_change_log` con estado `'proposed'`
+- Bruno las revisa en el panel "Propuestas IA" y decide aplicar o rechazar
+- Al aplicar: se modifica el archivo JSON, se crea backup `.bak.{timestamp}`, se recarga la config en memoria
+
+### Archivos nuevos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/intake-store-types.ts` | Tipos de las 4 tablas de intake.db: `PendingReview`, `ReviewAuditLog`, `ReassignmentPattern`, `ConfigChangeLog` |
+| `backend/src/services/intake-store/store.ts` | `IntakeStore` (SQLite) — 4 tablas, CRUD completo |
+| `backend/src/services/intake-store/cron.ts` | Crons de expiración (`runExpiryCheck`) y detección out-of-sync (`runOutOfSyncCheck`) |
+| `backend/src/services/review-tokens/index.ts` | `signReviewToken` / `verifyReviewToken` — JWT con JTI para invalidación |
+| `backend/src/services/config-agent/agent.ts` | Orquestador del ciclo nocturno |
+| `backend/src/services/config-agent/pattern-aggregator.ts` | Agrega reasignaciones recientes y upserta patrones |
+| `backend/src/services/config-agent/prompt-builder.ts` | Construye prompts del agente con config actual + patrones |
+| `backend/src/services/config-agent/response-validator.ts` | Valida la respuesta JSON del agente |
+| `backend/src/services/config-agent/applier.ts` | Aplica cambios aprobados: escribe JSON + backup + recarga |
+| `backend/src/services/llm/index.ts` | **Nuevo** — `getLLMProvider()` singleton compartido por clasificador y agente |
+| `backend/src/routes/review.ts` | Endpoints públicos `/api/review/:token` (GET + POST approve/reassign) |
+| `backend/src/routes/admin-reviews.ts` | Panel admin `/api/admin/reviews` (list, detail, force-approve, force-reassign, retry-note-sync) |
+| `backend/src/routes/admin-config-proposals.ts` | Panel admin `/api/admin/config-proposals` (list, detail, apply, reject) |
+| `backend/scripts/set-support-lead.ts` | Marca un usuario como `is_support_lead=1` por email |
+| `backend/scripts/seed-test-pattern.ts` | **Dev only** — crea 5 pending_reviews + 5 audit_log ficticios para probar el agente |
+| `backend/scripts/run-agent-once.ts` | **Dev** — dispara el agente manualmente |
+| `frontend/src/services/admin-reviews-api.ts` | Cliente API para `/api/admin/reviews` |
+| `frontend/src/services/admin-config-api.ts` | Cliente API para `/api/admin/config-proposals` |
+| `frontend/src/pages/PendingReviewsPanel.tsx` | Panel admin de revisiones: filtros, tabla, audit log expandible, acciones |
+| `frontend/src/pages/ConfigProposalsPanel.tsx` | Panel de propuestas de config: tabs, diff visual, aplicar/rechazar con modal |
+| `frontend/src/pages/ReviewPage.tsx` | Página pública de revisión (ruta `/review/:token`) |
+
+### Archivos modificados
+
+| Archivo | Cambios |
+|---------|---------|
+| `backend/src/identity-types.ts` | `is_support_lead: boolean` en `User` y `MeResponse` |
+| `frontend/src/auth-types.ts` | `is_support_lead: boolean` en `MeResponse` |
+| `backend/src/services/identity/store.ts` | Columna `is_support_lead` con migración no destructiva; `setSupportLead()`, `getSupportLead()`, `isSupportLead()` |
+| `backend/src/services/classifier/index.ts` | Usa `getLLMProvider()` de `services/llm/index.ts`; eliminada `createProvider()` local |
+| `backend/src/services/config-agent/agent.ts` | Eliminado cast temporal `(classifier as unknown as ...)` → usa `getLLMProvider()` directamente |
+| `backend/src/services/mailer/mailer-index.ts` | Nuevos templates: `sendReviewerNotification`, `sendBrunoEscalationAlert`, `sendBrunoEscalatedTicketAlert`, `sendBrunoOutOfSyncAlert`, `sendBrunoExpiryDigest` |
+| `backend/src/routes/intake.ts` | Flujo dual según `REQUIRE_HUMAN_REVIEW`: tras confirmar, crea `pending_review` + envía email revisor |
+| `backend/src/index.ts` | Registra rutas `/api/review`, `/api/admin/reviews`, `/api/admin/config-proposals`; programa 3 crons (expiración, out-of-sync, agente) |
+| `frontend/src/App.tsx` | Importa `PendingReviewsPanel` y `ConfigProposalsPanel`; añade `isSupportLead`; entradas de menú "Revisiones" (support_lead o superadmin) y "Propuestas IA" (solo support_lead); renderizado condicional |
+
+### Decisiones de diseño — razonamiento (no obvio en el código)
+
+**¿Por qué el ticket se crea en Redmine antes de la revisión?**
+El SLA del cliente no debe depender de que un técnico interno revise el ticket. La creación en Redmine es inmediata. La revisión es un proceso de calidad interno que opera de forma asíncrona.
+
+**¿Por qué la nota privada en Redmine es best-effort?**
+La fuente de verdad del historial de reasignaciones es `review_audit_log` en `intake.db`, no Redmine. La nota privada es conveniente para que los técnicos vean el historial sin salir de Redmine, pero su fallo no es crítico. El campo `redmine_sync_status` rastrea si se sincronizó correctamente y permite reintentarlo.
+
+**¿Por qué dos llamadas separadas a Redmine en la reasignación (actualizar assignee + añadir nota)?**
+Atomicidad: si la actualización del assignee falla, el token no se rota y el técnico original sigue siendo responsable. Si la nota falla (que es best-effort), el assignee ya está actualizado en Redmine. Mezclar ambas operaciones en una sola llamada no es posible con la API de Redmine.
+
+**¿Por qué el agente se ejecuta en batch nocturno y no inmediatamente tras cada reasignación?**
+Para evitar oscilaciones: una sola reasignación puede ser puntual. El agente espera a que el patrón se estabilice (`REASSIGNMENT_PATTERN_BUFFER_DAYS=14`). Además, agregar varias reasignaciones del mismo patrón en un solo prompt produce propuestas más coherentes.
+
+**¿Por qué el agente nunca aplica directamente?**
+Gobernanza: las reglas de asignación son decisiones de negocio. El LLM puede proponer cambios con alta confianza, pero siempre requiere aprobación humana explícita (Bruno). El agente es un asistente, no un actor autónomo.
+
+**¿Por qué `is_support_lead` como flag en BD y no en env var?**
+Consistencia con `is_superadmin`: ambos son roles de usuario específicos de una persona. Una env var sería un indicador global sin identidad. El flag en BD permite que múltiples personas sean support_lead en el futuro sin cambiar la infraestructura.
+
+**¿Por qué `services/llm/` separado del clasificador?**
+El clasificador y el agente son consumidores independientes del mismo proveedor LLM. Mezclarlos en `ClassifierService` rompería la separación de responsabilidades — el agente no debe depender del clasificador para acceder al LLM. La capa `services/llm/` expone el proveedor como utilidad compartida sin acoplamiento.

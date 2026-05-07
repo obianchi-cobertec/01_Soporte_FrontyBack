@@ -43,6 +43,7 @@ export interface RefreshResponse {
 export interface MeResponse {
   user_id: string;
   is_superadmin: boolean;
+  is_support_lead: boolean;
   contact: {
     name: string;
     email: string;

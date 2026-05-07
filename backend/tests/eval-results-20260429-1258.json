@@ -1,0 +1,414 @@
+{
+    "runAt":  "2026-04-29T12:58:09",
+    "totalCases":  30,
+    "natureCorrect":  24,
+    "domainCorrect":  23,
+    "bothCorrect":  19,
+    "avgElapsedSecs":  4.2,
+    "results":  [
+                    {
+                        "id":  "13204",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "sesiones_conectividad",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "sesiones_conectividad",
+                        "confidence":  "Prioridad sugerida: high",
+                        "elapsedSeconds":  6.64
+                    },
+                    {
+                        "id":  "13202",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "ventas_facturacion",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "funcionamiento_general",
+                        "confidence":  null,
+                        "elapsedSeconds":  7.45
+                    },
+                    {
+                        "id":  "13200",
+                        "status":  "OK",
+                        "expectedNature":  "peticion_cambio_mejora",
+                        "expectedDomain":  "informes_documentos",
+                        "gotNature":  "consulta_funcional",
+                        "gotDomain":  "informes_documentos",
+                        "confidence":  null,
+                        "elapsedSeconds":  5.44
+                    },
+                    {
+                        "id":  "13199",
+                        "status":  "OK",
+                        "expectedNature":  "configuracion",
+                        "expectedDomain":  "app_fichajes",
+                        "gotNature":  "configuracion",
+                        "gotDomain":  "app_fichajes",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.32
+                    },
+                    {
+                        "id":  "13198",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.04
+                    },
+                    {
+                        "id":  "13197",
+                        "status":  "OK",
+                        "expectedNature":  "consulta_funcional",
+                        "expectedDomain":  "ventas_facturacion",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "ventas_facturacion",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.26
+                    },
+                    {
+                        "id":  "13196",
+                        "status":  "OK",
+                        "expectedNature":  "usuario_acceso",
+                        "expectedDomain":  "movilsat",
+                        "gotNature":  "usuario_acceso",
+                        "gotDomain":  "movilsat",
+                        "confidence":  null,
+                        "elapsedSeconds":  5.92
+                    },
+                    {
+                        "id":  "13195",
+                        "status":  "OK",
+                        "expectedNature":  "consulta_funcional",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "consulta_funcional",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.14
+                    },
+                    {
+                        "id":  "13194",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "app_fichajes",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "app_fichajes",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.99
+                    },
+                    {
+                        "id":  "13192",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "sesiones_conectividad",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "sesiones_conectividad",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.73
+                    },
+                    {
+                        "id":  "13189",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "movilsat",
+                        "gotNature":  "consulta_funcional",
+                        "gotDomain":  "funcionamiento_general",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.41
+                    },
+                    {
+                        "id":  "13188",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "movilsat",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "movilsat",
+                        "confidence":  "Prioridad sugerida: high",
+                        "elapsedSeconds":  4.52
+                    },
+                    {
+                        "id":  "13183",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.91
+                    },
+                    {
+                        "id":  "13182",
+                        "status":  "OK",
+                        "expectedNature":  "peticion_cambio_mejora",
+                        "expectedDomain":  "informes_documentos",
+                        "gotNature":  "peticion_cambio_mejora",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  2.81
+                    },
+                    {
+                        "id":  "13181",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "ecommerce_web",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "importacion_exportacion",
+                        "confidence":  "Prioridad sugerida: high",
+                        "elapsedSeconds":  3.65
+                    },
+                    {
+                        "id":  "13180",
+                        "status":  "OK",
+                        "expectedNature":  "peticion_cambio_mejora",
+                        "expectedDomain":  "compras",
+                        "gotNature":  "peticion_cambio_mejora",
+                        "gotDomain":  "compras",
+                        "confidence":  null,
+                        "elapsedSeconds":  5.62
+                    },
+                    {
+                        "id":  "13179",
+                        "status":  "OK",
+                        "expectedNature":  "usuario_acceso",
+                        "expectedDomain":  "servidor_sistemas",
+                        "gotNature":  "usuario_acceso",
+                        "gotDomain":  "sesiones_conectividad",
+                        "confidence":  null,
+                        "elapsedSeconds":  2.51
+                    },
+                    {
+                        "id":  "13177",
+                        "status":  "OK",
+                        "expectedNature":  "formacion_duda_uso",
+                        "expectedDomain":  "almacen_stocks",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "almacen_stocks",
+                        "confidence":  null,
+                        "elapsedSeconds":  2.5
+                    },
+                    {
+                        "id":  "13175",
+                        "status":  "OK",
+                        "expectedNature":  "consulta_funcional",
+                        "expectedDomain":  "funcionamiento_general",
+                        "gotNature":  "peticion_cambio_mejora",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  2.95
+                    },
+                    {
+                        "id":  "13174",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.06
+                    },
+                    {
+                        "id":  "13170",
+                        "status":  "OK",
+                        "expectedNature":  "peticion_cambio_mejora",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "peticion_cambio_mejora",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  5.46
+                    },
+                    {
+                        "id":  "13169",
+                        "status":  "OK",
+                        "expectedNature":  "peticion_cambio_mejora",
+                        "expectedDomain":  "ventas_facturacion",
+                        "gotNature":  "peticion_cambio_mejora",
+                        "gotDomain":  "ventas_facturacion",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.05
+                    },
+                    {
+                        "id":  "13162",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "movilsat",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "movilsat",
+                        "confidence":  "Prioridad sugerida: high",
+                        "elapsedSeconds":  4.73
+                    },
+                    {
+                        "id":  "13159",
+                        "status":  "OK",
+                        "expectedNature":  "configuracion",
+                        "expectedDomain":  "movilsat",
+                        "gotNature":  "configuracion",
+                        "gotDomain":  "movilsat",
+                        "confidence":  "Prioridad sugerida: urgent",
+                        "elapsedSeconds":  3.41
+                    },
+                    {
+                        "id":  "13150",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "presupuestos_proyectos",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "presupuestos_proyectos",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.12
+                    },
+                    {
+                        "id":  "13149",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "compras",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.61
+                    },
+                    {
+                        "id":  "13147",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "presupuestos_proyectos",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "presupuestos_proyectos",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.79
+                    },
+                    {
+                        "id":  "13143",
+                        "status":  "OK",
+                        "expectedNature":  "incidencia_error",
+                        "expectedDomain":  "gmao",
+                        "gotNature":  "incidencia_error",
+                        "gotDomain":  "gmao",
+                        "confidence":  null,
+                        "elapsedSeconds":  3.79
+                    },
+                    {
+                        "id":  "13139",
+                        "status":  "OK",
+                        "expectedNature":  "formacion_duda_uso",
+                        "expectedDomain":  "tarifas_catalogos",
+                        "gotNature":  "consulta_funcional",
+                        "gotDomain":  "tarifas_catalogos",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.65
+                    },
+                    {
+                        "id":  "13137",
+                        "status":  "OK",
+                        "expectedNature":  "formacion_duda_uso",
+                        "expectedDomain":  "compras",
+                        "gotNature":  "formacion_duda_uso",
+                        "gotDomain":  "compras",
+                        "confidence":  null,
+                        "elapsedSeconds":  4.22
+                    }
+                ],
+    "failures":  [
+                     {
+                         "id":  "13202",
+                         "natureExpected":  "incidencia_error",
+                         "natureGot":  "incidencia_error",
+                         "natureOk":  true,
+                         "domainExpected":  "ventas_facturacion",
+                         "domainGot":  "funcionamiento_general",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13200",
+                         "natureExpected":  "peticion_cambio_mejora",
+                         "natureGot":  "consulta_funcional",
+                         "natureOk":  false,
+                         "domainExpected":  "informes_documentos",
+                         "domainGot":  "informes_documentos",
+                         "domainOk":  true
+                     },
+                     {
+                         "id":  "13197",
+                         "natureExpected":  "consulta_funcional",
+                         "natureGot":  "incidencia_error",
+                         "natureOk":  false,
+                         "domainExpected":  "ventas_facturacion",
+                         "domainGot":  "ventas_facturacion",
+                         "domainOk":  true
+                     },
+                     {
+                         "id":  "13189",
+                         "natureExpected":  "incidencia_error",
+                         "natureGot":  "consulta_funcional",
+                         "natureOk":  false,
+                         "domainExpected":  "movilsat",
+                         "domainGot":  "funcionamiento_general",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13182",
+                         "natureExpected":  "peticion_cambio_mejora",
+                         "natureGot":  "peticion_cambio_mejora",
+                         "natureOk":  true,
+                         "domainExpected":  "informes_documentos",
+                         "domainGot":  "gmao",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13181",
+                         "natureExpected":  "incidencia_error",
+                         "natureGot":  "incidencia_error",
+                         "natureOk":  true,
+                         "domainExpected":  "ecommerce_web",
+                         "domainGot":  "importacion_exportacion",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13179",
+                         "natureExpected":  "usuario_acceso",
+                         "natureGot":  "usuario_acceso",
+                         "natureOk":  true,
+                         "domainExpected":  "servidor_sistemas",
+                         "domainGot":  "sesiones_conectividad",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13177",
+                         "natureExpected":  "formacion_duda_uso",
+                         "natureGot":  "incidencia_error",
+                         "natureOk":  false,
+                         "domainExpected":  "almacen_stocks",
+                         "domainGot":  "almacen_stocks",
+                         "domainOk":  true
+                     },
+                     {
+                         "id":  "13175",
+                         "natureExpected":  "consulta_funcional",
+                         "natureGot":  "peticion_cambio_mejora",
+                         "natureOk":  false,
+                         "domainExpected":  "funcionamiento_general",
+                         "domainGot":  "gmao",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13149",
+                         "natureExpected":  "incidencia_error",
+                         "natureGot":  "incidencia_error",
+                         "natureOk":  true,
+                         "domainExpected":  "compras",
+                         "domainGot":  "gmao",
+                         "domainOk":  false
+                     },
+                     {
+                         "id":  "13139",
+                         "natureExpected":  "formacion_duda_uso",
+                         "natureGot":  "consulta_funcional",
+                         "natureOk":  false,
+                         "domainExpected":  "tarifas_catalogos",
+                         "domainGot":  "tarifas_catalogos",
+                         "domainOk":  true
+                     }
+                 ],
+    "callErrors":  [
+
+                   ]
+}

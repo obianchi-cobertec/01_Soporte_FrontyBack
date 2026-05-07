@@ -4,7 +4,7 @@ const STEPS: FlowStep[] = ['form', 'loading', 'confirmation', 'creating', 'done'
 
 function getStepIndex(step: FlowStep): number {
   if (step === 'error') return -1;
-  if (step === 'questions') return 1;
+  if (step === 'clarifying') return 1;
   return STEPS.indexOf(step);
 }
 

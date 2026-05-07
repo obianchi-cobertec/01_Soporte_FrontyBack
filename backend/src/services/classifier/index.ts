@@ -1,13 +1,14 @@
 import { buildSystemPrompt, buildUserPrompt } from './prompt-builder.js';
 import { validateClassificationResponse, buildFallbackResponse } from './response-validator.js';
 import { resolveAssignee } from './assignee-resolver.js';
-import type { LLMProvider, LLMProviderConfig } from './llm-provider.js';
-import { AnthropicProvider } from './provider-anthropic.js';
-import { OpenAIProvider } from './provider-openai.js';
-import type { ClassificationRequest, ClassificationResponse } from '../../types.js';
+import { generateClarifyingQuestion } from './question-generator.js';
+import { getLLMProvider } from '../llm/index.js';
+import type { LLMProvider } from './llm-provider.js';
+import type { ClassificationRequest, ClassificationResponse, ClarifyingQuestion } from '../../types.js';
 
 export interface ClassifierResult {
   response: ClassificationResponse;
+  clarifying_question: ClarifyingQuestion | null;
   durationMs: number;
   usedFallback: boolean;
   validationErrors: string[];
@@ -33,6 +34,7 @@ export class ClassifierService {
       if (!llmResponse.text) {
         return {
           response: buildFallbackResponse(request.session_id, request.description),
+          clarifying_question: null,
           durationMs,
           usedFallback: true,
           validationErrors: ['El LLM no devolvió texto en la respuesta'],
@@ -46,8 +48,14 @@ export class ClassifierService {
         // Resolver determinista: sobreescribe el assignee del LLM con la regla correcta
         validation.data.suggested_assignee = resolveAssignee(validation.data);
 
+        // Pregunta determinista: siempre en primera clasificación, nunca en re-clasificación
+        const clarifying_question: ClarifyingQuestion | null = request.clarification
+          ? null
+          : generateClarifyingQuestion(validation.data);
+
         return {
           response: validation.data,
+          clarifying_question,
           durationMs,
           usedFallback: false,
           validationErrors: [],
@@ -58,6 +66,7 @@ export class ClassifierService {
         console.error('[Classifier] Raw LLM output:', validation.raw);
         return {
           response: buildFallbackResponse(request.session_id, request.description),
+          clarifying_question: null,
           durationMs,
           usedFallback: true,
           validationErrors: validation.errors,
@@ -71,6 +80,7 @@ export class ClassifierService {
 
       return {
         response: buildFallbackResponse(request.session_id, request.description),
+        clarifying_question: null,
         durationMs,
         usedFallback: true,
         validationErrors: [`Error LLM: ${errorMsg}`],
@@ -80,53 +90,11 @@ export class ClassifierService {
   }
 }
 
-const DEFAULT_MODELS: Record<string, string> = {
-  anthropic: 'claude-sonnet-4-20250514',
-  openai: 'gpt-4o',
-};
-
-function createProvider(): LLMProvider {
-  const providerName = (process.env.LLM_PROVIDER ?? 'anthropic').toLowerCase();
-
-  if (providerName !== 'anthropic' && providerName !== 'openai') {
-    throw new Error(
-      `LLM_PROVIDER="${providerName}" no soportado. Usa "anthropic" o "openai".`
-    );
-  }
-
-  const apiKey =
-    process.env[`${providerName.toUpperCase()}_API_KEY`] ??
-    process.env.LLM_API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      `API key no encontrada. Configura ${providerName.toUpperCase()}_API_KEY ` +
-      `o LLM_API_KEY en las variables de entorno.`
-    );
-  }
-
-  const config: LLMProviderConfig = {
-    provider: providerName,
-    apiKey,
-    model: process.env.CLASSIFIER_MODEL ?? DEFAULT_MODELS[providerName],
-    maxTokens: parseInt(process.env.CLASSIFIER_MAX_TOKENS ?? '1500', 10),
-    timeoutMs: parseInt(process.env.CLASSIFIER_TIMEOUT_MS ?? '15000', 10),
-  };
-
-  console.log(`[Classifier] Proveedor: ${providerName}, modelo: ${config.model}`);
-
-  if (providerName === 'openai') {
-    return new OpenAIProvider(config);
-  }
-  return new AnthropicProvider(config);
-}
-
 let instance: ClassifierService | null = null;
 
 export function getClassifier(): ClassifierService {
   if (!instance) {
-    const provider = createProvider();
-    instance = new ClassifierService(provider);
+    instance = new ClassifierService(getLLMProvider());
   }
   return instance;
 }

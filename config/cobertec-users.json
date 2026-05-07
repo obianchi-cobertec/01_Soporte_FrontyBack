@@ -1,0 +1,26 @@
+{
+  "_description": "Fuente de verdad de usuarios internos de Cobertec en Redmine. Cada entrada corresponde a un usuario @cobertec.com (más root y admin). Sincronizar manualmente cuando haya altas/bajas en el equipo, o regenerar con scripts/sync-cobertec-users.ts.",
+  "_last_updated": "2026-05-05",
+  "_source": "Redmine API /users.json filtrado por @cobertec.com",
+  "users": [
+    { "id": 1,   "login": "admin",          "name": "Administrador Admin",   "email": "proyectos@cobertec.com" },
+    { "id": 6,   "login": "g.santamaria",   "name": "Gonzalo Santamaría",    "email": "g.santamaria@cobertec.com" },
+    { "id": 12,  "login": "j.ares",         "name": "Javier Ares",           "email": "j.ares@cobertec.com" },
+    { "id": 13,  "login": "j.quintanilla",  "name": "Jorge Quintanilla",     "email": "j.quintanilla@cobertec.com" },
+    { "id": 21,  "login": "Financiero",     "name": "Lorena Baños",          "email": "administracion@cobertec.com" },
+    { "id": 25,  "login": "Soporte",        "name": "Sergio García",         "email": "soporte@cobertec.com" },
+    { "id": 73,  "login": "SAT_Exp",        "name": "Alberto San Miguel",    "email": "a.sanmiguel@cobertec.com" },
+    { "id": 74,  "login": "b.garcia",       "name": "Berta Garcia",          "email": "b.garcia@cobertec.com" },
+    { "id": 77,  "login": "root",           "name": "root",                  "email": "cobertec@cobertec.com" },
+    { "id": 79,  "login": "a.martinez",     "name": "Alberto Martinez",      "email": "a.martinez@cobertec.com" },
+    { "id": 221, "login": "a.arnaiz",       "name": "Andrés Arnaiz",         "email": "a.arnaiz@cobertec.com" },
+    { "id": 270, "login": "a.romo",         "name": "Alberto Romo",          "email": "a.romo@cobertec.com" },
+    { "id": 322, "login": "alvaro",         "name": "Álvaro Andrés",         "email": "a.andres@cobertec.com" },
+    { "id": 329, "login": "e.sardinas",     "name": "Elena Sardiñas",        "email": "calidad@cobertec.com" },
+    { "id": 423, "login": "test_sat",       "name": "test_sat",              "email": "test_sat@cobertec.com" },
+    { "id": 525, "login": "desarrollo4",    "name": "Hildegart Nieto",       "email": "h.nieto@cobertec.com" },
+    { "id": 562, "login": "oscar_cbt",      "name": "Óscar Bianchi",         "email": "o.bianchi@cobertec.com" },
+    { "id": 736, "login": "Bruno",          "name": "Bruno Saiz",            "email": "b.saiz@cobertec.com" },
+    { "id": 768, "login": "maria_cobertec", "name": "María Portugal",        "email": "m.portugal@cobertec.com" }
+  ]
+}

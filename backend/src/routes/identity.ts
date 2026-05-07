@@ -32,6 +32,7 @@ export async function identityRoutes(fastify: FastifyInstance): Promise<void> {
     const response: MeResponse = {
       user_id: user.id,
       is_superadmin: store.isSuperAdmin(user.id),
+      is_support_lead: store.isSupportLead(user.id),
       contact: {
         name: contact.name,
         email: contact.email,

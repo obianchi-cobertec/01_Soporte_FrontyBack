@@ -152,6 +152,9 @@ export class IdentityStore {
     if (!existingCols.includes('must_change_password')) {
       this.db.exec(`ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`);
     }
+    if (!existingCols.includes('is_support_lead')) {
+      this.db.exec(`ALTER TABLE users ADD COLUMN is_support_lead INTEGER NOT NULL DEFAULT 0`);
+    }
 
     // Migración user_requests: añadir company_name_requested + hacer company_id nullable
     const urCols = (this.db.prepare('PRAGMA table_info(user_requests)').all() as { name: string }[]).map(c => c.name);
@@ -267,6 +270,15 @@ export class IdentityStore {
     return this.db.prepare('SELECT * FROM users WHERE contact_id = ?').get(contactId) as User | null;
   }
 
+  getContactByUserId(userId: string): { name: string; email: string } | null {
+    return this.db.prepare(`
+      SELECT c.name, c.email
+      FROM contacts c
+      JOIN users u ON u.contact_id = c.id
+      WHERE u.id = ?
+    `).get(userId) as { name: string; email: string } | null;
+  }
+
   getUserByEmail(email: string): (User & { contact_name: string; contact_email: string }) | null {
     return this.db.prepare(`
       SELECT u.*, c.name as contact_name, c.email as contact_email
@@ -335,6 +347,40 @@ export class IdentityStore {
       SELECT is_superadmin FROM users WHERE id = ?
     `).get(userId) as { is_superadmin: number } | undefined;
     return row?.is_superadmin === 1;
+  }
+
+  isSupportLead(userId: string): boolean {
+    const row = this.db.prepare(`
+      SELECT is_support_lead FROM users WHERE id = ?
+    `).get(userId) as { is_support_lead: number } | undefined;
+    return row?.is_support_lead === 1;
+  }
+
+  getSupportLead(): { user_id: string; name: string; email: string } | null {
+    const row = this.db.prepare(`
+      SELECT u.id as user_id, c.name, c.email
+      FROM users u
+      JOIN contacts c ON u.contact_id = c.id
+      WHERE u.is_support_lead = 1
+      LIMIT 1
+    `).get() as { user_id: string; name: string; email: string } | undefined;
+    return row ?? null;
+  }
+
+  setSupportLead(userId: string, value: boolean): void {
+    this.db.prepare(`
+      UPDATE users SET is_support_lead = ?, updated_at = datetime('now') WHERE id = ?
+    `).run(value ? 1 : 0, userId);
+  }
+
+  getUserByRedmineUserId(redmineUserId: number): { user_id: string; name: string; email: string } | null {
+    const row = this.db.prepare(`
+      SELECT u.id as user_id, c.name, c.email
+      FROM users u
+      JOIN contacts c ON u.contact_id = c.id
+      WHERE u.redmine_user_id = ?
+    `).get(redmineUserId) as { user_id: string; name: string; email: string } | undefined;
+    return row ?? null;
   }
 
   // ─── Company ───────────────────────────────────────────

@@ -9,7 +9,14 @@
       "Bash(npm run:*)",
       "Bash(echo \"PID=$!\")",
       "Bash(ls \"D:/0_Soporte/cobertec-intake/\"*.md)",
-      "Bash(ls \"D:/0_Soporte/cobertec-intake/frontend/\"*.md)"
+      "Bash(ls \"D:/0_Soporte/cobertec-intake/frontend/\"*.md)",
+      "Bash(npm install:*)",
+      "Bash(sqlite3 data/identity.db \"SELECT c.email, c.name, u.redmine_login FROM users u JOIN contacts c ON u.contact_id = c.id WHERE u.redmine_login = 'oscar_cbt';\")",
+      "Bash(npx tailwindcss:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//tmp/**)"
     ]
   }
 }
